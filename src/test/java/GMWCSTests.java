@@ -19,12 +19,11 @@ import java.util.Random;
 public class GMWCSTests {
     public static final int SEED = 20140503;
     public static final int TESTS_PER_SIZE = 300;
-    public static final int MAX_SIZE = 8;
+    public static final int MAX_SIZE = 16;
     public static final int RANDOM_TESTS = 1000;
-    public static final int STRESS_TESTS = 2000;
     public static final Integer DEBUG_TEST = null;
-    PrintStream nativeOut;
-    PrintStream nullOut;
+    private PrintStream nativeOut;
+    private PrintStream nullOut;
     private List<UndirectedGraph<Node, Edge>> tests;
     private Solver solver;
     private ReferenceSolver referenceSolver;
