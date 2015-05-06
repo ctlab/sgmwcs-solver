@@ -6,9 +6,11 @@ Get source from github:
 
     git clone <HTTPS clone URL (see on the right side of this page)>
     
-Then you should install concern library of CPLEX like this:
+Then you should install concert library of CPLEX.
+It's located in "cplex/lib" directory from CPLEX STUDIO root path.
+For example, 
 
-    mvn install:install-file  -Dfile=cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.5.1 -Dpackaging=jar
+    mvn install:install-file -Dfile=/opt/ibm/ILOG/CPLEX_Studio1251/cplex/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.5.1 -Dpackaging=jar
     
 After that you can build the project using maven:
 
