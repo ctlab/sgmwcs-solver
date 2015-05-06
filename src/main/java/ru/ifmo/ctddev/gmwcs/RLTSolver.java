@@ -21,10 +21,13 @@ public class RLTSolver extends Solver {
     private Node root;
 
     @Override
-    protected List<Unit> solveBiComponent(UndirectedGraph<Node, Edge> graph, Node root) throws IloException {
+    protected List<Unit> solveBiComponent(UndirectedGraph<Node, Edge> graph, Node root, double tl) throws IloException {
         cplex = new IloCplex();
         IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
         parameters.setParam(IloCplex.IntParam.Threads, threads);
+        if (tl > 0) {
+            parameters.setParam(IloCplex.DoubleParam.TiLim, tl);
+        }
         cplex.tuneParam(parameters);
         y = new LinkedHashMap<>();
         w = new LinkedHashMap<>();
@@ -70,7 +73,7 @@ public class RLTSolver extends Solver {
             cplex.end();
             return result;
         }
-        throw new IllegalStateException();
+        return null;
     }
 
     private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {

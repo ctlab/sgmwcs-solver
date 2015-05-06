@@ -112,6 +112,9 @@ public class SimpleIO implements GraphIO {
     @Override
     public void write(List<Unit> units) throws IOException {
         Set<Unit> unitSet = new LinkedHashSet<>();
+        if (units == null) {
+            units = new ArrayList<>();
+        }
         unitSet.addAll(units);
         writeNodes(unitSet);
         writeEdges(unitSet);

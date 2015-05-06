@@ -47,10 +47,11 @@ public class Main {
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         Solver solver = new RLTSolver();
-        GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile, ".out"), edgeFile, new File(edgeFile, ".out"));
+        GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
+                edgeFile, new File(edgeFile.toString() + ".out"));
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
-            List<Unit> units = solver.solve(graph, threadNum);
+            List<Unit> units = solver.solve(graph, threadNum, tl);
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
