@@ -7,10 +7,14 @@ import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.jgrapht.UndirectedGraph;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.*;
 
 public class RLTSolver extends Solver {
     public static final double EPS = 0.1;
+    public static final int SILENCE_SIZE = 30;
     private IloCplex cplex;
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
@@ -23,6 +27,14 @@ public class RLTSolver extends Solver {
     @Override
     protected List<Unit> solveBiComponent(UndirectedGraph<Node, Edge> graph, Node root, double tl) throws IloException {
         cplex = new IloCplex();
+        if (graph.vertexSet().size() <= SILENCE_SIZE) {
+            cplex.setOut(new PrintStream(new OutputStream() {
+                @Override
+                public void write(int b) throws IOException {
+
+                }
+            }));
+        }
         IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
         parameters.setParam(IloCplex.IntParam.Threads, threads);
         if (tl > 0) {
