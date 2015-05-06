@@ -51,7 +51,7 @@ public class Main {
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
-            List<Unit> units = solver.solve(graph, threadNum, tl);
+            List<Unit> units = solver.solve(graph, threadNum, tl == 0 ? -1 : tl);
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
