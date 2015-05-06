@@ -125,7 +125,6 @@ public abstract class Solver {
             if (rooted != null) {
                 for (Unit unit : rooted) {
                     if (unit != cutpoint) {
-                        cutpoint.addAbsorbedUnit(unit);
                         cutpoint.addAllAbsorbedUnits(unit.getAbsorbedUnits());
                         cutpoint.setWeight(cutpoint.getWeight() + unit.getWeight());
                     }
