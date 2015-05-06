@@ -23,6 +23,9 @@ public class RLTSolver extends Solver {
     @Override
     protected List<Unit> solveBiComponent(UndirectedGraph<Node, Edge> graph, Node root) throws IloException {
         cplex = new IloCplex();
+        IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
+        parameters.setParam(IloCplex.IntParam.Threads, threads);
+        cplex.tuneParam(parameters);
         y = new LinkedHashMap<>();
         w = new LinkedHashMap<>();
         v = new LinkedHashMap<>();

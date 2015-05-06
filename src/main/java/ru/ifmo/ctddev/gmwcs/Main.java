@@ -49,7 +49,7 @@ public class Main {
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile, ".out"), edgeFile, new File(edgeFile, ".out"));
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
-            List<Unit> units = solver.solve(graph);
+            List<Unit> units = solver.solve(graph, threadNum);
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
