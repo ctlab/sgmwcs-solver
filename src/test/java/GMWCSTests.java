@@ -53,7 +53,7 @@ public class GMWCSTests {
             return;
         }
         UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
-        Assert.assertNull(solver.solve(graph));
+        Assert.assertNull(solver.solve(graph, 4));
     }
 
     @Test
@@ -101,7 +101,7 @@ public class GMWCSTests {
         List<Unit> actual = null;
         try {
             System.setOut(nullOut);
-            actual = solver.solve(graph);
+            actual = solver.solve(graph, 4);
         } catch (IloException e) {
             System.setOut(nativeOut);
             System.out.println();

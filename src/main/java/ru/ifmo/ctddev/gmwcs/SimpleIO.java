@@ -97,7 +97,7 @@ public class SimpleIO implements GraphIO {
                 Edge edge = new Edge(lnum, weight);
                 Node from = nodeMap.get(first);
                 Node to = nodeMap.get(second);
-                graph.addEdge(from, to);
+                graph.addEdge(from, to, edge);
                 edgeList.add(new Pair<>(first, second));
                 if (!edgeMap.containsKey(first)) {
                     edgeMap.put(first, new LinkedHashMap<String, Edge>());

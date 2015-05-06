@@ -16,6 +16,7 @@ import static java.util.Arrays.asList;
 public class Main {
     public static OptionSet parseArgs(String args[]) throws IOException {
         OptionParser optionParser = new OptionParser();
+        optionParser.allowsUnrecognizedOptions();
         optionParser.acceptsAll(asList("h", "help"), "Print a short help message");
         OptionSet optionSet = optionParser.parse(args);
         optionParser.acceptsAll(asList("n", "nodes"), "Node list file").withRequiredArg().required();
@@ -49,7 +50,7 @@ public class Main {
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile, ".out"), edgeFile, new File(edgeFile, ".out"));
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
-            List<Unit> units = solver.solve(graph);
+            List<Unit> units = solver.solve(graph, threadNum);
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());

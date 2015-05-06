@@ -10,10 +10,12 @@ import org.jgrapht.graph.UndirectedSubgraph;
 import java.util.*;
 
 public abstract class Solver {
+    protected int threads;
     protected abstract List<Unit> solveBiComponent(UndirectedGraph<Node, Edge> graph, Node root) throws IloException;
 
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph) throws IloException {
+    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, int threads) throws IloException {
         List<Unit> best = null;
+        this.threads = threads;
         double maxWeight = 0.0;
         ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
         for (Set<Node> component : inspector.connectedSets()) {
