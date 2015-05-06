@@ -73,6 +73,9 @@ public abstract class Solver {
                     break;
                 }
             }
+            if (component.contains(new Node(1223, 0.0))) {
+                int hh = 1;
+            }
             components.remove(component);
             int cnt = 0;
             for (Set<Node> comp : components) {
@@ -123,6 +126,7 @@ public abstract class Solver {
                 for (Unit unit : rooted) {
                     if (unit != cutpoint) {
                         cutpoint.addAbsorbedUnit(unit);
+                        cutpoint.addAllAbsorbedUnits(unit.getAbsorbedUnits());
                         cutpoint.setWeight(cutpoint.getWeight() + unit.getWeight());
                     }
                 }
