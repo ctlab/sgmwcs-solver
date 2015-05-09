@@ -25,6 +25,7 @@ public class Main {
                 .ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Time limit in seconds, 0 - unlimited").withRequiredArg()
                 .ofType(Integer.class).defaultsTo(0);
+        optionParser.acceptsAll(asList("b"), "Break symmetries");
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -46,7 +47,7 @@ public class Main {
         int threadNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
-        Solver solver = new RLTSolver();
+        Solver solver = new RLTSolver(optionSet.has("b"));
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {

@@ -73,9 +73,6 @@ public abstract class Solver {
                     break;
                 }
             }
-            if (component.contains(new Node(1223, 0.0))) {
-                int hh = 1;
-            }
             components.remove(component);
             int cnt = 0;
             for (Set<Node> comp : components) {

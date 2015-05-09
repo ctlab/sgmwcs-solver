@@ -23,6 +23,11 @@ public class RLTSolver extends Solver {
     private Map<Edge, Pair<IloNumVar, IloNumVar>> x;
     private Map<Node, IloNumVar> x0;
     private Node root;
+    private boolean toBreak;
+
+    public RLTSolver(boolean toBreak) {
+        this.toBreak = toBreak;
+    }
 
     @Override
     protected List<Unit> solveBiComponent(UndirectedGraph<Node, Edge> graph, Node root, double tl) throws IloException {
@@ -53,6 +58,9 @@ public class RLTSolver extends Solver {
             v.put(node, cplex.intVar(0, Integer.MAX_VALUE, "v" + nodeName));
             y.put(node, cplex.boolVar("y" + nodeName));
             x0.put(node, cplex.boolVar("x_0_" + (node.getNum() + 1)));
+        }
+        if (root == null && toBreak) {
+            breakSymmetry(cplex, graph);
         }
         for (Edge edge : graph.edgeSet()) {
             Node from = graph.getEdgeSource(edge);
@@ -86,6 +94,25 @@ public class RLTSolver extends Solver {
             return result;
         }
         return null;
+    }
+
+    private void breakSymmetry(IloCplex cplex, UndirectedGraph<Node, Edge> graph) throws IloException {
+        int k = 0;
+        int n = graph.vertexSet().size();
+        IloNumVar[] rootMul = new IloNumVar[n];
+        IloNumVar[] nodeMul = new IloNumVar[n];
+        for (Node node : graph.vertexSet()) {
+            k++;
+            nodeMul[k - 1] = cplex.intVar(0, n);
+            rootMul[k - 1] = cplex.intVar(0, n);
+            cplex.addEq(nodeMul[k - 1], cplex.prod(k, y.get(node)));
+            cplex.addEq(rootMul[k - 1], cplex.prod(k, x0.get(node)));
+        }
+        IloNumVar rootSum = cplex.intVar(0, n);
+        cplex.addEq(rootSum, cplex.sum(rootMul));
+        for (int i = 0; i < n; i++) {
+            cplex.addGe(rootSum, nodeMul[i]);
+        }
     }
 
     private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
