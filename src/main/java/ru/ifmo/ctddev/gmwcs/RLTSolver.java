@@ -17,7 +17,6 @@ import java.util.*;
 
 public class RLTSolver extends Solver {
     public static final double EPS = 0.1;
-    public static final int SILENCE_SIZE = 30;
     private IloCplex cplex;
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
@@ -27,15 +26,17 @@ public class RLTSolver extends Solver {
     private Map<Node, IloNumVar> x0;
     private Node root;
     private boolean toBreak;
+    private int silence;
 
-    public RLTSolver(boolean toBreak) {
+    public RLTSolver(boolean toBreak, int nodesForSilence) {
+        silence = nodesForSilence;
         this.toBreak = toBreak;
     }
 
     @Override
     protected List<Unit> solveBiComponent(UndirectedGraph<Node, Edge> graph, Node root, double tl) throws IloException {
         cplex = new IloCplex();
-        if (graph.vertexSet().size() <= SILENCE_SIZE) {
+        if (graph.vertexSet().size() < silence) {
             cplex.setOut(new PrintStream(new OutputStream() {
                 @Override
                 public void write(int b) throws IOException {

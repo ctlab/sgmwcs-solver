@@ -30,6 +30,7 @@ public abstract class Solver {
         List<Set<Node>> connectedSets = new ArrayList<>();
         connectedSets.addAll(inspector.connectedSets());
         Collections.sort(connectedSets, new SetComparator<Node>());
+        int i = 1;
         for (Set<Node> component : connectedSets) {
             double fraction = (double) component.size() / nodeRemains;
             nodeRemains -= component.size();
@@ -40,6 +41,7 @@ public abstract class Solver {
                 }
             }
             UndirectedGraph<Node, Edge> subgraph = new UndirectedSubgraph<>(graph, component, edges);
+            System.out.println("Considering component " + (i++) + "/" + connectedSets.size() + ":");
             List<Unit> solution = solveComponent(clone(subgraph), limit.subLimit(fraction));
             if (sum(solution) > maxWeight) {
                 maxWeight = sum(solution);
@@ -58,6 +60,8 @@ public abstract class Solver {
         LeafBiComponentIterator iterator = new LeafBiComponentIterator(graph);
         int nodeRemains = iterator.nodesToProcess();
         List<Unit> bestSolution = null;
+        int i = 1;
+        int all = iterator.bicomponentsCount();
         while (iterator.hasNext()) {
             Pair<Node, Set<Node>> component = iterator.next();
             Node cutpoint = component.first;
@@ -65,19 +69,26 @@ public abstract class Solver {
             TimeLimit tl = tlFotSmall.subLimit((double) nodes.size() / nodeRemains);
             nodeRemains -= nodes.size();
             UndirectedGraph<Node, Edge> subgraph = subgraph(graph, nodes);
+            System.out.print("Considering bicomponent " + i + "/" + all + ": unrooted(");
             List<Unit> unrooted = solveBiComponent(subgraph, null, tl.subLimit(0.5));
             if (sum(unrooted) > sum(bestSolution)) {
                 bestSolution = getResult(unrooted);
             }
             List<Unit> rooted;
+            System.out.print("), rooted(");
             if (unrooted != null && unrooted.contains(cutpoint)) {
+                System.out.println("=unrooted)");
                 rooted = unrooted;
             } else {
                 rooted = solveBiComponent(subgraph, cutpoint, tl);
+                System.out.println(")");
             }
             collapse(graph, rooted, nodes, cutpoint);
+            i++;
         }
+        System.out.print("Considering bicomponent " + all + "/" + all + ": ");
         List<Unit> biggest = solveBiComponent(graph, null, limit);
+        System.out.println(")");
         if (sum(biggest) > sum(bestSolution)) {
             bestSolution = getResult(biggest);
         }
@@ -88,6 +99,7 @@ public abstract class Solver {
         long timeBefore = System.currentTimeMillis();
         List<Unit> result = solveBiComponent(graph, root, tl.getRemainingTime());
         double duration = (System.currentTimeMillis() - timeBefore) / 1000.0;
+        System.out.format("time: %.2f/%.2f", duration, tl.getRemainingTime() + 0.005);
         tl.spend(Math.min(tl.getRemainingTime(), duration));
         return result;
     }
@@ -208,6 +220,10 @@ public abstract class Solver {
                     leaves.add(component);
                 }
             }
+        }
+
+        public int bicomponentsCount() {
+            return componentCutpoints.size();
         }
 
         public int nodesToProcess() {

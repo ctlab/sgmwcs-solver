@@ -31,6 +31,9 @@ public class Main {
         optionParser.acceptsAll(Collections.singletonList("f"),
                 "Fraction of time allocated for the biggest bicomponent in each component")
                 .withRequiredArg().ofType(Double.class).defaultsTo(0.8);
+        optionParser.acceptsAll(asList("s", "silence"), "print only short description if size of bicomponent less " +
+                "than <silence>")
+                .withRequiredArg().ofType(Integer.class).defaultsTo(50);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -50,10 +53,11 @@ public class Main {
         OptionSet optionSet = parseArgs(args);
         int tl = (Integer) optionSet.valueOf("timelimit");
         int threadNum = (Integer) optionSet.valueOf("threads");
+        int silence = (Integer) optionSet.valueOf("silence");
         double mainFraction = (Double) optionSet.valueOf("f");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
-        Solver solver = new RLTSolver(optionSet.has("b"));
+        Solver solver = new RLTSolver(optionSet.has("b"), silence);
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
