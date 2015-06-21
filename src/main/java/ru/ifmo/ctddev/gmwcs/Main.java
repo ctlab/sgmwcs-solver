@@ -5,10 +5,12 @@ import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.jgrapht.UndirectedGraph;
+import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -25,7 +27,10 @@ public class Main {
                 .ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Time limit in seconds, 0 - unlimited").withRequiredArg()
                 .ofType(Integer.class).defaultsTo(0);
-        optionParser.acceptsAll(asList("b"), "Break symmetries");
+        optionParser.acceptsAll(Collections.singletonList("b"), "Break symmetries");
+        optionParser.acceptsAll(Collections.singletonList("f"),
+                "Fraction of time allocated for the biggest bicomponent in each component")
+                .withRequiredArg().ofType(Double.class).defaultsTo(0.8);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -45,6 +50,7 @@ public class Main {
         OptionSet optionSet = parseArgs(args);
         int tl = (Integer) optionSet.valueOf("timelimit");
         int threadNum = (Integer) optionSet.valueOf("threads");
+        double mainFraction = (Double) optionSet.valueOf("f");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         Solver solver = new RLTSolver(optionSet.has("b"));
@@ -52,7 +58,8 @@ public class Main {
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
-            List<Unit> units = solver.solve(graph, threadNum, tl == 0 ? -1 : tl);
+            double timeLimit = tl <= 0 ? Double.POSITIVE_INFINITY : tl;
+            List<Unit> units = solver.solve(graph, threadNum, timeLimit, mainFraction);
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());

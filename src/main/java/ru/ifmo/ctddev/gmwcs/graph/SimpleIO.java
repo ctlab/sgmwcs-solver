@@ -1,7 +1,8 @@
-package ru.ifmo.ctddev.gmwcs;
+package ru.ifmo.ctddev.gmwcs.graph;
 
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
+import ru.ifmo.ctddev.gmwcs.Pair;
 
 import java.io.*;
 import java.text.ParseException;

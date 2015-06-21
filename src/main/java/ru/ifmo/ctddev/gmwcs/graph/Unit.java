@@ -1,4 +1,4 @@
-package ru.ifmo.ctddev.gmwcs;
+package ru.ifmo.ctddev.gmwcs.graph;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;

@@ -5,7 +5,11 @@ import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import ru.ifmo.ctddev.gmwcs.*;
+import ru.ifmo.ctddev.gmwcs.RLTSolver;
+import ru.ifmo.ctddev.gmwcs.Solver;
+import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Node;
+import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -53,7 +57,7 @@ public class GMWCSTests {
             return;
         }
         UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
-        Assert.assertNull(solver.solve(graph, 4, -1));
+        Assert.assertNull(solver.solve(graph, 4, Double.POSITIVE_INFINITY, 0.5));
     }
 
     @Test
@@ -101,7 +105,7 @@ public class GMWCSTests {
         List<Unit> actual = null;
         try {
             System.setOut(nullOut);
-            actual = solver.solve(graph, 4, -1);
+            actual = solver.solve(graph, 4, Double.POSITIVE_INFINITY, 0.5);
         } catch (IloException e) {
             System.setOut(nativeOut);
             System.out.println();

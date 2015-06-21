@@ -6,6 +6,9 @@ import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.jgrapht.UndirectedGraph;
+import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Node;
+import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -42,7 +45,7 @@ public class RLTSolver extends Solver {
         }
         IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
         parameters.setParam(IloCplex.IntParam.Threads, threads);
-        if (tl > 0) {
+        if (tl > 0 && tl != Double.POSITIVE_INFINITY) {
             parameters.setParam(IloCplex.DoubleParam.TiLim, tl);
         }
         cplex.tuneParam(parameters);

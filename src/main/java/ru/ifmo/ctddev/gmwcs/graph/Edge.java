@@ -1,4 +1,4 @@
-package ru.ifmo.ctddev.gmwcs;
+package ru.ifmo.ctddev.gmwcs.graph;
 
 public class Edge extends Unit {
     public Edge(int num, double weight) {

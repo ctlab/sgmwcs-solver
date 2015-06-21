@@ -6,26 +6,32 @@ import org.jgrapht.alg.BiconnectivityInspector;
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.graph.UndirectedSubgraph;
+import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Node;
+import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
 
 public abstract class Solver {
     protected int threads;
+    private double mainFraction;
 
     protected abstract List<Unit> solveBiComponent(UndirectedGraph<Node, Edge> graph, Node root, double tl) throws IloException;
 
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, int threads, double tl) throws IloException {
+    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, int threads,
+                            double tl, double mainFraction) throws IloException {
         List<Unit> best = null;
         this.threads = threads;
+        this.mainFraction = mainFraction;
         double maxWeight = 0.0;
         ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
-        TimeLimiter limiter = new TimeLimiter(tl);
+        TimeLimit limit = new TimeLimit(tl);
         int nodeRemains = graph.vertexSet().size();
         List<Set<Node>> connectedSets = new ArrayList<>();
         connectedSets.addAll(inspector.connectedSets());
         Collections.sort(connectedSets, new SetComparator<Node>());
         for (Set<Node> component : connectedSets) {
-            double fraction = (limiter.getRemainingTime() / nodeRemains) * component.size();
+            double fraction = (double) component.size() / nodeRemains;
             nodeRemains -= component.size();
             Set<Edge> edges = new LinkedHashSet<>();
             for (Edge edge : graph.edgeSet()) {
@@ -34,7 +40,7 @@ public abstract class Solver {
                 }
             }
             UndirectedGraph<Node, Edge> subgraph = new UndirectedSubgraph<>(graph, component, edges);
-            List<Unit> solution = solveComponent(clone(subgraph), tl < 0 ? -1 : fraction, limiter);
+            List<Unit> solution = solveComponent(clone(subgraph), limit.subLimit(fraction));
             if (sum(solution) > maxWeight) {
                 maxWeight = sum(solution);
                 best = solution;
@@ -44,100 +50,74 @@ public abstract class Solver {
         return best;
     }
 
-    private List<Unit> solveComponent(UndirectedGraph<Node, Edge> graph, double tl,
-                                      TimeLimiter limiter) throws IloException {
-        BiconnectivityInspector<Node, Edge> inspector = new BiconnectivityInspector<>(graph);
-        Set<Node> cutpoints = inspector.getCutpoints();
-        List<Set<Node>> components = new ArrayList<>();
-        components.addAll(inspector.getBiconnectedVertexComponents());
-        Collections.sort(components, new SetComparator<Node>());
-        List<Unit> best = null;
-        int nodeRemains = graph.vertexSet().size() + components.size() - 1;
-        while (components.size() > 1) {
-            Set<Node> component = null;
-            Node cutpoint = null;
-            for (Set<Node> comp : components) {
-                int cutNodes = 0;
-                for (Node point : cutpoints) {
-                    if (comp.contains(point)) {
-                        cutNodes++;
-                        cutpoint = point;
-                        if (cutNodes == 2) {
-                            break;
-                        }
-                    }
-                }
-                if (cutNodes == 1) {
-                    component = new LinkedHashSet<>();
-                    component.addAll(comp);
-                    break;
-                }
-            }
-            components.remove(component);
-            int cnt = 0;
-            for (Set<Node> comp : components) {
-                if (comp.contains(cutpoint)) {
-                    cnt++;
-                    if (cnt > 1) {
-                        break;
-                    }
-                }
-            }
-            if (cnt < 2) {
-                cutpoints.remove(cutpoint);
-            }
-            Set<Edge> edgeSet = new LinkedHashSet<>();
-            for (Edge edge : graph.edgeSet()) {
-                Node from = graph.getEdgeSource(edge);
-                Node to = graph.getEdgeTarget(edge);
-                if (component.contains(from) && component.contains(to)) {
-                    edgeSet.add(edge);
-                }
-            }
-            double fraction = ((tl / nodeRemains) * component.size()) / 2;
-            UndirectedGraph<Node, Edge> subgraph = new UndirectedSubgraph<>(graph, component, edgeSet);
-            long timeBefore = System.currentTimeMillis();
-            List<Unit> unrooted = solveBiComponent(subgraph, null, tl < 0 ? -1 : fraction);
-            if (sum(unrooted) > sum(best)) {
-                best = getResult(unrooted);
+    private List<Unit> solveComponent(UndirectedGraph<Node, Edge> graph, TimeLimit limit) throws IloException {
+        if (graph.vertexSet().size() == 1) {
+            return Arrays.<Unit>asList(graph.vertexSet().iterator().next());
+        }
+        TimeLimit tlFotSmall = limit.subLimit(1 - mainFraction);
+        LeafBiComponentIterator iterator = new LeafBiComponentIterator(graph);
+        int nodeRemains = iterator.nodesToProcess();
+        List<Unit> bestSolution = null;
+        while (iterator.hasNext()) {
+            Pair<Node, Set<Node>> component = iterator.next();
+            Node cutpoint = component.first;
+            Set<Node> nodes = component.second;
+            TimeLimit tl = tlFotSmall.subLimit((double) nodes.size() / nodeRemains);
+            nodeRemains -= nodes.size();
+            UndirectedGraph<Node, Edge> subgraph = subgraph(graph, nodes);
+            List<Unit> unrooted = solveBiComponent(subgraph, null, tl.subLimit(0.5));
+            if (sum(unrooted) > sum(bestSolution)) {
+                bestSolution = getResult(unrooted);
             }
             List<Unit> rooted;
-            if (!unrooted.contains(cutpoint)) {
-                rooted = solveBiComponent(subgraph, cutpoint, tl < 0 ? -1 : fraction);
-            } else {
+            if (unrooted != null && unrooted.contains(cutpoint)) {
                 rooted = unrooted;
+            } else {
+                rooted = solveBiComponent(subgraph, cutpoint, tl);
             }
-            long timeAfter = System.currentTimeMillis();
-            if (tl > 0) {
-                nodeRemains -= component.size();
-                double spent = Math.min((timeAfter - timeBefore) / 1000.0, fraction * 2);
-                limiter.spend(spent);
-                tl -= spent;
-            }
-            for (Node node : component) {
-                if (node != cutpoint) {
-                    graph.removeVertex(node);
-                }
-            }
-            if (rooted != null) {
-                for (Unit unit : rooted) {
-                    if (unit != cutpoint) {
-                        cutpoint.addAllAbsorbedUnits(unit.getAbsorbedUnits());
-                        cutpoint.setWeight(cutpoint.getWeight() + unit.getWeight());
-                    }
-                }
-            }
+            collapse(graph, rooted, nodes, cutpoint);
         }
+        List<Unit> biggest = solveBiComponent(graph, null, limit);
+        if (sum(biggest) > sum(bestSolution)) {
+            bestSolution = getResult(biggest);
+        }
+        return bestSolution;
+    }
+
+    private List<Unit> solveBiComponent(UndirectedGraph<Node, Edge> graph, Node root, TimeLimit tl) throws IloException {
         long timeBefore = System.currentTimeMillis();
-        List<Unit> unrooted = solveBiComponent(graph, null, tl < 0 ? -1 : tl);
-        long timeAfter = System.currentTimeMillis();
-        if (tl > 0) {
-            limiter.spend(Math.min((timeAfter - timeBefore) / 1000.0, tl));
+        List<Unit> result = solveBiComponent(graph, root, tl.getRemainingTime());
+        double duration = (System.currentTimeMillis() - timeBefore) / 1000.0;
+        tl.spend(Math.min(tl.getRemainingTime(), duration));
+        return result;
+    }
+
+    private void collapse(UndirectedGraph<Node, Edge> graph, List<Unit> sol, Set<Node> component, Node cutpoint) {
+        Set<Node> toRemove = new LinkedHashSet<>();
+        toRemove.addAll(component);
+        for (Node node : toRemove) {
+            if (node != cutpoint) {
+                graph.removeVertex(node);
+            }
         }
-        if (sum(unrooted) > sum(best)) {
-            best = getResult(unrooted);
+        if (sol != null) {
+            for (Unit unit : sol) {
+                if (unit != cutpoint) {
+                    cutpoint.addAllAbsorbedUnits(unit.getAbsorbedUnits());
+                    cutpoint.setWeight(cutpoint.getWeight() + unit.getWeight());
+                }
+            }
         }
-        return best;
+    }
+
+    private UndirectedGraph<Node, Edge> subgraph(UndirectedGraph<Node, Edge> source, Set<Node> nodes) {
+        Set<Edge> edges = new LinkedHashSet<>();
+        for (Edge edge : source.edgeSet()) {
+            if (nodes.contains(source.getEdgeSource(edge)) && nodes.contains(source.getEdgeTarget(edge))) {
+                edges.add(edge);
+            }
+        }
+        return new UndirectedSubgraph<>(source, nodes, edges);
     }
 
     private void checkConnectivity(UndirectedGraph<Node, Edge> graph, List<Unit> result) {
@@ -201,6 +181,72 @@ public abstract class Solver {
         return res;
     }
 
+    private class LeafBiComponentIterator implements Iterator<Pair<Node, Set<Node>>> {
+        private Map<Set<Node>, List<Node>> componentCutpoints;
+        private Map<Node, List<Set<Node>>> cutpointComponents;
+        private PriorityQueue<Set<Node>> leaves;
+
+        public LeafBiComponentIterator(UndirectedGraph<Node, Edge> graph) {
+            BiconnectivityInspector<Node, Edge> inspector = new BiconnectivityInspector<>(graph);
+            Set<Set<Node>> components = inspector.getBiconnectedVertexComponents();
+            Set<Node> cutpoints = inspector.getCutpoints();
+            componentCutpoints = new LinkedHashMap<>();
+            cutpointComponents = new LinkedHashMap<>();
+            leaves = new PriorityQueue<>(new SetComparator<Node>());
+            for (Set<Node> component : components) {
+                componentCutpoints.put(component, new ArrayList<Node>());
+                for (Node node : component) {
+                    if (cutpoints.contains(node)) {
+                        componentCutpoints.get(component).add(node);
+                        if (!cutpointComponents.containsKey(node)) {
+                            cutpointComponents.put(node, new ArrayList<Set<Node>>());
+                        }
+                        cutpointComponents.get(node).add(component);
+                    }
+                }
+                if (componentCutpoints.get(component).size() <= 1) {
+                    leaves.add(component);
+                }
+            }
+        }
+
+        public int nodesToProcess() {
+            int result = 0;
+            int max = -1;
+            for (Set<Node> component : componentCutpoints.keySet()) {
+                result += component.size();
+                if (component.size() > max) {
+                    max = component.size();
+                }
+            }
+            result -= max;
+            return result;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return leaves.size() > 1;
+        }
+
+        @Override
+        public Pair<Node, Set<Node>> next() {
+            Set<Node> smallest = leaves.poll();
+            Node cutpoint = componentCutpoints.get(smallest).iterator().next();
+            componentCutpoints.remove(smallest);
+            cutpointComponents.get(cutpoint).remove(smallest);
+            if (cutpointComponents.get(cutpoint).size() == 1) {
+                for (Set<Node> updated : cutpointComponents.get(cutpoint)) {
+                    componentCutpoints.get(updated).remove(cutpoint);
+                    if (componentCutpoints.get(updated).size() <= 1 && !leaves.contains(updated)) {
+                        leaves.add(updated);
+                    }
+                }
+                cutpointComponents.remove(cutpoint);
+            }
+            return new Pair<>(cutpoint, smallest);
+        }
+    }
+
     private class SetComparator<E> implements Comparator<Set<E>> {
         @Override
         public int compare(Set<E> o1, Set<E> o2) {
@@ -214,15 +260,28 @@ public abstract class Solver {
         }
     }
 
-    private class TimeLimiter {
+    private class TimeLimit {
         private double tl;
+        private TimeLimit parent;
 
-        public TimeLimiter(double tl) {
+        public TimeLimit(double tl) {
             this.tl = tl;
+        }
+
+        private TimeLimit(TimeLimit parent, double fraction) {
+            this.parent = parent;
+            tl = parent.getRemainingTime() * fraction;
         }
 
         public void spend(double time) {
             tl -= time;
+            if (parent != null) {
+                parent.spend(time);
+            }
+        }
+
+        public TimeLimit subLimit(double fraction) {
+            return new TimeLimit(this, fraction);
         }
 
         public double getRemainingTime() {

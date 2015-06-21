@@ -1,9 +1,9 @@
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.graph.UndirectedSubgraph;
-import ru.ifmo.ctddev.gmwcs.Edge;
-import ru.ifmo.ctddev.gmwcs.Node;
-import ru.ifmo.ctddev.gmwcs.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Node;
+import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
 
