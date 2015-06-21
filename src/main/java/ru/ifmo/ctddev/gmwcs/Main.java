@@ -49,8 +49,14 @@ public class Main {
         return optionSet;
     }
 
-    public static void main(String[] args) throws IOException {
-        OptionSet optionSet = parseArgs(args);
+    public static void main(String[] args) {
+        OptionSet optionSet = null;
+        try {
+            optionSet = parseArgs(args);
+        } catch (IOException e) {
+            // We can't say anything. Error occurred while printing to stderr.
+            System.exit(2);
+        }
         int tl = (Integer) optionSet.valueOf("timelimit");
         int threadNum = (Integer) optionSet.valueOf("threads");
         int silence = (Integer) optionSet.valueOf("silence");
@@ -69,6 +75,8 @@ public class Main {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
         } catch (IloException e) {
             System.err.println("CPLEX error:" + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error occurred while reading/writing input/output files");
         }
     }
 }
