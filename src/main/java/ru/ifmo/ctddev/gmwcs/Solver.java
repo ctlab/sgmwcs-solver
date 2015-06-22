@@ -29,7 +29,7 @@ public abstract class Solver {
         int nodeRemains = graph.vertexSet().size();
         List<Set<Node>> connectedSets = new ArrayList<>();
         connectedSets.addAll(inspector.connectedSets());
-        Collections.sort(connectedSets, new SetComparator<Node>());
+        Collections.sort(connectedSets, new SetComparator<>());
         int i = 1;
         for (Set<Node> component : connectedSets) {
             double fraction = (double) component.size() / nodeRemains;
@@ -204,14 +204,14 @@ public abstract class Solver {
             Set<Node> cutpoints = inspector.getCutpoints();
             componentCutpoints = new LinkedHashMap<>();
             cutpointComponents = new LinkedHashMap<>();
-            leaves = new PriorityQueue<>(new SetComparator<Node>());
+            leaves = new PriorityQueue<>(new SetComparator<>());
             for (Set<Node> component : components) {
-                componentCutpoints.put(component, new ArrayList<Node>());
+                componentCutpoints.put(component, new ArrayList<>());
                 for (Node node : component) {
                     if (cutpoints.contains(node)) {
                         componentCutpoints.get(component).add(node);
                         if (!cutpointComponents.containsKey(node)) {
-                            cutpointComponents.put(node, new ArrayList<Set<Node>>());
+                            cutpointComponents.put(node, new ArrayList<>());
                         }
                         cutpointComponents.get(node).add(component);
                     }
