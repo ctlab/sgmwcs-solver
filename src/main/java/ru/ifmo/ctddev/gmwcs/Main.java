@@ -1,11 +1,12 @@
 package ru.ifmo.ctddev.gmwcs;
 
-import ilog.concert.IloException;
-import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.graph.*;
+import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
+import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
+import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,22 +26,30 @@ public class Main {
         optionParser.acceptsAll(asList("e", "edges"), "Edge list file").withRequiredArg().required();
         optionParser.acceptsAll(asList("m", "threads"), "Number of threads").withRequiredArg()
                 .ofType(Integer.class).defaultsTo(1);
-        optionParser.acceptsAll(asList("t", "timelimit"), "Time limit in seconds, 0 - unlimited").withRequiredArg()
-                .ofType(Integer.class).defaultsTo(0);
+        optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
+                .withRequiredArg().ofType(Long.class).defaultsTo(0L);
+        optionParser.acceptsAll(asList("u", "unrooted"), "Maximum share of time allocated for solving unrooted parts")
+                .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
+        optionParser.acceptsAll(asList("r", "rooted"), "Maximum share of time allocated for solving rooted parts")
+                .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
         optionParser.acceptsAll(Collections.singletonList("b"), "Break symmetries");
-        optionParser.acceptsAll(Collections.singletonList("f"),
-                "Fraction of time allocated for the biggest bicomponent in each component")
-                .withRequiredArg().ofType(Double.class).defaultsTo(0.8);
-        optionParser.acceptsAll(asList("s", "silence"), "print only short description if size of bicomponent less " +
-                "than <silence>")
-                .withRequiredArg().ofType(Integer.class).defaultsTo(50);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
         }
         try {
             optionSet = optionParser.parse(args);
-        } catch (OptionException e) {
+            double ush = (Double) optionSet.valueOf("u");
+            double rsh = (Double) optionSet.valueOf("r");
+            if (ush < 0.0 || ush > 1.0 || rsh < 0.0 || rsh > 1.0) {
+                System.err.println("Share must b in range [0,1]");
+                System.exit(1);
+            }
+            if (rsh + ush > 1.0) {
+                System.err.println("Sum of shares of rooted and unrooted parts must be <= 1.0");
+                System.exit(1);
+            }
+        } catch (Exception e) {
             System.err.println(e.getMessage());
             System.err.println();
             optionParser.printHelpOn(System.err);
@@ -57,24 +66,30 @@ public class Main {
             // We can't say anything. Error occurred while printing to stderr.
             System.exit(2);
         }
-        int tl = (Integer) optionSet.valueOf("timelimit");
-        int threadNum = (Integer) optionSet.valueOf("threads");
-        int silence = (Integer) optionSet.valueOf("silence");
-        double mainFraction = (Double) optionSet.valueOf("f");
+        long timelimit = (Long) optionSet.valueOf("timelimit");
+        TimeLimit tl = new TimeLimit(timelimit <= 0 ? Double.POSITIVE_INFINITY : timelimit);
+        double rsh = (Double) optionSet.valueOf("r");
+        double ush = (Double) optionSet.valueOf("u");
+        TimeLimit rootedTL = tl.subLimit(rsh + ush);
+        int threadsNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
-        Solver solver = new RLTSolver(optionSet.has("b"), silence);
+        RLTSolver rltSolver = new RLTSolver(optionSet.has("b"));
+        rltSolver.setThreadsNum(threadsNum);
+        BicomponentSolver solver = new BicomponentSolver(rltSolver);
+        solver.setUnrootedTL(rootedTL.subLimit((ush + rsh == 0.0) ? 0 : ush / (ush + rsh)));
+        solver.setRootedTL(rootedTL);
+        solver.setTLForBiggest(tl);
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
-            double timeLimit = tl <= 0 ? Double.POSITIVE_INFINITY : tl;
-            List<Unit> units = solver.solve(graph, threadNum, timeLimit, mainFraction);
+            List<Unit> units = solver.solve(graph);
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
-        } catch (IloException e) {
-            System.err.println("CPLEX error:" + e.getMessage());
+        } catch (SolverException e) {
+            System.err.println("Error occur while solving:" + e.getMessage());
         } catch (IOException e) {
             System.err.println("Error occurred while reading/writing input/output files");
         }

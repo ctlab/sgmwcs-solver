@@ -1,4 +1,4 @@
-package ru.ifmo.ctddev.gmwcs;
+package ru.ifmo.ctddev.gmwcs.solver;
 
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
@@ -6,17 +6,15 @@ import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.jgrapht.UndirectedGraph;
+import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.*;
 
-public class RLTSolver extends Solver {
-    public static final double EPS = 0.1;
+public class RLTSolver implements Solver {
+    public static final double EPS = 0.01;
     private IloCplex cplex;
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
@@ -25,79 +23,98 @@ public class RLTSolver extends Solver {
     private Map<Edge, Pair<IloNumVar, IloNumVar>> x;
     private Map<Node, IloNumVar> x0;
     private Node root;
+    private double tl;
     private boolean toBreak;
-    private int silence;
+    private int threads;
 
-    public RLTSolver(boolean toBreak, int nodesForSilence) {
-        silence = nodesForSilence;
+    public RLTSolver(boolean toBreak) {
         this.toBreak = toBreak;
+        tl = Double.POSITIVE_INFINITY;
+        threads = 1;
+    }
+
+    public void setTimeOut(double tl) {
+        this.tl = tl;
+    }
+
+    public void setThreadsNum(int threads) {
+        if (threads < 1) {
+            throw new IllegalArgumentException();
+        }
+        this.threads = threads;
+    }
+
+    public void setRoot(Node root) {
+        this.root = root;
     }
 
     @Override
-    protected List<Unit> solveBiComponent(UndirectedGraph<Node, Edge> graph, Node root, double tl) throws IloException {
-        cplex = new IloCplex();
-        if (graph.vertexSet().size() < silence) {
-            cplex.setOut(new PrintStream(new OutputStream() {
-                @Override
-                public void write(int b) throws IOException {
-
-                }
-            }));
-        }
-        IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
-        parameters.setParam(IloCplex.IntParam.Threads, threads);
-        if (tl > 0 && tl != Double.POSITIVE_INFINITY) {
-            parameters.setParam(IloCplex.DoubleParam.TiLim, tl);
-        }
-        cplex.tuneParam(parameters);
-        y = new LinkedHashMap<>();
-        w = new LinkedHashMap<>();
-        v = new LinkedHashMap<>();
-        t = new LinkedHashMap<>();
-        x = new LinkedHashMap<>();
-        x0 = new LinkedHashMap<>();
-        this.root = root;
-        for (Node node : graph.vertexSet()) {
-            String nodeName = Integer.toString(node.getNum() + 1);
-            v.put(node, cplex.intVar(0, Integer.MAX_VALUE, "v" + nodeName));
-            y.put(node, cplex.boolVar("y" + nodeName));
-            x0.put(node, cplex.boolVar("x_0_" + (node.getNum() + 1)));
-        }
-        if (root == null && toBreak) {
-            breakSymmetry(cplex, graph);
-        }
-        for (Edge edge : graph.edgeSet()) {
-            Node from = graph.getEdgeSource(edge);
-            Node to = graph.getEdgeTarget(edge);
-            String edgeName = (from.getNum() + 1) + "_" + (to.getNum() + 1);
-            w.put(edge, cplex.boolVar("w_" + edgeName));
-            IloNumVar in = cplex.intVar(0, Integer.MAX_VALUE, "t_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
-            IloNumVar out = cplex.intVar(0, Integer.MAX_VALUE, "t_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
-            t.put(edge, new Pair<>(in, out));
-            in = cplex.intVar(0, Integer.MAX_VALUE, "x_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
-            out = cplex.intVar(0, Integer.MAX_VALUE, "x_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
-            x.put(edge, new Pair<>(in, out));
-        }
-        addConstraints(graph);
-        IloNumExpr nodeObj = unitScalProd(graph.vertexSet(), y);
-        IloNumExpr edgeObj = unitScalProd(graph.edgeSet(), w);
-        cplex.addMaximize(cplex.sum(nodeObj, edgeObj));
-        if (cplex.solve()) {
-            List<Unit> result = new ArrayList<>();
+    public List<Unit> solve(UndirectedGraph<Node, Edge> graph) throws SolverException {
+        try {
+            cplex = new IloCplex();
+            IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
+            parameters.setParam(IloCplex.IntParam.Threads, threads);
+            if (tl <= 0) {
+                parameters.setParam(IloCplex.DoubleParam.TiLim, EPS);
+            }
+            if (tl > 0 && tl != Double.POSITIVE_INFINITY) {
+                parameters.setParam(IloCplex.DoubleParam.TiLim, tl);
+            }
+            cplex.tuneParam(parameters);
+            y = new LinkedHashMap<>();
+            w = new LinkedHashMap<>();
+            v = new LinkedHashMap<>();
+            t = new LinkedHashMap<>();
+            x = new LinkedHashMap<>();
+            x0 = new LinkedHashMap<>();
             for (Node node : graph.vertexSet()) {
-                if (cplex.getValue(y.get(node)) > EPS) {
-                    result.add(node);
-                }
+                String nodeName = Integer.toString(node.getNum() + 1);
+                v.put(node, cplex.intVar(0, Integer.MAX_VALUE, "v" + nodeName));
+                y.put(node, cplex.boolVar("y" + nodeName));
+                x0.put(node, cplex.boolVar("x_0_" + (node.getNum() + 1)));
+            }
+            if (root == null && toBreak) {
+                breakSymmetry(cplex, graph);
             }
             for (Edge edge : graph.edgeSet()) {
-                if (cplex.getValue(w.get(edge)) > EPS) {
-                    result.add(edge);
-                }
+                Node from = graph.getEdgeSource(edge);
+                Node to = graph.getEdgeTarget(edge);
+                String edgeName = (from.getNum() + 1) + "_" + (to.getNum() + 1);
+                w.put(edge, cplex.boolVar("w_" + edgeName));
+                IloNumVar in = cplex.intVar(0, Integer.MAX_VALUE, "t_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
+                IloNumVar out = cplex.intVar(0, Integer.MAX_VALUE, "t_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
+                t.put(edge, new Pair<>(in, out));
+                in = cplex.intVar(0, Integer.MAX_VALUE, "x_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
+                out = cplex.intVar(0, Integer.MAX_VALUE, "x_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
+                x.put(edge, new Pair<>(in, out));
             }
+            addConstraints(graph);
+            IloNumExpr nodeObj = unitScalProd(graph.vertexSet(), y);
+            IloNumExpr edgeObj = unitScalProd(graph.edgeSet(), w);
+            cplex.addMaximize(cplex.sum(nodeObj, edgeObj));
+            if (cplex.solve()) {
+                List<Unit> result = new ArrayList<>();
+                for (Node node : graph.vertexSet()) {
+                    if (cplex.getValue(y.get(node)) > EPS) {
+                        result.add(node);
+                    }
+                }
+                for (Edge edge : graph.edgeSet()) {
+                    if (cplex.getValue(w.get(edge)) > EPS) {
+                        result.add(edge);
+                    }
+                }
+                if (Utils.sum(result) < 0.0 && root == null) {
+                    result = null;
+                }
+                return result;
+            }
+            return null;
+        } catch (IloException e) {
+            throw new SolverException();
+        } finally {
             cplex.end();
-            return result;
         }
-        return null;
     }
 
     private void breakSymmetry(IloCplex cplex, UndirectedGraph<Node, Edge> graph) throws IloException {

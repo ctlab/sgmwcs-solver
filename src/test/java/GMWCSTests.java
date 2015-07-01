@@ -1,15 +1,15 @@
-import ilog.concert.IloException;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import ru.ifmo.ctddev.gmwcs.RLTSolver;
-import ru.ifmo.ctddev.gmwcs.Solver;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
+import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
+import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,13 +29,13 @@ public class GMWCSTests {
     private PrintStream nativeOut;
     private PrintStream nullOut;
     private List<UndirectedGraph<Node, Edge>> tests;
-    private Solver solver;
+    private BicomponentSolver solver;
     private ReferenceSolver referenceSolver;
     private Random random;
 
     public GMWCSTests() {
         random = new Random(SEED);
-        solver = new RLTSolver(true, 50);
+        solver = new BicomponentSolver(new RLTSolver(false));
         tests = new ArrayList<>();
         nativeOut = System.out;
         nullOut = new PrintStream(new OutputStream() {
@@ -52,12 +52,12 @@ public class GMWCSTests {
     }
 
     @Test
-    public void test01_empty() throws IloException {
+    public void test01_empty() throws SolverException {
         if (DEBUG_TEST != null) {
             return;
         }
         UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
-        Assert.assertNull(solver.solve(graph, 4, Double.POSITIVE_INFINITY, 0.5));
+        Assert.assertNull(solver.solve(graph));
     }
 
     @Test
@@ -105,8 +105,8 @@ public class GMWCSTests {
         List<Unit> actual = null;
         try {
             System.setOut(nullOut);
-            actual = solver.solve(graph, 4, Double.POSITIVE_INFINITY, 0.5);
-        } catch (IloException e) {
+            actual = solver.solve(graph);
+        } catch (SolverException e) {
             System.setOut(nativeOut);
             System.out.println();
             Assert.assertTrue(num + "\n" + e.getMessage(), false);
