@@ -2,9 +2,7 @@ package ru.ifmo.ctddev.gmwcs.solver;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
-import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.graph.SimpleGraph;
-import org.jgrapht.graph.UndirectedSubgraph;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Decomposition;
@@ -155,25 +153,5 @@ public class BicomponentSolver {
         tl.spend(Math.min(duration, tl.getRemainingTime()));
         System.out.println("Operation '" + desc + "' has done. It takes " + duration + " seconds.");
         return result;
-    }
-
-    private void checkConnectivity(UndirectedGraph<Node, Edge> graph, List<Unit> result) {
-        Set<Node> nodes = new LinkedHashSet<>();
-        Set<Edge> edges = new LinkedHashSet<>();
-        if (result == null) {
-            return;
-        }
-        for (Unit unit : result) {
-            if (unit instanceof Node) {
-                nodes.add((Node) unit);
-            } else {
-                edges.add((Edge) unit);
-            }
-        }
-        UndirectedGraph<Node, Edge> subgraph = new UndirectedSubgraph<>(graph, nodes, edges);
-        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(subgraph);
-        if (!inspector.isGraphConnected()) {
-            throw new IllegalStateException();
-        }
     }
 }

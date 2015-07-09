@@ -2,7 +2,6 @@ package ru.ifmo.ctddev.gmwcs.graph;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
-import org.jgrapht.alg.BiconnectivityInspector;
 import org.jgrapht.alg.ConnectivityInspector;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.solver.Utils;
@@ -22,20 +21,17 @@ public class Decomposition {
         ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
         List<Set<Node>> components = inspector.connectedSets();
         Set<Node> bestComponent = null;
-        BiconnectivityInspector<Node, Edge> partBest = null;
+        Blocks partBest = null;
         int maxSize = 0;
         for (Set<Node> component : components) {
             UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
-            BiconnectivityInspector<Node, Edge> biconnectivityInspector = new BiconnectivityInspector<>(subgraph);
-            Set<Set<Node>> bicomponents = biconnectivityInspector.getBiconnectedVertexComponents();
-            if (bicomponents.isEmpty()) {
-                bicomponents.add(component);
-            }
+            Blocks blocks = new Blocks(subgraph);
+            Set<Set<Node>> bicomponents = blocks.components();
             for (Set<Node> bicomponent : bicomponents) {
                 if (bicomponent.size() > maxSize) {
                     maxSize = bicomponent.size();
                     biggest = bicomponent;
-                    partBest = biconnectivityInspector;
+                    partBest = blocks;
                     bestComponent = component;
                 }
             }
@@ -48,9 +44,9 @@ public class Decomposition {
         processBest(partBest);
     }
 
-    private void processBest(BiconnectivityInspector<Node, Edge> partBest) {
+    private void processBest(Blocks partBest) {
         Set<Node> cutpoints = new LinkedHashSet<>();
-        for (Node cp : partBest.getCutpoints()) {
+        for (Node cp : partBest.cutpoints()) {
             if (biggest.contains(cp)) {
                 cutpoints.add(cp);
             }
