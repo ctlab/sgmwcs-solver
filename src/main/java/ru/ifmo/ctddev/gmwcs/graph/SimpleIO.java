@@ -48,16 +48,16 @@ public class SimpleIO implements GraphIO {
             if (line.startsWith("#")) {
                 continue;
             }
-            Scanner lineScanner = new Scanner(line);
-            if (!lineScanner.hasNextLine()) {
+            StringTokenizer tokenizer = new StringTokenizer(line);
+            if (!tokenizer.hasMoreTokens()) {
                 continue;
             }
-            String node = lineScanner.next();
+            String node = tokenizer.nextToken();
             nodeList.add(node);
-            if (!lineScanner.hasNext()) {
+            if (!tokenizer.hasMoreTokens()) {
                 throw new ParseException("Expected weight of node in line", lnum);
             }
-            String weightStr = lineScanner.next();
+            String weightStr = tokenizer.nextToken();
             try {
                 double weight = Double.parseDouble(weightStr);
                 Node vertex = new Node(lnum, weight);
@@ -65,7 +65,7 @@ public class SimpleIO implements GraphIO {
                 graph.addVertex(vertex);
 
             } catch (NumberFormatException e) {
-                throw new ParseException("Expected floating point value of node in line", lnum);
+                throw new ParseException("Expected floating point value of node weight in line", lnum);
             }
         }
     }
@@ -78,20 +78,20 @@ public class SimpleIO implements GraphIO {
             if (line.startsWith("#")) {
                 continue;
             }
-            Scanner lineScanner = new Scanner(line);
-            if (!lineScanner.hasNext()) {
+            StringTokenizer tokenizer = new StringTokenizer(line);
+            if (!tokenizer.hasMoreTokens()) {
                 continue;
             }
-            String first = lineScanner.next();
-            if (!lineScanner.hasNext()) {
+            String first = tokenizer.nextToken();
+            if (!tokenizer.hasMoreTokens()) {
                 throw new ParseException("Expected name of second node in edge list in line", lnum);
             }
-            String second = lineScanner.next();
-            if (!lineScanner.hasNext()) {
+            String second = tokenizer.nextToken();
+            if (!tokenizer.hasMoreTokens()) {
                 throw new ParseException("Expected weight of edge in line", lnum);
             }
             try {
-                double weight = Double.parseDouble(lineScanner.next());
+                double weight = Double.parseDouble(tokenizer.nextToken());
                 if (!nodeMap.containsKey(first) || !nodeMap.containsKey(second)) {
                     throw new ParseException("There's no such vertex in edge list in line", lnum);
                 }
