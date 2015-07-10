@@ -37,6 +37,7 @@ public class BicomponentSolver {
     }
 
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph) throws SolverException {
+        solver.setMinimum(-Double.MAX_VALUE);
         if (graph.vertexSet().size() == 0) {
             return null;
         }
@@ -44,8 +45,9 @@ public class BicomponentSolver {
         Decomposition decomposition = new Decomposition(graph);
         double duration = (System.currentTimeMillis() - timeBefore) / 1000.0;
         System.out.println("Graph decomposing takes " + duration + " seconds.");
-        List<Unit> bestUnrooted = solveUnrooted(graph, decomposition);
         List<Unit> bestBiggest = solveBiggest(graph, decomposition);
+        solver.setMinimum(Utils.sum(bestBiggest));
+        List<Unit> bestUnrooted = solveUnrooted(graph, decomposition);
         List<Unit> best = Utils.sum(bestBiggest) > Utils.sum(bestUnrooted) ? bestBiggest : bestUnrooted;
         if (Utils.sum(best) < 0) {
             return null;

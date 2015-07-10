@@ -70,16 +70,16 @@ public class Main {
         TimeLimit tl = new TimeLimit(timelimit <= 0 ? Double.POSITIVE_INFINITY : timelimit);
         double rsh = (Double) optionSet.valueOf("r");
         double ush = (Double) optionSet.valueOf("u");
-        TimeLimit rootedTL = tl.subLimit(rsh + ush);
+        TimeLimit biggestTL = tl.subLimit(1.0 - ush);
         int threadsNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver(optionSet.has("b"));
         rltSolver.setThreadsNum(threadsNum);
         BicomponentSolver solver = new BicomponentSolver(rltSolver);
-        solver.setUnrootedTL(rootedTL.subLimit((ush + rsh == 0.0) ? 0 : ush / (ush + rsh)));
-        solver.setRootedTL(rootedTL);
-        solver.setTLForBiggest(tl);
+        solver.setUnrootedTL(tl);
+        solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
+        solver.setTLForBiggest(biggestTL);
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {

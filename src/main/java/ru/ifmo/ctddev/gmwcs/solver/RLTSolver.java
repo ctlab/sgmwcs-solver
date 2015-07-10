@@ -26,11 +26,13 @@ public class RLTSolver implements Solver {
     private double tl;
     private boolean toBreak;
     private int threads;
+    private double minimum;
 
     public RLTSolver(boolean toBreak) {
         this.toBreak = toBreak;
         tl = Double.POSITIVE_INFINITY;
         threads = 1;
+        this.minimum = -Double.MAX_VALUE;
     }
 
     public void setTimeOut(double tl) {
@@ -91,7 +93,9 @@ public class RLTSolver implements Solver {
             addConstraints(graph);
             IloNumExpr nodeObj = unitScalProd(graph.vertexSet(), y);
             IloNumExpr edgeObj = unitScalProd(graph.edgeSet(), w);
-            cplex.addMaximize(cplex.sum(nodeObj, edgeObj));
+            IloNumExpr sum = cplex.sum(nodeObj, edgeObj);
+            cplex.addGe(sum, minimum);
+            cplex.addMaximize(sum);
             if (cplex.solve()) {
                 List<Unit> result = new ArrayList<>();
                 for (Node node : graph.vertexSet()) {
@@ -232,5 +236,9 @@ public class RLTSolver implements Solver {
             variables[i++] = vars.get(unit);
         }
         return cplex.scalProd(coef, variables);
+    }
+
+    public void setMinimum(double minimum) {
+        this.minimum = minimum;
     }
 }
