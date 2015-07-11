@@ -147,7 +147,7 @@ public class BicomponentSolver {
         return solve("solving unrooted parts", Utils.subgraph(graph, union), unrooted);
     }
 
-    public List<Unit> solve(String desc, UndirectedGraph<Node, Edge> graph, TimeLimit tl) throws SolverException {
+    private List<Unit> solve(String desc, UndirectedGraph<Node, Edge> graph, TimeLimit tl) throws SolverException {
         solver.setTimeOut(tl.getRemainingTime());
         long timeBefore = System.currentTimeMillis();
         List<Unit> result = solver.solve(graph);
