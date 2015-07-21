@@ -4,8 +4,9 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.graph.*;
-import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
+import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
+import ru.ifmo.ctddev.gmwcs.solver.Solver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 
 import java.io.File;
@@ -75,11 +76,8 @@ public class Main {
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver(optionSet.has("b"));
+        Solver solver = new ComponentSolver(rltSolver);
         rltSolver.setThreadsNum(threadsNum);
-        BicomponentSolver solver = new BicomponentSolver(rltSolver);
-        solver.setUnrootedTL(tl);
-        solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
-        solver.setTLForBiggest(biggestTL);
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {

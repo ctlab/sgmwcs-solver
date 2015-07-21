@@ -20,9 +20,12 @@ public class Blocks {
         enter = new LinkedHashMap<>();
         up = new LinkedHashMap<>();
         stack = new Stack<>();
-        root = graph.vertexSet().iterator().next();
         components = new LinkedHashSet<>();
         cutpoints = new LinkedHashSet<>();
+        if (graph.vertexSet().isEmpty()) {
+            return;
+        }
+        root = graph.vertexSet().iterator().next();
         this.graph = graph;
         if (graph.vertexSet().size() > 1) {
             dfs(root, null);
@@ -33,7 +36,7 @@ public class Blocks {
         }
     }
 
-    public void dfs(Node v, Node parent) {
+    private void dfs(Node v, Node parent) {
         time++;
         enter.put(v, time);
         up.put(v, time);

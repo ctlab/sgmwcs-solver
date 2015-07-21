@@ -7,8 +7,9 @@ import org.junit.runners.MethodSorters;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
-import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
+import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
+import ru.ifmo.ctddev.gmwcs.solver.Solver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 
 import java.io.IOException;
@@ -29,13 +30,13 @@ public class GMWCSTests {
     private PrintStream nativeOut;
     private PrintStream nullOut;
     private List<UndirectedGraph<Node, Edge>> tests;
-    private BicomponentSolver solver;
+    private Solver solver;
     private ReferenceSolver referenceSolver;
     private Random random;
 
     public GMWCSTests() {
         random = new Random(SEED);
-        solver = new BicomponentSolver(new RLTSolver(false));
+        solver = new ComponentSolver(new RLTSolver(true));
         tests = new ArrayList<>();
         nativeOut = System.out;
         nullOut = new PrintStream(new OutputStream() {

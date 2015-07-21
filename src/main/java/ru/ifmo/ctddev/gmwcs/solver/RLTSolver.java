@@ -7,6 +7,7 @@ import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.Pair;
+import ru.ifmo.ctddev.gmwcs.graph.Blocks;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
@@ -121,28 +122,82 @@ public class RLTSolver implements Solver {
         }
     }
 
+    private double score(UndirectedGraph<Node, Edge> graph, Node node) {
+        double score = 0.0;
+        if (node.getWeight() > 0.0) {
+            score += node.getWeight();
+        }
+        for (Edge edge : graph.edgesOf(node)) {
+            if (edge.getWeight() > 0.0) {
+                score += edge.getWeight();
+            }
+        }
+        return score;
+    }
+
     private void breakSymmetry(IloCplex cplex, UndirectedGraph<Node, Edge> graph) throws IloException {
         int k = 0;
         int n = graph.vertexSet().size();
         IloNumVar[] rootMul = new IloNumVar[n];
         IloNumVar[] nodeMul = new IloNumVar[n];
+        Map<Node, Double> scores = new LinkedHashMap<>();
+        double lb = 0.0;
+        double ub = 0.0;
         for (Node node : graph.vertexSet()) {
-            k++;
-            nodeMul[k - 1] = cplex.intVar(0, n);
-            rootMul[k - 1] = cplex.intVar(0, n);
-            cplex.addEq(nodeMul[k - 1], cplex.prod(k, y.get(node)));
-            cplex.addEq(rootMul[k - 1], cplex.prod(k, x0.get(node)));
+            double score = score(graph, node);
+            scores.put(node, score);
+            lb = Math.min(lb, score);
+            ub = Math.max(ub, score);
         }
-        IloNumVar rootSum = cplex.intVar(0, n);
+        lb -= EPS;
+        ub += EPS;
+        for (Node node : graph.vertexSet()) {
+            nodeMul[k] = cplex.numVar(lb, ub);
+            rootMul[k] = cplex.numVar(lb, ub);
+            cplex.addEq(nodeMul[k], cplex.prod(scores.get(node), y.get(node)));
+            cplex.addEq(rootMul[k], cplex.prod(scores.get(node), x0.get(node)));
+            k++;
+        }
+        IloNumVar rootSum = cplex.numVar(lb, ub);
         cplex.addEq(rootSum, cplex.sum(rootMul));
         for (int i = 0; i < n; i++) {
-            cplex.addGe(rootSum, nodeMul[i]);
+            cplex.addGe(cplex.sum(rootSum, EPS), nodeMul[i]);
         }
     }
 
     private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
         sumConstraints(graph);
         otherConstraints(graph);
+        blocksConstraints(graph);
+    }
+
+    private void blocksConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
+        Blocks blocks = new Blocks(graph);
+        List<Set<Node>> bicomponents = new ArrayList<>();
+        bicomponents.addAll(blocks.components());
+        for (int i = 0; i < bicomponents.size(); i++) {
+            for (int j = i + 1; j < bicomponents.size(); j++) {
+                Set<Node> s1 = bicomponents.get(i);
+                Set<Node> s2 = bicomponents.get(j);
+                Node cp = intersection(s1, s2);
+                if (cp != null) {
+                    for (Node u : s1) {
+                        for (Node v : s2) {
+                            cplex.addLe(cplex.sum(y.get(v), y.get(u)), cplex.sum(1 + EPS, y.get(cp)));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private Node intersection(Set<Node> s1, Set<Node> s2) {
+        for (Node node : s1) {
+            if (s2.contains(node)) {
+                return node;
+            }
+        }
+        return null;
     }
 
     private void otherConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
