@@ -7,7 +7,6 @@ import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.Pair;
-import ru.ifmo.ctddev.gmwcs.graph.Blocks;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
@@ -169,36 +168,6 @@ public class RLTSolver implements Solver {
     private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
         sumConstraints(graph);
         otherConstraints(graph);
-        blocksConstraints(graph);
-    }
-
-    private void blocksConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
-        Blocks blocks = new Blocks(graph);
-        List<Set<Node>> bicomponents = new ArrayList<>();
-        bicomponents.addAll(blocks.components());
-        for (int i = 0; i < bicomponents.size(); i++) {
-            for (int j = i + 1; j < bicomponents.size(); j++) {
-                Set<Node> s1 = bicomponents.get(i);
-                Set<Node> s2 = bicomponents.get(j);
-                Node cp = intersection(s1, s2);
-                if (cp != null) {
-                    for (Node u : s1) {
-                        for (Node v : s2) {
-                            cplex.addLe(cplex.sum(y.get(v), y.get(u)), cplex.sum(1 + EPS, y.get(cp)));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private Node intersection(Set<Node> s1, Set<Node> s2) {
-        for (Node node : s1) {
-            if (s2.contains(node)) {
-                return node;
-            }
-        }
-        return null;
     }
 
     private void otherConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
