@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Set;
 
 public class ComponentSolver implements Solver {
-    private final RLTSolver solver;
+    private final Solver solver;
 
-    public ComponentSolver(RLTSolver solver) {
+    public ComponentSolver(Solver solver) {
         this.solver = solver;
     }
 
