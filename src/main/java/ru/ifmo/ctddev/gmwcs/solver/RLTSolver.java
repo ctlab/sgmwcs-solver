@@ -57,6 +57,7 @@ public class RLTSolver implements Solver {
             cplex = new IloCplex();
             IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
             parameters.setParam(IloCplex.IntParam.Threads, threads);
+            parameters.setParam(IloCplex.IntParam.ParallelMode, -1);
             if (tl <= 0) {
                 parameters.setParam(IloCplex.DoubleParam.TiLim, EPS);
             }
