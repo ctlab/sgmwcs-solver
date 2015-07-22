@@ -110,7 +110,7 @@ public class GMWCSTests {
                 System.err.println(error(test));
                 System.err.println("Expected: " + sum(expected, test.synonyms()) + ", but actual: "
                         + sum(actual, test.synonyms()));
-                toXdot(test.graph());
+                toXdot(test.graph(), expected, actual);
                 System.exit(1);
             }
         } catch (IOException e) {
@@ -139,19 +139,34 @@ public class GMWCSTests {
         return message;
     }
 
-    private void toXdot(UndirectedGraph<Node, Edge> graph) throws IOException {
+    private String dotColor(Unit unit, List<Unit> expected, List<Unit> actual) {
+        if (expected.contains(unit) && actual.contains(unit)) {
+            return "YELLOW";
+        }
+        if (expected.contains(unit)) {
+            return "GREEN";
+        }
+        if (actual.contains(unit)) {
+            return "RED";
+        }
+        return "BLACK";
+    }
+
+    private void toXdot(UndirectedGraph<Node, Edge> graph, List<Unit> expected, List<Unit> actual) throws IOException {
         Runtime runtime = Runtime.getRuntime();
         Process process = runtime.exec("xdot");
         try (PrintWriter os = new PrintWriter(process.getOutputStream())) {
             os.println("graph test {");
             for (Node node : graph.vertexSet()) {
-                os.println(node.getNum() + " [label = \"" + node.getNum() + ", " + node.getWeight() + "\"]");
+                os.print(node.getNum() + " [label = \"" + node.getNum() + ", " + node.getWeight() + "\" ");
+                os.println("color=" + dotColor(node, expected, actual) + "]");
             }
             for (Edge edge : graph.edgeSet()) {
                 Node from = graph.getEdgeSource(edge);
                 Node to = graph.getEdgeTarget(edge);
                 os.print(from.getNum() + "--" + to.getNum() + "[label = \"" + edge.getNum() + ", " +
-                        edge.getWeight() + "\"]");
+                        edge.getWeight() + "\" ");
+                os.println("color=" + dotColor(edge, expected, actual) + "]");
             }
             os.println("}");
             os.flush();

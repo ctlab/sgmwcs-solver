@@ -147,14 +147,24 @@ public class RLTSolver implements Solver {
             }
             IloNumVar var = cplex.boolVar();
             summands.put(unit, var);
-            IloNumVar[] args = new IloNumVar[eq.size()];
-            for (int i = 0; i < eq.size(); i++) {
-                args[i] = getVar(eq.get(i));
+            int num = eq.size();
+            for (Unit i : eq) {
+                if (getVar(i) == null) {
+                    num--;
+                }
+            }
+            IloNumVar[] args = new IloNumVar[num];
+            int j = 0;
+            for (Unit anEq : eq) {
+                if (getVar(anEq) == null) {
+                    continue;
+                }
+                args[j++] = getVar(anEq);
             }
             if (unit.getWeight() > 0) {
                 cplex.addLe(var, cplex.sum(args));
             } else {
-                cplex.addGe(cplex.prod(eq.size(), var), cplex.sum(args));
+                cplex.addGe(cplex.prod(eq.size() + 0.5, var), cplex.sum(args));
             }
         }
         cplex.addMaximize(unitScalProd(summands.keySet(), summands));
