@@ -23,7 +23,7 @@ public class TestCase {
         }
         List<Unit> units = new ArrayList<>();
         units.addAll(set);
-        Collections.shuffle(units);
+        Collections.shuffle(units, random);
         Unit last = units.get(0);
         synonyms.add(last);
         for (int i = 1; i < units.size(); i++) {

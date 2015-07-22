@@ -106,8 +106,10 @@ public class GMWCSTests {
             System.exit(1);
         }
         try {
-            if (Math.abs(sum(expected) - sum(actual)) > 0.1) {
+            if (Math.abs(sum(expected, test.synonyms()) - sum(actual, test.synonyms())) > 0.1) {
                 System.err.println(error(test));
+                System.err.println("Expected: " + sum(expected, test.synonyms()) + ", but actual: "
+                        + sum(actual, test.synonyms()));
                 toXdot(test.graph());
                 System.exit(1);
             }
@@ -223,14 +225,19 @@ public class GMWCSTests {
         }
     }
 
-    private double sum(List<Unit> units) {
+    private double sum(Collection<? extends Unit> units, LDSU<Unit> synonyms) {
         if (units == null) {
             return 0;
         }
-        double res = 0;
+        double result = 0;
+        Set<Unit> visited = new LinkedHashSet<>();
         for (Unit unit : units) {
-            res += unit.getWeight();
+            if (visited.contains(unit)) {
+                continue;
+            }
+            visited.addAll(synonyms.listOf(unit));
+            result += unit.getWeight();
         }
-        return res;
+        return result;
     }
 }

@@ -24,8 +24,8 @@ public class ComponentSolver implements Solver {
         List<Unit> best = null;
         for (Set<Node> component : inspector.connectedSets()) {
             List<Unit> result = solver.solve(Utils.subgraph(graph, component), synonyms);
-            if (Utils.sum(result) > max) {
-                max = Utils.sum(result);
+            if (Utils.sum(result, synonyms) > max) {
+                max = Utils.sum(result, synonyms);
                 best = result;
             }
         }

@@ -103,11 +103,7 @@ public class RLTSolver implements Solver {
                 x.put(edge, new Pair<>(in, out));
             }
             addConstraints(graph);
-            IloNumExpr nodeObj = unitScalProd(graph.vertexSet(), y);
-            IloNumExpr edgeObj = unitScalProd(graph.edgeSet(), w);
-            IloNumExpr sum = cplex.sum(nodeObj, edgeObj);
-            cplex.addGe(sum, minimum);
-            cplex.addMaximize(sum);
+            addObjective(graph, synonyms);
             if (cplex.solve()) {
                 List<Unit> result = new ArrayList<>();
                 for (Node node : graph.vertexSet()) {
@@ -120,7 +116,7 @@ public class RLTSolver implements Solver {
                         result.add(edge);
                     }
                 }
-                if (Utils.sum(result) < 0.0 && root == null) {
+                if (Utils.sum(result, synonyms) < 0.0 && root == null) {
                     result = null;
                 }
                 return result;
@@ -131,6 +127,41 @@ public class RLTSolver implements Solver {
         } finally {
             cplex.end();
         }
+    }
+
+    private void addObjective(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws IloException {
+        Map<Unit, IloNumVar> summands = new LinkedHashMap<>();
+        Set<Unit> toConsider = new LinkedHashSet<>();
+        toConsider.addAll(graph.vertexSet());
+        toConsider.addAll(graph.edgeSet());
+        Set<Unit> visited = new LinkedHashSet<>();
+        for (Unit unit : toConsider) {
+            if (visited.contains(unit)) {
+                continue;
+            }
+            visited.addAll(synonyms.listOf(unit));
+            List<Unit> eq = synonyms.listOf(unit);
+            if (eq.size() == 1) {
+                summands.put(unit, getVar(unit));
+                continue;
+            }
+            IloNumVar var = cplex.boolVar();
+            summands.put(unit, var);
+            IloNumVar[] args = new IloNumVar[eq.size()];
+            for (int i = 0; i < eq.size(); i++) {
+                args[i] = getVar(eq.get(i));
+            }
+            if (unit.getWeight() > 0) {
+                cplex.addLe(var, cplex.sum(args));
+            } else {
+                cplex.addGe(cplex.prod(eq.size(), var), cplex.sum(args));
+            }
+        }
+        cplex.addMaximize(unitScalProd(summands.keySet(), summands));
+    }
+
+    private IloNumVar getVar(Unit unit) {
+        return unit instanceof Node ? y.get(unit) : w.get(unit);
     }
 
     @Override
@@ -242,7 +273,7 @@ public class RLTSolver implements Solver {
 
     private void sumConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
         // (31)
-        cplex.addEq(cplex.sum(x0.values().toArray(new IloNumVar[]{})), 1);
+        cplex.addEq(cplex.sum(x0.values().toArray(new IloNumVar[0])), 1);
         if (root != null) {
             cplex.addEq(x0.get(root), 1);
         }
