@@ -23,7 +23,7 @@ public class GMWCSTests {
     public static final int TESTS_PER_SIZE = 300;
     public static final int MAX_SIZE = 16;
     public static final int RANDOM_TESTS = 1000;
-    public static final Integer DEBUG_TEST = null;
+    public static final Integer DEBUG_TEST = 2780;
     private List<TestCase> tests;
     private Solver solver;
     private ReferenceSolver referenceSolver;
@@ -31,7 +31,7 @@ public class GMWCSTests {
 
     public GMWCSTests() {
         random = new Random(SEED);
-        solver = new ComponentSolver(new RLTSolver(true));
+        solver = new ComponentSolver(new RLTSolver());
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
         if (System.getProperty("skipTests") != null) {

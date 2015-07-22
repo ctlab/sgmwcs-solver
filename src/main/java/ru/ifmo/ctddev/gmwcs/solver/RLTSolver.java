@@ -27,13 +27,11 @@ public class RLTSolver implements Solver {
     private Map<Node, IloNumVar> x0;
     private Node root;
     private double tl;
-    private boolean toBreak;
     private int threads;
     private boolean suppressOutput;
     private double minimum;
 
-    public RLTSolver(boolean toBreak) {
-        this.toBreak = toBreak;
+    public RLTSolver() {
         tl = Double.POSITIVE_INFINITY;
         threads = 1;
         this.minimum = -Double.MAX_VALUE;
@@ -87,9 +85,6 @@ public class RLTSolver implements Solver {
                 y.put(node, cplex.boolVar("y" + nodeName));
                 x0.put(node, cplex.boolVar("x_0_" + (node.getNum() + 1)));
             }
-            if (root == null && toBreak) {
-                breakSymmetry(cplex, graph);
-            }
             for (Edge edge : graph.edgeSet()) {
                 Node from = graph.getEdgeSource(edge);
                 Node to = graph.getEdgeTarget(edge);
@@ -105,6 +100,7 @@ public class RLTSolver implements Solver {
             addConstraints(graph);
             addObjective(graph, synonyms);
             if (cplex.solve()) {
+                System.err.println(cplex.getObjValue());
                 List<Unit> result = new ArrayList<>();
                 for (Node node : graph.vertexSet()) {
                     if (cplex.getValue(y.get(node)) > EPS) {
@@ -190,36 +186,6 @@ public class RLTSolver implements Solver {
             }
         }
         return score;
-    }
-
-    private void breakSymmetry(IloCplex cplex, UndirectedGraph<Node, Edge> graph) throws IloException {
-        int k = 0;
-        int n = graph.vertexSet().size();
-        IloNumVar[] rootMul = new IloNumVar[n];
-        IloNumVar[] nodeMul = new IloNumVar[n];
-        Map<Node, Double> scores = new LinkedHashMap<>();
-        double lb = 0.0;
-        double ub = 0.0;
-        for (Node node : graph.vertexSet()) {
-            double score = score(graph, node);
-            scores.put(node, score);
-            lb = Math.min(lb, score);
-            ub = Math.max(ub, score);
-        }
-        lb -= EPS;
-        ub += EPS;
-        for (Node node : graph.vertexSet()) {
-            nodeMul[k] = cplex.numVar(lb, ub);
-            rootMul[k] = cplex.numVar(lb, ub);
-            cplex.addEq(nodeMul[k], cplex.prod(scores.get(node), y.get(node)));
-            cplex.addEq(rootMul[k], cplex.prod(scores.get(node), x0.get(node)));
-            k++;
-        }
-        IloNumVar rootSum = cplex.numVar(lb, ub);
-        cplex.addEq(rootSum, cplex.sum(rootMul));
-        for (int i = 0; i < n; i++) {
-            cplex.addGe(cplex.sum(rootSum, EPS), nodeMul[i]);
-        }
     }
 
     private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
