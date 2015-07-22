@@ -100,7 +100,6 @@ public class RLTSolver implements Solver {
             addConstraints(graph);
             addObjective(graph, synonyms);
             if (cplex.solve()) {
-                System.err.println(cplex.getObjValue());
                 List<Unit> result = new ArrayList<>();
                 for (Node node : graph.vertexSet()) {
                     if (cplex.getValue(y.get(node)) > EPS) {

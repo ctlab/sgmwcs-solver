@@ -12,7 +12,6 @@ import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Collections;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -33,7 +32,6 @@ public class Main {
                 .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
         optionParser.acceptsAll(asList("r", "rooted"), "Maximum share of time allocated for solving rooted parts")
                 .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
-        optionParser.acceptsAll(Collections.singletonList("b"), "Break symmetries");
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -75,7 +73,7 @@ public class Main {
         int threadsNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
-        RLTSolver rltSolver = new RLTSolver(optionSet.has("b"));
+        RLTSolver rltSolver = new RLTSolver();
         Solver solver = new ComponentSolver(rltSolver);
         rltSolver.setThreadsNum(threadsNum);
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
