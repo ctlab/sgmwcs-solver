@@ -2,6 +2,7 @@ package ru.ifmo.ctddev.gmwcs.solver;
 
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
+import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
@@ -17,17 +18,22 @@ public class ComponentSolver implements Solver {
     }
 
     @Override
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph) throws SolverException {
+    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
         ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
         double max = 0.0;
         List<Unit> best = null;
         for (Set<Node> component : inspector.connectedSets()) {
-            List<Unit> result = solver.solve(Utils.subgraph(graph, component));
+            List<Unit> result = solver.solve(Utils.subgraph(graph, component), synonyms);
             if (Utils.sum(result) > max) {
                 max = Utils.sum(result);
                 best = result;
             }
         }
         return best;
+    }
+
+    @Override
+    public void suppressOutput() {
+        solver.suppressOutput();
     }
 }

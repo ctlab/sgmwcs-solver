@@ -82,7 +82,7 @@ public class Main {
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
-            List<Unit> units = solver.solve(graph);
+            List<Unit> units = solver.solve(graph, new LDSU<>());
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());

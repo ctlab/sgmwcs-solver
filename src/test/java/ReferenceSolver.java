@@ -1,6 +1,7 @@
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.graph.UndirectedSubgraph;
+import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
@@ -8,7 +9,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import java.util.*;
 
 public class ReferenceSolver {
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, List<Node> roots) {
+    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms, List<Node> roots) {
         for (Node root : roots) {
             if (!graph.containsVertex(root)) {
                 throw new IllegalArgumentException();
@@ -56,7 +57,7 @@ public class ReferenceSolver {
                         break;
                     }
                 }
-                double candidate = sum(res) + sum(currEdges);
+                double candidate = sum(res, synonyms) + sum(currEdges, synonyms);
                 if (containsRoots && candidate > max) {
                     max = candidate;
                     maxSet = new ArrayList<>();
@@ -68,9 +69,14 @@ public class ReferenceSolver {
         return maxSet;
     }
 
-    private double sum(Collection<? extends Unit> units) {
+    private double sum(Collection<? extends Unit> units, LDSU<Unit> synonyms) {
         double result = 0;
+        Set<Unit> visited = new LinkedHashSet<>();
         for (Unit unit : units) {
+            if (visited.contains(unit)) {
+                continue;
+            }
+            visited.addAll(synonyms.listOf(unit));
             result += unit.getWeight();
         }
         return result;

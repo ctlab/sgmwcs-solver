@@ -6,11 +6,14 @@ import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.jgrapht.UndirectedGraph;
+import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 
 public class RLTSolver implements Solver {
@@ -26,6 +29,7 @@ public class RLTSolver implements Solver {
     private double tl;
     private boolean toBreak;
     private int threads;
+    private boolean suppressOutput;
     private double minimum;
 
     public RLTSolver(boolean toBreak) {
@@ -51,9 +55,16 @@ public class RLTSolver implements Solver {
     }
 
     @Override
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph) throws SolverException {
+    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
         try {
             cplex = new IloCplex();
+            if (suppressOutput) {
+                cplex.setOut(new OutputStream() {
+                    @Override
+                    public void write(int b) throws IOException {
+                    }
+                });
+            }
             IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
             parameters.setParam(IloCplex.IntParam.Threads, threads);
             parameters.setParam(IloCplex.IntParam.ParallelMode, -1);
@@ -120,6 +131,11 @@ public class RLTSolver implements Solver {
         } finally {
             cplex.end();
         }
+    }
+
+    @Override
+    public void suppressOutput() {
+        suppressOutput = true;
     }
 
     private double score(UndirectedGraph<Node, Edge> graph, Node node) {
