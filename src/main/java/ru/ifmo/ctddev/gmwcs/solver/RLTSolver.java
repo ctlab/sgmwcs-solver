@@ -8,6 +8,7 @@ import ilog.cplex.IloCplex;
 import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
+import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
@@ -26,18 +27,18 @@ public class RLTSolver implements Solver {
     private Map<Edge, Pair<IloNumVar, IloNumVar>> x;
     private Map<Node, IloNumVar> x0;
     private Node root;
-    private double tl;
+    private TimeLimit tl;
     private int threads;
     private boolean suppressOutput;
     private double minimum;
 
     public RLTSolver() {
-        tl = Double.POSITIVE_INFINITY;
+        tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
         this.minimum = -Double.MAX_VALUE;
     }
 
-    public void setTimeOut(double tl) {
+    public void setTimeLimit(TimeLimit tl) {
         this.tl = tl;
     }
 
@@ -66,11 +67,10 @@ public class RLTSolver implements Solver {
             IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
             parameters.setParam(IloCplex.IntParam.Threads, threads);
             parameters.setParam(IloCplex.IntParam.ParallelMode, -1);
-            if (tl <= 0) {
+            if (tl.getRemainingTime() <= 0) {
                 parameters.setParam(IloCplex.DoubleParam.TiLim, EPS);
-            }
-            if (tl > 0 && tl != Double.POSITIVE_INFINITY) {
-                parameters.setParam(IloCplex.DoubleParam.TiLim, tl);
+            } else if (tl.getRemainingTime() != Double.POSITIVE_INFINITY) {
+                parameters.setParam(IloCplex.DoubleParam.TiLim, tl.getRemainingTime());
             }
             cplex.tuneParam(parameters);
             y = new LinkedHashMap<>();
@@ -99,7 +99,10 @@ public class RLTSolver implements Solver {
             }
             addConstraints(graph);
             addObjective(graph, synonyms);
-            if (cplex.solve()) {
+            long timeBefore = System.currentTimeMillis();
+            boolean solFound = cplex.solve();
+            tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
+            if (solFound) {
                 List<Unit> result = new ArrayList<>();
                 for (Node node : graph.vertexSet()) {
                     if (cplex.getValue(y.get(node)) > EPS) {
@@ -162,7 +165,9 @@ public class RLTSolver implements Solver {
                 cplex.addGe(cplex.prod(eq.size() + 0.5, var), cplex.sum(args));
             }
         }
-        cplex.addMaximize(unitScalProd(summands.keySet(), summands));
+        IloNumExpr sum = unitScalProd(summands.keySet(), summands);
+        cplex.addGe(sum, minimum);
+        cplex.addMaximize(sum);
     }
 
     private IloNumVar getVar(Unit unit) {
@@ -172,19 +177,6 @@ public class RLTSolver implements Solver {
     @Override
     public void suppressOutput() {
         suppressOutput = true;
-    }
-
-    private double score(UndirectedGraph<Node, Edge> graph, Node node) {
-        double score = 0.0;
-        if (node.getWeight() > 0.0) {
-            score += node.getWeight();
-        }
-        for (Edge edge : graph.edgesOf(node)) {
-            if (edge.getWeight() > 0.0) {
-                score += edge.getWeight();
-            }
-        }
-        return score;
     }
 
     private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
@@ -285,7 +277,7 @@ public class RLTSolver implements Solver {
         return cplex.scalProd(coef, variables);
     }
 
-    public void setMinimum(double minimum) {
-        this.minimum = minimum;
+    public void setLB(double lb) {
+        this.minimum = lb;
     }
 }
