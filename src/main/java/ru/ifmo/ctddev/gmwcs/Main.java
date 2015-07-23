@@ -27,21 +27,17 @@ public class Main {
                 .ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
-        optionParser.acceptsAll(asList("f", "fraction"), "Fraction of time for solving biggest component")
-                .withRequiredArg().ofType(Double.class).defaultsTo(0.9);
         optionParser.acceptsAll(asList("s", "synonyms"), "Synonym list file").withRequiredArg();
         optionParser.acceptsAll(asList("r", "root"), "Solve with selected root node").withRequiredArg();
         optionParser.acceptsAll(asList("a", "all"), "Write to out files at each found solution");
+        optionParser.acceptsAll(asList("b", "bruteforce"), "Bruteforce n the nost weighted nodes")
+                .withRequiredArg().ofType(Integer.class).defaultsTo(0);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
         }
         try {
             optionSet = optionParser.parse(args);
-            double fraction = (Double) optionSet.valueOf("f");
-            if (fraction < 0.0 || fraction > 1.0) {
-                throw new ParseException("Fraction must belongs to [0.0, 1.0]", 0);
-            }
         } catch (Exception e) {
             System.err.println(e.getMessage());
             System.err.println();
@@ -66,7 +62,7 @@ public class Main {
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver();
         ComponentSolver solver = new ComponentSolver(rltSolver);
-        solver.setMainFraction((Double) optionSet.valueOf("f"));
+        solver.setBFNum((Integer) optionSet.valueOf("b"));
         solver.setTimeLimit(tl);
         rltSolver.setThreadsNum(threadsNum);
         SimpleIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
@@ -79,6 +75,11 @@ public class Main {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
             if (optionSet.has("s")) {
                 synonyms = graphIO.getSynonyms(new File((String) optionSet.valueOf("s")));
+                for (Edge edge : graph.edgeSet()) {
+                    if (synonyms.listOf(edge) == null) {
+                        System.err.println(edge);
+                    }
+                }
             } else {
                 for (Node node : graph.vertexSet()) {
                     synonyms.add(node);

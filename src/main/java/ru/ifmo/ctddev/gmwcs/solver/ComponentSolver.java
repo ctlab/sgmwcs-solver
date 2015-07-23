@@ -1,24 +1,26 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
+import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
+import org.jgrapht.graph.SimpleGraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 public class ComponentSolver implements Solver {
     private final Solver solver;
     private TimeLimit tl;
     private double lb;
-    private double fraction;
     private Node root;
+    private Integer BFNum;
 
     public ComponentSolver(Solver solver) {
         this.solver = solver;
@@ -27,39 +29,42 @@ public class ComponentSolver implements Solver {
     }
 
     @Override
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
+    public List<Unit> solve(UndirectedGraph<Node, Edge> origin, LDSU<Unit> synonyms) throws SolverException {
+        UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
+        Graphs.addGraph(graph, origin);
         if (graph.vertexSet().isEmpty()) {
             return null;
         }
         if (root != null) {
-            return solveRooted(graph, synonyms);
+            return solveRooted(graph, synonyms, lb, tl, root);
         }
         ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
-        Set<Node> biggest = biggestComponent(inspector);
-        TimeLimit mainTL = tl.subLimit(fraction);
-        solver.setLB(lb);
-        solver.setTimeLimit(mainTL);
-        List<Unit> solBiggest = solver.solve(Utils.subgraph(graph, biggest), synonyms);
-        solver.setLB(Utils.sum(solBiggest, synonyms));
-        solver.setTimeLimit(tl);
-        Set<Node> auxSubset = new LinkedHashSet<>();
-        auxSubset.addAll(graph.vertexSet());
-        auxSubset.removeAll(biggest);
-        List<Unit> auxSolution = solver.solve(Utils.subgraph(graph, auxSubset), synonyms);
-        return auxSolution != null ? auxSolution : solBiggest;
-    }
-
-    private Set<Node> biggestComponent(ConnectivityInspector<Node, Edge> inspector) {
-        Set<Node> max = Collections.emptySet();
-        for (Set<Node> component : inspector.connectedSets()) {
-            if (component.size() > max.size()) {
-                max = component;
+        PriorityQueue<Node> nodes = new PriorityQueue<>();
+        nodes.addAll(graph.vertexSet());
+        List<Unit> solution = new ArrayList<>();
+        double lowerBound = lb;
+        for (int i = 0; i < BFNum; i++) {
+            if (nodes.isEmpty()) {
+                break;
             }
+            Node node = nodes.poll();
+            if (node.getWeight() < 0.0) {
+                break;
+            }
+            UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, inspector.connectedSetOf(node));
+            List<Unit> result = solveRooted(subgraph, synonyms, lowerBound, tl, node);
+            if (result != null) {
+                solution = result;
+            }
+            graph.removeVertex(node);
+            lowerBound = Math.max(lowerBound, Utils.sum(solution, synonyms));
         }
-        return max;
+        List<Unit> result = solveRooted(graph, synonyms, lowerBound, tl, null);
+        return result == null ? solution : result;
     }
 
-    private List<Unit> solveRooted(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
+    private List<Unit> solveRooted(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms,
+                                   double lb, TimeLimit tl, Node root) throws SolverException {
         ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
         Set<Node> subset = inspector.connectedSetOf(root);
         if (subset == null) {
@@ -94,7 +99,7 @@ public class ComponentSolver implements Solver {
         this.root = root;
     }
 
-    public void setMainFraction(double fraction) {
-        this.fraction = fraction;
+    public void setBFNum(Integer BFNum) {
+        this.BFNum = BFNum;
     }
 }

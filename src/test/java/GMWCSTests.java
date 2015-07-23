@@ -27,7 +27,9 @@ public class GMWCSTests {
 
     public GMWCSTests() {
         random = new Random(SEED);
-        solver = new ComponentSolver(new RLTSolver());
+        ComponentSolver solver = new ComponentSolver(new RLTSolver());
+        solver.setBFNum(2);
+        this.solver = solver;
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
         if (System.getProperty("skipTests") != null) {
