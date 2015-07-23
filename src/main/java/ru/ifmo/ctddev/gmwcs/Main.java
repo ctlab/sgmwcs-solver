@@ -3,10 +3,7 @@ package ru.ifmo.ctddev.gmwcs;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.jgrapht.UndirectedGraph;
-import ru.ifmo.ctddev.gmwcs.graph.Edge;
-import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.SimpleIO;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.*;
 import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
@@ -34,6 +31,7 @@ public class Main {
                 .withRequiredArg().ofType(Double.class).defaultsTo(0.9);
         optionParser.acceptsAll(asList("s", "synonyms"), "Synonym list file").withRequiredArg();
         optionParser.acceptsAll(asList("r", "root"), "Solve with selected root node").withRequiredArg();
+        optionParser.acceptsAll(asList("a", "all"), "Write to out files at each found solution");
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -74,6 +72,9 @@ public class Main {
         SimpleIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"));
         LDSU<Unit> synonyms = new LDSU<>();
+        if (optionSet.has("a")) {
+            rltSolver.setCallback(new WritingCallback(graphIO));
+        }
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
             if (optionSet.has("s")) {
@@ -100,9 +101,26 @@ public class Main {
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
         } catch (SolverException e) {
-            System.err.println("Error occur while solving:" + e.getMessage());
+            System.err.println("Error occured while solving:" + e.getMessage());
         } catch (IOException e) {
             System.err.println("Error occurred while reading/writing input/output files");
+        }
+    }
+
+    private static class WritingCallback extends RLTSolver.SolutionCallback {
+        private GraphIO graphIO;
+
+        public WritingCallback(GraphIO graphIO) {
+            this.graphIO = graphIO;
+        }
+
+        @Override
+        public void main(List<Unit> solution) {
+            try {
+                graphIO.write(solution);
+            } catch (IOException e) {
+                System.err.println("Solution couldn't be written to disk. Input output error occured.");
+            }
         }
     }
 }

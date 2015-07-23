@@ -30,7 +30,9 @@ public class RLTSolver implements Solver {
     private TimeLimit tl;
     private int threads;
     private boolean suppressOutput;
+    private UndirectedGraph<Node, Edge> graph;
     private double minimum;
+    private SolutionCallback solutionCallback;
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
@@ -55,14 +57,17 @@ public class RLTSolver implements Solver {
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
+        this.graph = graph;
         try {
             cplex = new IloCplex();
             if (suppressOutput) {
-                cplex.setOut(new OutputStream() {
+                OutputStream nos = new OutputStream() {
                     @Override
                     public void write(int b) throws IOException {
                     }
-                });
+                };
+                cplex.setOut(nos);
+                cplex.setWarning(nos);
             }
             IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
             parameters.setParam(IloCplex.IntParam.Threads, threads);
@@ -100,6 +105,9 @@ public class RLTSolver implements Solver {
             addConstraints(graph);
             addObjective(graph, synonyms);
             long timeBefore = System.currentTimeMillis();
+            if (solutionCallback != null) {
+                cplex.use(new MIPCallback());
+            }
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
             if (solFound) {
@@ -125,6 +133,10 @@ public class RLTSolver implements Solver {
         } finally {
             cplex.end();
         }
+    }
+
+    public void setCallback(SolutionCallback callback) {
+        this.solutionCallback = callback;
     }
 
     private void addObjective(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws IloException {
@@ -279,5 +291,31 @@ public class RLTSolver implements Solver {
 
     public void setLB(double lb) {
         this.minimum = lb;
+    }
+
+    public static abstract class SolutionCallback {
+        public abstract void main(List<Unit> solution);
+    }
+
+    private class MIPCallback extends IloCplex.IncumbentCallback {
+
+        @Override
+        protected void main() throws IloException {
+            if (solutionCallback == null) {
+                return;
+            }
+            List<Unit> result = new ArrayList<>();
+            for (Node node : graph.vertexSet()) {
+                if (getValue(y.get(node)) > EPS) {
+                    result.add(node);
+                }
+            }
+            for (Edge edge : graph.edgeSet()) {
+                if (getValue(w.get(edge)) > EPS) {
+                    result.add(edge);
+                }
+            }
+            solutionCallback.main(result);
+        }
     }
 }
