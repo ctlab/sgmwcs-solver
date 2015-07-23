@@ -75,11 +75,6 @@ public class Main {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
             if (optionSet.has("s")) {
                 synonyms = graphIO.getSynonyms(new File((String) optionSet.valueOf("s")));
-                for (Edge edge : graph.edgeSet()) {
-                    if (synonyms.listOf(edge) == null) {
-                        System.err.println(edge);
-                    }
-                }
             } else {
                 for (Node node : graph.vertexSet()) {
                     synonyms.add(node);

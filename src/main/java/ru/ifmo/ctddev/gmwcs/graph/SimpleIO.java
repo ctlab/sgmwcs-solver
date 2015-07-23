@@ -64,6 +64,9 @@ public class SimpleIO implements GraphIO {
             try {
                 double weight = Double.parseDouble(weightStr);
                 Node vertex = new Node(lnum, weight);
+                if (nodeMap.containsKey(node)) {
+                    throw new ParseException("Duplicate node " + node, 0);
+                }
                 nodeMap.put(node, vertex);
                 graph.addVertex(vertex);
 
@@ -101,6 +104,10 @@ public class SimpleIO implements GraphIO {
                 Edge edge = new Edge(lnum, weight);
                 Node from = nodeMap.get(first);
                 Node to = nodeMap.get(second);
+                if (edgeMap.get(first) != null && edgeMap.get(first).get(second) != null ||
+                        edgeMap.get(second) != null && edgeMap.get(second).get(first) != null) {
+                    throw new ParseException("Duplicate edge " + first + " -- " + second, 0);
+                }
                 graph.addEdge(from, to, edge);
                 edgeList.add(new Pair<>(first, second));
                 if (!edgeMap.containsKey(first)) {
