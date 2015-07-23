@@ -8,21 +8,17 @@ import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
-import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
-import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
-import ru.ifmo.ctddev.gmwcs.solver.Solver;
-import ru.ifmo.ctddev.gmwcs.solver.SolverException;
+import ru.ifmo.ctddev.gmwcs.solver.*;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GMWCSTests {
     public static final int SEED = 20140503;
-    public static final int TESTS_PER_SIZE = 2000;
+    public static final int TESTS_PER_SIZE = 300;
     public static final int MAX_SIZE = 16;
-    public static final int RANDOM_TESTS = 5000;
+    public static final int RANDOM_TESTS = 2200;
     public static final Integer DEBUG_TEST = null;
     private List<TestCase> tests;
     private Solver solver;
@@ -110,7 +106,7 @@ public class GMWCSTests {
                 System.err.println(error(test));
                 System.err.println("Expected: " + sum(expected, test.synonyms()) + ", but actual: "
                         + sum(actual, test.synonyms()));
-                toXdot(test.graph(), expected, actual);
+                Utils.toXdot(test.graph(), expected, actual);
                 System.exit(1);
             }
         } catch (IOException e) {
@@ -137,44 +133,6 @@ public class GMWCSTests {
             message += "\n";
         }
         return message;
-    }
-
-    private String dotColor(Unit unit, List<Unit> expected, List<Unit> actual) {
-        if (expected.contains(unit) && actual.contains(unit)) {
-            return "YELLOW";
-        }
-        if (expected.contains(unit)) {
-            return "GREEN";
-        }
-        if (actual.contains(unit)) {
-            return "RED";
-        }
-        return "BLACK";
-    }
-
-    private void toXdot(UndirectedGraph<Node, Edge> graph, List<Unit> expected, List<Unit> actual) throws IOException {
-        Runtime runtime = Runtime.getRuntime();
-        Process process = runtime.exec("xdot");
-        try (PrintWriter os = new PrintWriter(process.getOutputStream())) {
-            os.println("graph test {");
-            for (Node node : graph.vertexSet()) {
-                os.print(node.getNum() + " [label = \"" + node.getNum() + ", " + node.getWeight() + "\" ");
-                os.println("color=" + dotColor(node, expected, actual) + "]");
-            }
-            for (Edge edge : graph.edgeSet()) {
-                Node from = graph.getEdgeSource(edge);
-                Node to = graph.getEdgeTarget(edge);
-                os.print(from.getNum() + "--" + to.getNum() + "[label = \"" + edge.getNum() + ", " +
-                        edge.getWeight() + "\" ");
-                os.println("color=" + dotColor(edge, expected, actual) + "]");
-            }
-            os.println("}");
-            os.flush();
-        }
-        try {
-            process.waitFor();
-        } catch (InterruptedException ignored) {
-        }
     }
 
     private void makeConnectedGraphs() {

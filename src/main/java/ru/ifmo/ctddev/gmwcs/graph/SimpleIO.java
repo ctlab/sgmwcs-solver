@@ -2,11 +2,14 @@ package ru.ifmo.ctddev.gmwcs.graph;
 
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
+import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
 
 import java.io.*;
 import java.text.ParseException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SimpleIO implements GraphIO {
     private File nodeIn;
@@ -101,7 +104,7 @@ public class SimpleIO implements GraphIO {
                 graph.addEdge(from, to, edge);
                 edgeList.add(new Pair<>(first, second));
                 if (!edgeMap.containsKey(first)) {
-                    edgeMap.put(first, new LinkedHashMap<String, Edge>());
+                    edgeMap.put(first, new LinkedHashMap<>());
                 }
                 edgeMap.get(first).put(second, edge);
             } catch (NumberFormatException e) {
@@ -119,6 +122,11 @@ public class SimpleIO implements GraphIO {
         unitSet.addAll(units);
         writeNodes(unitSet);
         writeEdges(unitSet);
+    }
+
+    @Override
+    public Node getNode(String name) {
+        return nodeMap.get(name);
     }
 
     private void writeEdges(Set<Unit> units) throws IOException {
@@ -148,6 +156,71 @@ public class SimpleIO implements GraphIO {
                 writer.write("\n");
             }
             writer.write("#subnet node score\t" + sum);
+        }
+    }
+
+    public LDSU<Unit> getSynonyms(File s) throws FileNotFoundException, ParseException {
+        LDSU<Unit> synonyms = new LDSU<>();
+        nodeMap.values().forEach(synonyms::add);
+        for (Pair<String, String> p : edgeList) {
+            Edge edge = edgeMap.get(p.first).get(p.second);
+            synonyms.add(edge);
+        }
+        try (Scanner sc = new Scanner(new BufferedReader(new FileReader(s)))) {
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine();
+                List<Unit> eq = new ArrayList<>();
+                line = getEdges(line, eq);
+                getNodes(line, eq);
+                if (eq.isEmpty()) {
+                    continue;
+                }
+                Unit main = eq.get(0);
+                for (int i = 1; i < eq.size(); i++) {
+                    synonyms.merge(main, eq.get(i));
+                }
+            }
+        }
+        return synonyms;
+    }
+
+    private String getEdges(String line, List<Unit> eq) throws ParseException {
+        Pattern pattern = Pattern.compile("([^\\s\\-]+)\\s*--\\s*([^\\s\\-]+)");
+        Matcher matcher = pattern.matcher(line);
+        while (matcher.find()) {
+            String from = matcher.group(1);
+            String to = matcher.group(2);
+            if (from == null) {
+                throw new ParseException("No such node " + from + " but it was occured in synonym file", 0);
+            }
+            if (to == null) {
+                throw new ParseException("No such node " + to + " but it was occured in synonym file", 0);
+            }
+            Edge edge;
+            if (edgeMap.get(from).get(to) != null) {
+                edge = edgeMap.get(from).get(to);
+            } else {
+                edge = edgeMap.get(to).get(from);
+            }
+            if (edge == null) {
+                throw new ParseException("No such edge " + from + " -- " + to, 0);
+            }
+            eq.add(edge);
+            line = line.replace(matcher.group(), "");
+        }
+        return line;
+    }
+
+    private void getNodes(String line, List<Unit> eq) throws ParseException {
+        Pattern pattern = Pattern.compile("[^\\s]+");
+        Matcher matcher = pattern.matcher(line);
+        while (matcher.find()) {
+            String name = matcher.group();
+            Node node = getNode(name);
+            if (node == null) {
+                throw new ParseException("No such node " + name + " but it was occured in synonym file", 0);
+            }
+            eq.add(node);
         }
     }
 }

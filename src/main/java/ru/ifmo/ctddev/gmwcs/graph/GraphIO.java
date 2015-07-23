@@ -10,4 +10,6 @@ public interface GraphIO {
     UndirectedGraph<Node, Edge> read() throws IOException, ParseException;
 
     void write(List<Unit> units) throws IOException;
+
+    Node getNode(String rootName);
 }

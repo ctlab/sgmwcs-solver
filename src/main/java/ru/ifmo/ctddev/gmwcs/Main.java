@@ -3,10 +3,12 @@ package ru.ifmo.ctddev.gmwcs;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.jgrapht.UndirectedGraph;
-import ru.ifmo.ctddev.gmwcs.graph.*;
+import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Node;
+import ru.ifmo.ctddev.gmwcs.graph.SimpleIO;
+import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
-import ru.ifmo.ctddev.gmwcs.solver.Solver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 
 import java.io.File;
@@ -28,25 +30,19 @@ public class Main {
                 .ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
-        optionParser.acceptsAll(asList("u", "unrooted"), "Maximum share of time allocated for solving unrooted parts")
-                .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
-        optionParser.acceptsAll(asList("r", "rooted"), "Maximum share of time allocated for solving rooted parts")
-                .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
+        optionParser.acceptsAll(asList("f", "fraction"), "Fraction of time for solving biggest component")
+                .withRequiredArg().ofType(Double.class).defaultsTo(0.9);
+        optionParser.acceptsAll(asList("s", "synonyms"), "Synonym list file").withRequiredArg();
+        optionParser.acceptsAll(asList("r", "root"), "Solve with selected root node").withRequiredArg();
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
         }
         try {
             optionSet = optionParser.parse(args);
-            double ush = (Double) optionSet.valueOf("u");
-            double rsh = (Double) optionSet.valueOf("r");
-            if (ush < 0.0 || ush > 1.0 || rsh < 0.0 || rsh > 1.0) {
-                System.err.println("Share must b in range [0,1]");
-                System.exit(1);
-            }
-            if (rsh + ush > 1.0) {
-                System.err.println("Sum of shares of rooted and unrooted parts must be <= 1.0");
-                System.exit(1);
+            double fraction = (Double) optionSet.valueOf("f");
+            if (fraction < 0.0 || fraction > 1.0) {
+                throw new ParseException("Fraction must belongs to [0.0, 1.0]", 0);
             }
         } catch (Exception e) {
             System.err.println(e.getMessage());
@@ -67,20 +63,39 @@ public class Main {
         }
         long timelimit = (Long) optionSet.valueOf("timelimit");
         TimeLimit tl = new TimeLimit(timelimit <= 0 ? Double.POSITIVE_INFINITY : timelimit);
-        double rsh = (Double) optionSet.valueOf("r");
-        double ush = (Double) optionSet.valueOf("u");
-        TimeLimit biggestTL = tl.subLimit(1.0 - ush);
         int threadsNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver();
-        Solver solver = new ComponentSolver(rltSolver);
+        ComponentSolver solver = new ComponentSolver(rltSolver);
+        solver.setMainFraction((Double) optionSet.valueOf("f"));
+        solver.setTimeLimit(tl);
         rltSolver.setThreadsNum(threadsNum);
-        GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
+        SimpleIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"));
+        LDSU<Unit> synonyms = new LDSU<>();
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
-            List<Unit> units = solver.solve(graph, new LDSU<>());
+            if (optionSet.has("s")) {
+                synonyms = graphIO.getSynonyms(new File((String) optionSet.valueOf("s")));
+            } else {
+                for (Node node : graph.vertexSet()) {
+                    synonyms.add(node);
+                }
+                for (Edge edge : graph.edgeSet()) {
+                    synonyms.add(edge);
+                }
+            }
+            if (optionSet.has("r")) {
+                String rootName = (String) optionSet.valueOf("r");
+                Node root = graphIO.getNode(rootName);
+                if (root == null) {
+                    System.err.println("There is no such node, which was chosen as root");
+                    System.exit(1);
+                }
+                solver.setRoot(root);
+            }
+            List<Unit> units = solver.solve(graph, synonyms);
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
