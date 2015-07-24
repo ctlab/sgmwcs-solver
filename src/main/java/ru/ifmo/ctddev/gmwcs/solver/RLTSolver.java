@@ -235,7 +235,7 @@ public class RLTSolver implements Solver {
         for (int i = 0; i < size; i++) {
             terms[i] = or(inspector.connectedSets().get(i));
         }
-        cplex.addLe(cplex.sum(terms), 1);
+        cplex.addLazyConstraint(cplex.le(cplex.sum(terms), 1));
     }
 
     private IloNumVar or(Set<? extends Unit> units) throws IloException {
