@@ -6,6 +6,7 @@ import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.jgrapht.UndirectedGraph;
+import org.jgrapht.alg.ConnectivityInspector;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
@@ -220,6 +221,34 @@ public class RLTSolver implements Solver {
     private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
         sumConstraints(graph);
         otherConstraints(graph);
+        componentConstraints(graph);
+    }
+
+    private void componentConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
+        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
+        if (inspector.connectedSets().size() <= 1) {
+            return;
+        }
+        int size = inspector.connectedSets().size();
+        IloNumVar[] terms = new IloNumVar[size];
+        for (int i = 0; i < size; i++) {
+            terms[i] = or(inspector.connectedSets().get(i));
+        }
+        cplex.addLe(cplex.sum(terms), 1);
+    }
+
+    private IloNumVar or(Set<? extends Unit> units) throws IloException {
+        int size = units.size();
+        IloNumVar result = cplex.boolVar();
+        IloNumVar[] vars = new IloNumVar[size];
+        int i = 0;
+        for (Unit unit : units) {
+            vars[i++] = unit instanceof Node ? y.get(unit) : w.get(unit);
+        }
+        IloNumExpr sum = cplex.sum(vars);
+        cplex.addLe(result, sum);
+        cplex.addGe(cplex.prod(size + 0.5, result), sum);
+        return result;
     }
 
     private void otherConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
