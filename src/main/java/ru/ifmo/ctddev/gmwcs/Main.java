@@ -32,7 +32,7 @@ public class Main {
         optionParser.acceptsAll(asList("a", "all"), "Write to out files at each found solution");
         optionParser.acceptsAll(asList("B", "bruteforce"), "Bruteforce n the most weighted nodes")
                 .withRequiredArg().ofType(Integer.class).defaultsTo(0);
-        optionParser.accepts("b", "Breaking symmetries");
+        optionParser.acceptsAll(asList("b", "break"), "Breaking symmetries");
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
