@@ -32,6 +32,7 @@ public class Main {
         optionParser.acceptsAll(asList("a", "all"), "Write to out files at each found solution");
         optionParser.acceptsAll(asList("b", "bruteforce"), "Bruteforce n the nost weighted nodes")
                 .withRequiredArg().ofType(Integer.class).defaultsTo(0);
+        optionParser.accepts("break", "Breaking symmetries");
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -60,7 +61,7 @@ public class Main {
         int threadsNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
-        RLTSolver rltSolver = new RLTSolver();
+        RLTSolver rltSolver = new RLTSolver(optionSet.has("break"));
         ComponentSolver solver = new ComponentSolver(rltSolver);
         solver.setBFNum((Integer) optionSet.valueOf("b"));
         solver.setTimeLimit(tl);

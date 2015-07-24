@@ -32,9 +32,11 @@ public class RLTSolver implements Solver {
     private boolean suppressOutput;
     private UndirectedGraph<Node, Edge> graph;
     private double minimum;
+    private boolean toBreak;
     private SolutionCallback solutionCallback;
 
-    public RLTSolver() {
+    public RLTSolver(boolean toBreak) {
+        this.toBreak = toBreak;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
         this.minimum = -Double.MAX_VALUE;
@@ -108,6 +110,9 @@ public class RLTSolver implements Solver {
             if (solutionCallback != null) {
                 cplex.use(new MIPCallback());
             }
+            if (toBreak && root == null) {
+                breakSymmetry(cplex, graph);
+            }
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
             if (solFound) {
@@ -135,6 +140,27 @@ public class RLTSolver implements Solver {
         }
     }
 
+    private void breakSymmetry(IloCplex cplex, UndirectedGraph<Node, Edge> graph) throws IloException {
+        int n = graph.vertexSet().size();
+        IloNumVar[] rootMul = new IloNumVar[n];
+        IloNumVar[] nodeMul = new IloNumVar[n];
+        PriorityQueue<Node> nodes = new PriorityQueue<>();
+        nodes.addAll(graph.vertexSet());
+        int k = nodes.size();
+        for (Node node : nodes) {
+            nodeMul[k - 1] = cplex.intVar(0, n);
+            rootMul[k - 1] = cplex.intVar(0, n);
+            cplex.addEq(nodeMul[k - 1], cplex.prod(k, y.get(node)));
+            cplex.addEq(rootMul[k - 1], cplex.prod(k, x0.get(node)));
+            k--;
+        }
+        IloNumVar rootSum = cplex.intVar(0, n);
+        cplex.addEq(rootSum, cplex.sum(rootMul));
+        for (int i = 0; i < n; i++) {
+            cplex.addGe(rootSum, nodeMul[i]);
+        }
+    }
+    
     public void setCallback(SolutionCallback callback) {
         this.solutionCallback = callback;
     }
