@@ -33,6 +33,8 @@ public class Main {
         optionParser.acceptsAll(asList("B", "bruteforce"), "Bruteforce n the most weighted nodes")
                 .withRequiredArg().ofType(Integer.class).defaultsTo(0);
         optionParser.acceptsAll(asList("b", "break"), "Breaking symmetries");
+        optionParser.accepts("tune").withRequiredArg().ofType(Double.class);
+        optionParser.accepts("probe").withRequiredArg().ofType(Double.class);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -71,6 +73,12 @@ public class Main {
         LDSU<Unit> synonyms = new LDSU<>();
         if (optionSet.has("a")) {
             rltSolver.setCallback(new WritingCallback(graphIO));
+        }
+        if (optionSet.has("tune")) {
+            rltSolver.setTuningTime((Double) optionSet.valueOf("tune"));
+        }
+        if (optionSet.has("probe")) {
+            rltSolver.setTuningTime((Double) optionSet.valueOf("probe"));
         }
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();

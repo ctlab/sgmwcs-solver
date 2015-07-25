@@ -30,6 +30,8 @@ public class RLTSolver implements Solver {
     private Node root;
     private TimeLimit tl;
     private int threads;
+    private double tuningTime;
+    private double probingTime;
     private boolean suppressOutput;
     private UndirectedGraph<Node, Edge> graph;
     private double minimum;
@@ -58,6 +60,14 @@ public class RLTSolver implements Solver {
         this.root = root;
     }
 
+    public void setTuningTime(double time) {
+        tuningTime = time;
+    }
+
+    public void setProbingTime(double time) {
+        probingTime = time;
+    }
+
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
         this.graph = graph;
@@ -72,16 +82,6 @@ public class RLTSolver implements Solver {
                 cplex.setOut(nos);
                 cplex.setWarning(nos);
             }
-            IloCplex.ParameterSet parameters = new IloCplex.ParameterSet();
-            parameters.setParam(IloCplex.IntParam.Threads, threads);
-            parameters.setParam(IloCplex.IntParam.ParallelMode, -1);
-            parameters.setParam(IloCplex.IntParam.MIPOrdType, 3);
-            if (tl.getRemainingTime() <= 0) {
-                parameters.setParam(IloCplex.DoubleParam.TiLim, EPS);
-            } else if (tl.getRemainingTime() != Double.POSITIVE_INFINITY) {
-                parameters.setParam(IloCplex.DoubleParam.TiLim, tl.getRemainingTime());
-            }
-            cplex.tuneParam(parameters);
             y = new LinkedHashMap<>();
             w = new LinkedHashMap<>();
             v = new LinkedHashMap<>();
@@ -115,6 +115,12 @@ public class RLTSolver implements Solver {
             if (toBreak && root == null) {
                 breakSymmetry(cplex, graph);
             }
+            tuning(cplex);
+            if (tl.getRemainingTime() <= 0) {
+                cplex.setParam(IloCplex.DoubleParam.TiLim, EPS);
+            } else if (tl.getRemainingTime() != Double.POSITIVE_INFINITY) {
+                cplex.setParam(IloCplex.DoubleParam.TiLim, tl.getRemainingTime());
+            }
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
             if (solFound) {
@@ -139,6 +145,20 @@ public class RLTSolver implements Solver {
             throw new SolverException();
         } finally {
             cplex.end();
+        }
+    }
+
+    private void tuning(IloCplex cplex) throws IloException {
+        cplex.setParam(IloCplex.IntParam.Threads, threads);
+        cplex.setParam(IloCplex.IntParam.ParallelMode, -1);
+        cplex.setParam(IloCplex.IntParam.MIPOrdType, 3);
+        if (tuningTime > 0.0) {
+            cplex.setParam(IloCplex.DoubleParam.TuningTiLim, tuningTime);
+            cplex.tuneParam();
+        }
+        if (probingTime > 0.0) {
+            cplex.setParam(IloCplex.DoubleParam.ProbeTime, probingTime);
+            cplex.setParam(IloCplex.IntParam.Probe, 3);
         }
     }
 
