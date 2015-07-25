@@ -78,7 +78,7 @@ public class Main {
             rltSolver.setTuningTime((Double) optionSet.valueOf("tune"));
         }
         if (optionSet.has("probe")) {
-            rltSolver.setTuningTime((Double) optionSet.valueOf("probe"));
+            rltSolver.setProbingTime((Double) optionSet.valueOf("probe"));
         }
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
