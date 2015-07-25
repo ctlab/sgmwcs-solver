@@ -33,8 +33,8 @@ public class Main {
         optionParser.acceptsAll(asList("B", "bruteforce"), "Bruteforce n the most weighted nodes")
                 .withRequiredArg().ofType(Integer.class).defaultsTo(0);
         optionParser.acceptsAll(asList("b", "break"), "Breaking symmetries");
-        optionParser.accepts("tune").withRequiredArg().ofType(Double.class);
-        optionParser.accepts("probe").withRequiredArg().ofType(Double.class);
+        optionParser.accepts("tune", "Time allocated for each cplex tuning test").withRequiredArg().ofType(Double.class);
+        optionParser.accepts("probe", "Time allocated for cplex probing").withRequiredArg().ofType(Double.class);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
