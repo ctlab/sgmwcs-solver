@@ -27,7 +27,7 @@ public class RLTSolver implements Solver {
     private Map<Edge, Pair<IloNumVar, IloNumVar>> t;
     private Map<Edge, Pair<IloNumVar, IloNumVar>> x;
     private Map<Node, IloNumVar> x0;
-    private Node root;
+    private int roots;
     private TimeLimit tl;
     private int threads;
     private double tuningTime;
@@ -56,8 +56,8 @@ public class RLTSolver implements Solver {
         this.threads = threads;
     }
 
-    public void setRoot(Node root) {
-        this.root = root;
+    public void setRootsNum(int num) {
+        this.roots = num;
     }
 
     public void setTuningTime(double time) {
@@ -69,8 +69,7 @@ public class RLTSolver implements Solver {
     }
 
     @Override
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
-        this.graph = graph;
+    public List<Unit> solve(UndirectedGraph<Node, Edge> origin, LDSU<Unit> synonyms) throws SolverException {
         try {
             cplex = new IloCplex();
             if (suppressOutput) {
@@ -82,15 +81,21 @@ public class RLTSolver implements Solver {
                 cplex.setOut(nos);
                 cplex.setWarning(nos);
             }
+            Set<Node> roots = getRoots(origin);
+            this.graph = extract(origin, roots);
+            if (roots.isEmpty()) {
+                return null;
+            }
             y = new LinkedHashMap<>();
             w = new LinkedHashMap<>();
             v = new LinkedHashMap<>();
             t = new LinkedHashMap<>();
             x = new LinkedHashMap<>();
             x0 = new LinkedHashMap<>();
+            int n = graph.vertexSet().size();
             for (Node node : graph.vertexSet()) {
                 String nodeName = Integer.toString(node.getNum() + 1);
-                v.put(node, cplex.intVar(0, Integer.MAX_VALUE, "v" + nodeName));
+                v.put(node, cplex.intVar(0, n, "v" + nodeName));
                 y.put(node, cplex.boolVar("y" + nodeName));
                 x0.put(node, cplex.boolVar("x_0_" + (node.getNum() + 1)));
             }
@@ -99,20 +104,20 @@ public class RLTSolver implements Solver {
                 Node to = graph.getEdgeTarget(edge);
                 String edgeName = (from.getNum() + 1) + "_" + (to.getNum() + 1);
                 w.put(edge, cplex.boolVar("w_" + edgeName));
-                IloNumVar in = cplex.intVar(0, Integer.MAX_VALUE, "t_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
-                IloNumVar out = cplex.intVar(0, Integer.MAX_VALUE, "t_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
+                IloNumVar in = cplex.intVar(0, n, "t_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
+                IloNumVar out = cplex.intVar(0, n, "t_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
                 t.put(edge, new Pair<>(in, out));
-                in = cplex.intVar(0, Integer.MAX_VALUE, "x_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
-                out = cplex.intVar(0, Integer.MAX_VALUE, "x_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
+                in = cplex.boolVar();
+                out = cplex.boolVar();
                 x.put(edge, new Pair<>(in, out));
             }
-            addConstraints(graph);
+            addConstraints(graph, roots);
             addObjective(graph, synonyms);
             long timeBefore = System.currentTimeMillis();
             if (solutionCallback != null) {
                 cplex.use(new MIPCallback());
             }
-            if (toBreak && root == null) {
+            if (toBreak) {
                 breakSymmetry(cplex, graph);
             }
             tuning(cplex);
@@ -135,9 +140,6 @@ public class RLTSolver implements Solver {
                         result.add(edge);
                     }
                 }
-                if (Utils.sum(result, synonyms) < 0.0 && root == null) {
-                    result = null;
-                }
                 return result;
             }
             return null;
@@ -146,6 +148,15 @@ public class RLTSolver implements Solver {
         } finally {
             cplex.end();
         }
+    }
+
+    private UndirectedGraph<Node, Edge> extract(UndirectedGraph<Node, Edge> origin, Set<Node> roots) {
+        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<Node, Edge>(origin);
+        Set<Node> nodes = new LinkedHashSet<>();
+        for (Node root : roots) {
+            nodes.addAll(inspector.connectedSetOf(root));
+        }
+        return Utils.subgraph(origin, nodes);
     }
 
     private void tuning(IloCplex cplex) throws IloException {
@@ -169,12 +180,20 @@ public class RLTSolver implements Solver {
         PriorityQueue<Node> nodes = new PriorityQueue<>();
         nodes.addAll(graph.vertexSet());
         int k = nodes.size();
-        for (Node node : nodes) {
+        int j = nodes.size();
+        double last = Double.POSITIVE_INFINITY;
+        while (!nodes.isEmpty()) {
+            Node node = nodes.poll();
+            if (node.getWeight() == last) {
+                j++;
+            }
+            last = node.getWeight();
             nodeMul[k - 1] = cplex.intVar(0, n);
             rootMul[k - 1] = cplex.intVar(0, n);
-            cplex.addEq(nodeMul[k - 1], cplex.prod(k, y.get(node)));
-            cplex.addEq(rootMul[k - 1], cplex.prod(k, x0.get(node)));
+            cplex.addEq(nodeMul[k - 1], cplex.prod(j, y.get(node)));
+            cplex.addEq(rootMul[k - 1], cplex.prod(j, x0.get(node)));
             k--;
+            j--;
         }
         IloNumVar rootSum = cplex.intVar(0, n);
         cplex.addEq(rootSum, cplex.sum(rootMul));
@@ -239,8 +258,8 @@ public class RLTSolver implements Solver {
         suppressOutput = true;
     }
 
-    private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
-        sumConstraints(graph);
+    private void addConstraints(UndirectedGraph<Node, Edge> graph, Set<Node> roots) throws IloException {
+        sumConstraints(graph, roots);
         otherConstraints(graph);
         componentConstraints(graph);
     }
@@ -326,12 +345,18 @@ public class RLTSolver implements Solver {
         }
     }
 
-    private void sumConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
+    private void sumConstraints(UndirectedGraph<Node, Edge> graph, Set<Node> roots) throws IloException {
         // (31)
-        cplex.addEq(cplex.sum(x0.values().toArray(new IloNumVar[0])), 1);
-        if (root != null) {
-            cplex.addEq(x0.get(root), 1);
+        IloNumVar[] rootVars = new IloNumVar[roots.size()];
+        int j = 0;
+        for (Node node : graph.vertexSet()) {
+            if (!roots.contains(node)) {
+                cplex.addEq(x0.get(node), 0);
+            } else {
+                rootVars[j++] = x0.get(node);
+            }
         }
+        cplex.addEq(cplex.sum(rootVars), 1);
         // (32) (33)
         for (Node node : graph.vertexSet()) {
             Set<Edge> edges = graph.edgesOf(node);
@@ -367,6 +392,20 @@ public class RLTSolver implements Solver {
 
     public void setLB(double lb) {
         this.minimum = lb;
+    }
+
+    public Set<Node> getRoots(UndirectedGraph<Node, Edge> graph) {
+        Set<Node> result = new LinkedHashSet<>();
+        PriorityQueue<Node> queue = new PriorityQueue<>();
+        queue.addAll(graph.vertexSet());
+        for (int i = 0; (i < roots || roots <= 0); i++) {
+            if (queue.isEmpty()) {
+                break;
+            }
+            Node root = queue.poll();
+            result.add(root);
+        }
+        return result;
     }
 
     public static abstract class SolutionCallback {

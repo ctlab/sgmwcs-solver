@@ -28,7 +28,6 @@ public class Main {
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
         optionParser.acceptsAll(asList("s", "synonyms"), "Synonym list file").withRequiredArg();
-        optionParser.acceptsAll(asList("r", "root"), "Solve with selected root node").withRequiredArg();
         optionParser.acceptsAll(asList("a", "all"), "Write to out files at each found solution");
         optionParser.acceptsAll(asList("B", "bruteforce"), "Bruteforce n the most weighted nodes")
                 .withRequiredArg().ofType(Integer.class).defaultsTo(0);
@@ -91,15 +90,6 @@ public class Main {
                 for (Edge edge : graph.edgeSet()) {
                     synonyms.add(edge);
                 }
-            }
-            if (optionSet.has("r")) {
-                String rootName = (String) optionSet.valueOf("r");
-                Node root = graphIO.getNode(rootName);
-                if (root == null) {
-                    System.err.println("There is no such node, which was chosen as root");
-                    System.exit(1);
-                }
-                solver.setRoot(root);
             }
             List<Unit> units = solver.solve(graph, synonyms);
             graphIO.write(units);

@@ -42,13 +42,13 @@ public class Utils {
     }
 
     private static String dotColor(Unit unit, List<Unit> expected, List<Unit> actual) {
-        if (expected.contains(unit) && actual.contains(unit)) {
+        if (actual != null && expected.contains(unit) && actual.contains(unit)) {
             return "YELLOW";
         }
         if (expected.contains(unit)) {
             return "GREEN";
         }
-        if (actual.contains(unit)) {
+        if (actual != null && actual.contains(unit)) {
             return "RED";
         }
         return "BLACK";
