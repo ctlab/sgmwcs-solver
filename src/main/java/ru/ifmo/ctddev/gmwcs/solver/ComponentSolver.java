@@ -34,7 +34,10 @@ public class ComponentSolver implements Solver {
         solver.setLB(lb);
         solver.setTimeLimit(tl);
         solver.setRootsNum(BFNum);
-        List<Unit> sol = solver.solve(graph, synonyms);
+        List<Unit> sol = null;
+        if (BFNum != 0) {
+            sol = solver.solve(graph, synonyms);
+        }
         solver.setRootsNum(0);
         solver.setLB(Math.max(lb, Utils.sum(sol, synonyms)));
         PriorityQueue<Node> nodes = new PriorityQueue<>();
