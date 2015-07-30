@@ -9,14 +9,17 @@ import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 public class ComponentSolver implements Solver {
     private final RLTSolver solver;
     private TimeLimit tl;
     private double lb;
     private Integer BFNum;
+    private boolean suppressing;
 
     public ComponentSolver(RLTSolver solver) {
         this.solver = solver;
@@ -26,30 +29,84 @@ public class ComponentSolver implements Solver {
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> origin, LDSU<Unit> synonyms) throws SolverException {
+        solver.clearRoots();
+        int BFNum = this.BFNum;
         UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
         Graphs.addGraph(graph, origin);
         if (graph.vertexSet().isEmpty()) {
             return null;
         }
-        solver.setLB(lb);
+        List<Unit> best = null;
         solver.setTimeLimit(tl);
-        solver.setRootsNum(BFNum);
-        List<Unit> sol = null;
-        if (BFNum != 0) {
-            sol = solver.solve(graph, synonyms);
+        Set<Set<Unit>> groups = getNGroups(graph);
+        if (groups.size() < BFNum) {
+            BFNum = groups.size();
         }
-        solver.setRootsNum(0);
-        solver.setLB(Math.max(lb, Utils.sum(sol, synonyms)));
-        PriorityQueue<Node> nodes = new PriorityQueue<>();
-        nodes.addAll(graph.vertexSet());
+        groups.forEach(solver::addRoot);
         for (int i = 0; i < BFNum; i++) {
-            if (graph.vertexSet().isEmpty()) {
+            solver.setBFNum(BFNum - i);
+            solver.setLB(Math.max(lb, Utils.sum(best, synonyms)));
+            List<Unit> sol = solver.solve(graph, synonyms);
+            if (sol != null) {
+                best = sol;
+            }
+        }
+        for (Set<Unit> c : groups) {
+            for (Unit unit : c) {
+                if (unit instanceof Node) {
+                    graph.removeVertex((Node) unit);
+                } else {
+                    graph.removeEdge((Edge) unit);
+                }
+            }
+        }
+        solver.clearRoots();
+        solver.setBFNum(0);
+        solver.setLB(Math.max(lb, Utils.sum(best, synonyms)));
+        List<Unit> sol2 = solver.solve(graph, synonyms);
+        return sol2 == null ? best : sol2;
+    }
+
+    private Set<Set<Unit>> getNGroups(UndirectedGraph<Node, Edge> graph) {
+        Set<Set<Unit>> groups = new LinkedHashSet<>();
+        PriorityQueue<Node> nodes = new PriorityQueue<>();
+        PriorityQueue<Edge> edges = new PriorityQueue<>();
+        nodes.addAll(graph.vertexSet());
+        edges.addAll(graph.edgeSet());
+        for (int i = 0; i < BFNum; i++) {
+            PriorityQueue<? extends Unit> current;
+            if (nodes.isEmpty() && edges.isEmpty()) {
                 break;
             }
-            graph.removeVertex(nodes.poll());
+            if (nodes.isEmpty()) {
+                current = edges;
+            } else if (edges.isEmpty()) {
+                current = nodes;
+            } else {
+                if (nodes.peek().getWeight() > edges.peek().getWeight()) {
+                    current = nodes;
+                } else {
+                    current = edges;
+                }
+            }
+            Set<Unit> group = new LinkedHashSet<>();
+            double weight = current.peek().getWeight();
+            if (!suppressing) {
+                if (current == nodes) {
+                    System.out.print("Chosen nodes with weight " + weight + " as group: ");
+                } else {
+                    System.out.print("Chosen edges with weight " + weight + " as group: ");
+                }
+            }
+            while (!current.isEmpty() && current.peek().getWeight() == weight) {
+                group.add(current.poll());
+            }
+            if (!suppressing) {
+                System.out.println(group.size() + " elements");
+            }
+            groups.add(group);
         }
-        List<Unit> sol2 = solver.solve(graph, synonyms);
-        return sol2 == null ? sol : sol2;
+        return groups;
     }
 
     @Override
@@ -59,6 +116,7 @@ public class ComponentSolver implements Solver {
 
     @Override
     public void suppressOutput() {
+        this.suppressing = true;
         solver.suppressOutput();
     }
 

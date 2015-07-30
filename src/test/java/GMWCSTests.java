@@ -28,8 +28,8 @@ public class GMWCSTests {
     public GMWCSTests() {
         random = new Random(SEED);
         ComponentSolver solver = new ComponentSolver(new RLTSolver(true));
-        solver.setBFNum(2);
         this.solver = solver;
+        solver.setBFNum(2);
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
         if (System.getProperty("skipTests") != null) {
