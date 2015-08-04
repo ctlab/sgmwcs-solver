@@ -107,7 +107,7 @@ public class RLTSolver implements Solver {
             int n = graph.vertexSet().size();
             for (Node node : graph.vertexSet()) {
                 String nodeName = Integer.toString(node.getNum() + 1);
-                v.put(node, cplex.intVar(0, n, "v" + nodeName));
+                v.put(node, cplex.numVar(0, Double.MAX_VALUE, "v" + nodeName));
                 y.put(node, cplex.boolVar("y" + nodeName));
                 x0.put(node, cplex.boolVar("x_0_" + (node.getNum() + 1)));
             }
@@ -116,8 +116,8 @@ public class RLTSolver implements Solver {
                 Node to = graph.getEdgeTarget(edge);
                 String edgeName = (from.getNum() + 1) + "_" + (to.getNum() + 1);
                 w.put(edge, cplex.boolVar("w_" + edgeName));
-                IloNumVar in = cplex.intVar(0, n, "t_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
-                IloNumVar out = cplex.intVar(0, n, "t_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
+                IloNumVar in = cplex.numVar(0, Double.MAX_VALUE, "t_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
+                IloNumVar out = cplex.numVar(0, Double.MAX_VALUE, "t_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
                 t.put(edge, new Pair<>(in, out));
                 in = cplex.boolVar();
                 out = cplex.boolVar();
