@@ -5,6 +5,7 @@ import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
+import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
 import ru.ifmo.ctddev.gmwcs.LDSU;
@@ -104,7 +105,6 @@ public class RLTSolver implements Solver {
             t = new LinkedHashMap<>();
             x = new LinkedHashMap<>();
             x0 = new LinkedHashMap<>();
-            int n = graph.vertexSet().size();
             for (Node node : graph.vertexSet()) {
                 String nodeName = Integer.toString(node.getNum() + 1);
                 v.put(node, cplex.numVar(0, Double.MAX_VALUE, "v" + nodeName));
@@ -280,6 +280,20 @@ public class RLTSolver implements Solver {
         sumConstraints(graph, roots);
         otherConstraints(graph);
         componentConstraints(graph);
+        maxSizeConstraints(graph);
+    }
+
+    private void maxSizeConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
+        for (Node v : graph.vertexSet()) {
+            for (Node u : Graphs.neighborListOf(graph, v)) {
+                if (u.getWeight() >= 0) {
+                    Edge e = graph.getEdge(v, u);
+                    if (e != null && e.getWeight() >= 0) {
+                        cplex.addLe(y.get(v), w.get(e));
+                    }
+                }
+            }
+        }
     }
 
     private void componentConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
