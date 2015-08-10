@@ -68,46 +68,41 @@ public class RLTSolver implements Solver {
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
         try {
             cplex = new IloCplex();
-            if (suppressOutput) {
-                OutputStream nos = new OutputStream() {
-                    @Override
-                    public void write(int b) throws IOException {
-                    }
-                };
-                cplex.setOut(nos);
-                cplex.setWarning(nos);
-            }
             this.graph = graph;
             initVariables();
             addConstraints(graph);
             addObjective(graph, synonyms);
             long timeBefore = System.currentTimeMillis();
-            if (toBreak) {
+            if (toBreak && root == null) {
                 breakSymmetry(cplex, graph);
             }
             tuning(cplex);
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
             if (solFound) {
-                List<Unit> result = new ArrayList<>();
-                for (Node node : graph.vertexSet()) {
-                    if (cplex.getValue(y.get(node)) > EPS) {
-                        result.add(node);
-                    }
-                }
-                for (Edge edge : graph.edgeSet()) {
-                    if (cplex.getValue(w.get(edge)) > EPS) {
-                        result.add(edge);
-                    }
-                }
-                return result;
+                return getResult();
             }
-            return null;
+            return Collections.emptyList();
         } catch (IloException e) {
             throw new SolverException();
         } finally {
             cplex.end();
         }
+    }
+
+    private List<Unit> getResult() throws IloException {
+        List<Unit> result = new ArrayList<>();
+        for (Node node : graph.vertexSet()) {
+            if (cplex.getValue(y.get(node)) > EPS) {
+                result.add(node);
+            }
+        }
+        for (Edge edge : graph.edgeSet()) {
+            if (cplex.getValue(w.get(edge)) > EPS) {
+                result.add(edge);
+            }
+        }
+        return result;
     }
 
     private void initVariables() throws IloException {
@@ -138,6 +133,15 @@ public class RLTSolver implements Solver {
     }
 
     private void tuning(IloCplex cplex) throws IloException {
+        if (suppressOutput) {
+            OutputStream nos = new OutputStream() {
+                @Override
+                public void write(int b) throws IOException {
+                }
+            };
+            cplex.setOut(nos);
+            cplex.setWarning(nos);
+        }
         if (solutionCallback != null) {
             cplex.use(new MIPCallback());
         }
