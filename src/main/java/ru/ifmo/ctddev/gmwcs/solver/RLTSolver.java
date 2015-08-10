@@ -7,7 +7,6 @@ import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
-import org.jgrapht.alg.ConnectivityInspector;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
@@ -36,8 +35,7 @@ public class RLTSolver implements Solver {
     private UndirectedGraph<Node, Edge> graph;
     private double minimum;
     private boolean toBreak;
-    private int neededRoots;
-    private Set<Set<Unit>> roots;
+    private Node root;
     private SolutionCallback solutionCallback;
 
     public RLTSolver(boolean toBreak) {
@@ -45,23 +43,10 @@ public class RLTSolver implements Solver {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
         this.minimum = -Double.MAX_VALUE;
-        roots = new LinkedHashSet<>();
     }
 
     public void setTimeLimit(TimeLimit tl) {
         this.tl = tl;
-    }
-
-    public void addRoot(Set<Unit> root) {
-        roots.add(root);
-    }
-
-    public void clearRoots() {
-        roots.clear();
-    }
-
-    public void setBFNum(int k) {
-        neededRoots = k;
     }
 
     public void setThreadsNum(int threads) {
@@ -80,7 +65,7 @@ public class RLTSolver implements Solver {
     }
 
     @Override
-    public List<Unit> solve(UndirectedGraph<Node, Edge> origin, LDSU<Unit> synonyms) throws SolverException {
+    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
         try {
             cplex = new IloCplex();
             if (suppressOutput) {
@@ -92,65 +77,15 @@ public class RLTSolver implements Solver {
                 cplex.setOut(nos);
                 cplex.setWarning(nos);
             }
-            Set<Unit> allRoots = new LinkedHashSet<>();
-            roots.forEach(allRoots::addAll);
-            if (!allRoots.isEmpty()) {
-                this.graph = extract(origin, allRoots);
-            } else {
-                this.graph = origin;
-            }
-            y = new LinkedHashMap<>();
-            w = new LinkedHashMap<>();
-            v = new LinkedHashMap<>();
-            t = new LinkedHashMap<>();
-            x = new LinkedHashMap<>();
-            x0 = new LinkedHashMap<>();
-            Node best = null;
-            for (Node node : graph.vertexSet()) {
-                String nodeName = Integer.toString(node.getNum() + 1);
-                v.put(node, cplex.numVar(0, Double.MAX_VALUE, "v" + nodeName));
-                y.put(node, cplex.boolVar("y" + nodeName));
-                x0.put(node, cplex.boolVar("x_0_" + (node.getNum() + 1)));
-                if (allRoots.isEmpty()) {
-                    if (best == null || best.getWeight() < node.getWeight()) {
-                        best = node;
-                    }
-                } else {
-                    if (allRoots.contains(node) && (best == null || best.getWeight() < node.getWeight())) {
-                        best = node;
-                    }
-                }
-            }
-            for (Edge edge : graph.edgeSet()) {
-                Node from = graph.getEdgeSource(edge);
-                Node to = graph.getEdgeTarget(edge);
-                String edgeName = (from.getNum() + 1) + "_" + (to.getNum() + 1);
-                w.put(edge, cplex.boolVar("w_" + edgeName));
-                IloNumVar in = cplex.numVar(0, Double.MAX_VALUE, "t_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
-                IloNumVar out = cplex.numVar(0, Double.MAX_VALUE, "t_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
-                t.put(edge, new Pair<>(in, out));
-                in = cplex.boolVar();
-                out = cplex.boolVar();
-                x.put(edge, new Pair<>(in, out));
-            }
-            addConstraints(graph, roots);
+            this.graph = graph;
+            initVariables();
+            addConstraints(graph);
             addObjective(graph, synonyms);
             long timeBefore = System.currentTimeMillis();
-            if (solutionCallback != null) {
-                cplex.use(new MIPCallback());
-            }
             if (toBreak) {
                 breakSymmetry(cplex, graph);
             }
             tuning(cplex);
-            if (tl.getRemainingTime() <= 0) {
-                cplex.setParam(IloCplex.DoubleParam.TiLim, EPS);
-            } else if (tl.getRemainingTime() != Double.POSITIVE_INFINITY) {
-                cplex.setParam(IloCplex.DoubleParam.TiLim, tl.getRemainingTime());
-            }
-            if (roots.size() == 0 && best != null) {
-                addMIPStart(best);
-            }
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
             if (solFound) {
@@ -175,53 +110,37 @@ public class RLTSolver implements Solver {
         }
     }
 
-    private void addMIPStart(Node best) throws IloException {
-        Set<String> start = new HashSet<>();
-        Set<Node> vis = new HashSet<>();
-        dfs(best, vis, start);
-        List<IloNumVar> vars = new ArrayList<>();
-        vars.addAll(y.values());
-        vars.addAll(w.values());
-        IloNumVar[] startVars = vars.toArray(new IloNumVar[0]);
-        double[] startVals = new double[vars.size()];
-        for (int i = 0; i < startVars.length; i++) {
-            startVals[i] = start.contains(startVars[i].getName()) ? 1 : 0;
+    private void initVariables() throws IloException {
+        y = new LinkedHashMap<>();
+        w = new LinkedHashMap<>();
+        v = new LinkedHashMap<>();
+        t = new LinkedHashMap<>();
+        x = new LinkedHashMap<>();
+        x0 = new LinkedHashMap<>();
+        for (Node node : graph.vertexSet()) {
+            String nodeName = Integer.toString(node.getNum() + 1);
+            v.put(node, cplex.numVar(0, Double.MAX_VALUE, "v" + nodeName));
+            y.put(node, cplex.boolVar("y" + nodeName));
+            x0.put(node, cplex.boolVar("x_0_" + (node.getNum() + 1)));
         }
-        cplex.addMIPStart(startVars, startVals);
-    }
-
-    private void dfs(Node v, Set<Node> vis, Set<String> start) {
-        vis.add(v);
-        start.add(y.get(v).getName());
-        for (Edge edge : graph.edgesOf(v)) {
-            if (edge.getWeight() >= 0) {
-                Node u = Graphs.getOppositeVertex(graph, edge, v);
-                if (u.getWeight() >= 0) {
-                    start.add(w.get(edge).getName());
-                    if (!vis.contains(u)) {
-                        dfs(u, vis, start);
-                    }
-                }
-            }
+        for (Edge edge : graph.edgeSet()) {
+            Node from = graph.getEdgeSource(edge);
+            Node to = graph.getEdgeTarget(edge);
+            String edgeName = (from.getNum() + 1) + "_" + (to.getNum() + 1);
+            w.put(edge, cplex.boolVar("w_" + edgeName));
+            IloNumVar in = cplex.numVar(0, Double.MAX_VALUE, "t_" + (to.getNum() + 1) + "_" + (from.getNum() + 1));
+            IloNumVar out = cplex.numVar(0, Double.MAX_VALUE, "t_" + (from.getNum() + 1) + "_" + (to.getNum() + 1));
+            t.put(edge, new Pair<>(in, out));
+            in = cplex.boolVar();
+            out = cplex.boolVar();
+            x.put(edge, new Pair<>(in, out));
         }
-    }
-
-    private UndirectedGraph<Node, Edge> extract(UndirectedGraph<Node, Edge> origin, Set<Unit> roots) {
-        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(origin);
-        Set<Node> nodes = new LinkedHashSet<>();
-        for (Unit unit : roots) {
-            Node root;
-            if (unit instanceof Node) {
-                root = (Node) unit;
-            } else {
-                root = origin.getEdgeSource((Edge) unit);
-            }
-            nodes.addAll(inspector.connectedSetOf(root));
-        }
-        return Utils.subgraph(origin, nodes);
     }
 
     private void tuning(IloCplex cplex) throws IloException {
+        if (solutionCallback != null) {
+            cplex.use(new MIPCallback());
+        }
         cplex.setParam(IloCplex.IntParam.Threads, threads);
         cplex.setParam(IloCplex.IntParam.ParallelMode, -1);
         cplex.setParam(IloCplex.IntParam.MIPOrdType, 3);
@@ -232,6 +151,11 @@ public class RLTSolver implements Solver {
         if (probingTime > 0.0) {
             cplex.setParam(IloCplex.DoubleParam.ProbeTime, probingTime);
             cplex.setParam(IloCplex.IntParam.Probe, 3);
+        }
+        if (tl.getRemainingTime() <= 0) {
+            cplex.setParam(IloCplex.DoubleParam.TiLim, EPS);
+        } else if (tl.getRemainingTime() != Double.POSITIVE_INFINITY) {
+            cplex.setParam(IloCplex.DoubleParam.TiLim, tl.getRemainingTime());
         }
     }
 
@@ -320,10 +244,9 @@ public class RLTSolver implements Solver {
         suppressOutput = true;
     }
 
-    private void addConstraints(UndirectedGraph<Node, Edge> graph, Set<Set<Unit>> roots) throws IloException {
-        sumConstraints(graph, roots);
+    private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
+        sumConstraints(graph);
         otherConstraints(graph);
-        componentConstraints(graph);
         maxSizeConstraints(graph);
     }
 
@@ -338,33 +261,6 @@ public class RLTSolver implements Solver {
                 }
             }
         }
-    }
-
-    private void componentConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
-        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
-        if (inspector.connectedSets().size() <= 1) {
-            return;
-        }
-        int size = inspector.connectedSets().size();
-        IloNumVar[] terms = new IloNumVar[size];
-        for (int i = 0; i < size; i++) {
-            terms[i] = or(inspector.connectedSets().get(i));
-        }
-        cplex.addLazyConstraint(cplex.le(cplex.sum(terms), 1));
-    }
-
-    private IloNumVar or(Set<? extends Unit> units) throws IloException {
-        int size = units.size();
-        IloNumVar result = cplex.boolVar();
-        IloNumVar[] vars = new IloNumVar[size];
-        int i = 0;
-        for (Unit unit : units) {
-            vars[i++] = unit instanceof Node ? y.get(unit) : w.get(unit);
-        }
-        IloNumExpr sum = cplex.sum(vars);
-        cplex.addLe(result, sum);
-        cplex.addGe(cplex.prod(size + 0.5, result), sum);
-        return result;
     }
 
     private void otherConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
@@ -430,16 +326,9 @@ public class RLTSolver implements Solver {
         return result;
     }
 
-    private void sumConstraints(UndirectedGraph<Node, Edge> graph, Set<Set<Unit>> roots) throws IloException {
+    private void sumConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
         // (31)
         cplex.addEq(cplex.sum(getVars(graph.vertexSet(), x0)), 1);
-        // groups
-        IloNumVar[] presVars = new IloNumVar[roots.size()];
-        int k = 0;
-        for (Set<Unit> units : roots) {
-            presVars[k++] = or(units);
-        }
-        cplex.addEq(cplex.sum(presVars), neededRoots);
         // (32) (33)
         for (Node node : graph.vertexSet()) {
             Set<Edge> edges = graph.edgesOf(node);

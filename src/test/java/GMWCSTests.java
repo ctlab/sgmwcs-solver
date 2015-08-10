@@ -29,7 +29,6 @@ public class GMWCSTests {
         random = new Random(SEED);
         ComponentSolver solver = new ComponentSolver(new RLTSolver(true));
         this.solver = solver;
-        solver.setBFNum(2);
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
         if (System.getProperty("skipTests") != null) {
@@ -45,7 +44,10 @@ public class GMWCSTests {
             return;
         }
         UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
-        Assert.assertNull(solver.solve(graph, new LDSU<>()));
+        List<Unit> res = solver.solve(graph, new LDSU<>());
+        if (!(res == null || res.isEmpty())) {
+            Assert.assertTrue(false);
+        }
     }
 
     @Test
