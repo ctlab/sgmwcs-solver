@@ -64,6 +64,10 @@ public class RLTSolver implements Solver {
         probingTime = time;
     }
 
+    public void setRoot(Node root) {
+        this.root = root;
+    }
+
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
         try {
@@ -333,6 +337,9 @@ public class RLTSolver implements Solver {
     private void sumConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
         // (31)
         cplex.addEq(cplex.sum(getVars(graph.vertexSet(), x0)), 1);
+        if (root != null) {
+            cplex.addEq(x0.get(root), 1);
+        }
         // (32) (33)
         for (Node node : graph.vertexSet()) {
             Set<Edge> edges = graph.edgesOf(node);

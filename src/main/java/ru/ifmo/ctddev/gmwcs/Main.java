@@ -30,6 +30,7 @@ public class Main {
         optionParser.acceptsAll(asList("s", "synonyms"), "Synonym list file").withRequiredArg();
         optionParser.acceptsAll(asList("a", "all"), "Write to out files at each found solution");
         optionParser.acceptsAll(asList("b", "break"), "Breaking symmetries");
+        optionParser.acceptsAll(asList("r", "root"), "Specify root node").withRequiredArg();
         optionParser.accepts("tune", "Time allocated for each cplex tuning test").withRequiredArg().ofType(Double.class);
         optionParser.accepts("probe", "Time allocated for cplex probing").withRequiredArg().ofType(Double.class);
         if (optionSet.has("h")) {
@@ -78,6 +79,9 @@ public class Main {
         }
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
+            if (optionSet.has("r")) {
+                rltSolver.setRoot(graphIO.getNode((String) optionSet.valueOf("r")));
+            }
             if (optionSet.has("s")) {
                 synonyms = graphIO.getSynonyms(new File((String) optionSet.valueOf("s")));
             } else {
