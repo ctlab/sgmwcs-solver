@@ -105,11 +105,21 @@ public class RLTSolver implements Solver {
             t = new LinkedHashMap<>();
             x = new LinkedHashMap<>();
             x0 = new LinkedHashMap<>();
+            Node best = null;
             for (Node node : graph.vertexSet()) {
                 String nodeName = Integer.toString(node.getNum() + 1);
                 v.put(node, cplex.numVar(0, Double.MAX_VALUE, "v" + nodeName));
                 y.put(node, cplex.boolVar("y" + nodeName));
                 x0.put(node, cplex.boolVar("x_0_" + (node.getNum() + 1)));
+                if (allRoots.isEmpty()) {
+                    if (best == null || best.getWeight() < node.getWeight()) {
+                        best = node;
+                    }
+                } else {
+                    if (allRoots.contains(node) && (best == null || best.getWeight() < node.getWeight())) {
+                        best = node;
+                    }
+                }
             }
             for (Edge edge : graph.edgeSet()) {
                 Node from = graph.getEdgeSource(edge);
@@ -138,6 +148,9 @@ public class RLTSolver implements Solver {
             } else if (tl.getRemainingTime() != Double.POSITIVE_INFINITY) {
                 cplex.setParam(IloCplex.DoubleParam.TiLim, tl.getRemainingTime());
             }
+            if (roots.size() == 0 && best != null) {
+                addMIPStart(best);
+            }
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
             if (solFound) {
@@ -159,6 +172,37 @@ public class RLTSolver implements Solver {
             throw new SolverException();
         } finally {
             cplex.end();
+        }
+    }
+
+    private void addMIPStart(Node best) throws IloException {
+        Set<String> start = new HashSet<>();
+        Set<Node> vis = new HashSet<>();
+        dfs(best, vis, start);
+        List<IloNumVar> vars = new ArrayList<>();
+        vars.addAll(y.values());
+        vars.addAll(w.values());
+        IloNumVar[] startVars = vars.toArray(new IloNumVar[0]);
+        double[] startVals = new double[vars.size()];
+        for (int i = 0; i < startVars.length; i++) {
+            startVals[i] = start.contains(startVars[i].getName()) ? 1 : 0;
+        }
+        cplex.addMIPStart(startVars, startVals);
+    }
+
+    private void dfs(Node v, Set<Node> vis, Set<String> start) {
+        vis.add(v);
+        start.add(y.get(v).getName());
+        for (Edge edge : graph.edgesOf(v)) {
+            if (edge.getWeight() >= 0) {
+                Node u = Graphs.getOppositeVertex(graph, edge, v);
+                if (u.getWeight() >= 0) {
+                    start.add(w.get(edge).getName());
+                    if (!vis.contains(u)) {
+                        dfs(u, vis, start);
+                    }
+                }
+            }
         }
     }
 
