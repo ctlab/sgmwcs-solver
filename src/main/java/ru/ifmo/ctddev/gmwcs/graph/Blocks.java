@@ -13,10 +13,14 @@ public class Blocks {
     private Set<Set<Node>> components;
     private Set<Node> cutpoints;
     private Node root;
+    private Map<Node, List<Set<Node>>> intersection;
+    private Map<Node, Set<Node>> componentOf;
+    private Map<Set<Node>, Set<Node>> cpsOf;
     private int rootChildren;
     private int time;
 
     public Blocks(UndirectedGraph<Node, Edge> graph) {
+        intersection = new HashMap<>();
         enter = new LinkedHashMap<>();
         up = new LinkedHashMap<>();
         stack = new Stack<>();
@@ -30,6 +34,33 @@ public class Blocks {
             Set<Node> component = new LinkedHashSet<>();
             component.add(root);
             components.add(component);
+        }
+        postProcessing();
+    }
+
+    public Set<Node> componentOf(Node node) {
+        return componentOf.get(node);
+    }
+
+    public Set<Node> cutpointsOf(Set<Node> component) {
+        return cpsOf.get(component);
+    }
+
+    private void postProcessing() {
+        cpsOf = new HashMap<>();
+        componentOf = new HashMap<>();
+        for (Node cp : intersection.keySet()) {
+            for (Set<Node> comp : intersection.get(cp)) {
+                if (!cpsOf.containsKey(comp)) {
+                    cpsOf.put(comp, new HashSet<>());
+                }
+                cpsOf.get(comp).add(cp);
+            }
+        }
+        for (Set<Node> component : components()) {
+            for (Node node : component) {
+                componentOf.put(node, component);
+            }
         }
     }
 
@@ -60,6 +91,10 @@ public class Blocks {
                     }
                     components.add(component);
                     cutpoints.add(v);
+                    if (!intersection.containsKey(v)) {
+                        intersection.put(v, new ArrayList<>());
+                    }
+                    intersection.get(v).add(component);
                 }
                 if (up.get(u) < up.get(v)) {
                     up.put(v, up.get(u));
@@ -72,6 +107,7 @@ public class Blocks {
         }
         if (rootChildren < 2) {
             cutpoints.remove(root);
+            intersection.remove(root);
         }
     }
 
