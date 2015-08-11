@@ -20,7 +20,6 @@ public class Blocks {
     private int time;
 
     public Blocks(UndirectedGraph<Node, Edge> graph) {
-        intersection = new HashMap<>();
         enter = new LinkedHashMap<>();
         up = new LinkedHashMap<>();
         stack = new Stack<>();
@@ -46,15 +45,26 @@ public class Blocks {
         return cpsOf.get(component);
     }
 
+    public List<Set<Node>> incidentBlocks(Node cp) {
+        return intersection.get(cp);
+    }
+
     private void postProcessing() {
         cpsOf = new HashMap<>();
         componentOf = new HashMap<>();
-        for (Node cp : intersection.keySet()) {
-            for (Set<Node> comp : intersection.get(cp)) {
-                if (!cpsOf.containsKey(comp)) {
-                    cpsOf.put(comp, new HashSet<>());
+        intersection = new HashMap<>();
+        for (Set<Node> component : components) {
+            for (Node cp : cutpoints) {
+                if (component.contains(cp)) {
+                    if (!intersection.containsKey(cp)) {
+                        intersection.put(cp, new ArrayList<>());
+                    }
+                    intersection.get(cp).add(component);
+                    if (!cpsOf.containsKey(component)) {
+                        cpsOf.put(component, new HashSet<>());
+                    }
+                    cpsOf.get(component).add(cp);
                 }
-                cpsOf.get(comp).add(cp);
             }
         }
         for (Set<Node> component : components()) {
@@ -91,10 +101,6 @@ public class Blocks {
                     }
                     components.add(component);
                     cutpoints.add(v);
-                    if (!intersection.containsKey(v)) {
-                        intersection.put(v, new ArrayList<>());
-                    }
-                    intersection.get(v).add(component);
                 }
                 if (up.get(u) < up.get(v)) {
                     up.put(v, up.get(u));
@@ -107,7 +113,6 @@ public class Blocks {
         }
         if (rootChildren < 2) {
             cutpoints.remove(root);
-            intersection.remove(root);
         }
     }
 

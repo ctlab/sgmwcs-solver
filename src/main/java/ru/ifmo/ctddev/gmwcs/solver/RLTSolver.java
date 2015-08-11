@@ -10,6 +10,7 @@ import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
+import ru.ifmo.ctddev.gmwcs.graph.Blocks;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
@@ -80,6 +81,9 @@ public class RLTSolver implements Solver {
             if (toBreak && root == null) {
                 breakSymmetry(cplex, graph);
             }
+            if (root != null) {
+                tighten();
+            }
             tuning(cplex);
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
@@ -91,6 +95,33 @@ public class RLTSolver implements Solver {
             throw new SolverException();
         } finally {
             cplex.end();
+        }
+    }
+
+    private void tighten() throws IloException {
+        Blocks blocks = new Blocks(graph);
+        if (!blocks.cutpoints().contains(root)) {
+            throw new IllegalArgumentException();
+        }
+        for (Set<Node> component : blocks.incidentBlocks(root)) {
+            dfs(root, component, true, blocks);
+        }
+    }
+
+    private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks) throws IloException {
+        if (!fake) {
+            for (Node node : component) {
+                cplex.addLe(cplex.diff(y.get(node), y.get(root)), 0);
+            }
+        }
+        for (Node cp : blocks.cutpointsOf(component)) {
+            if (root != cp) {
+                for (Set<Node> comp : blocks.incidentBlocks(cp)) {
+                    if (comp != component) {
+                        dfs(cp, comp, false, blocks);
+                    }
+                }
+            }
         }
     }
 
