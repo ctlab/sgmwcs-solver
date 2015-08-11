@@ -16,4 +16,6 @@ public interface Solver {
     void suppressOutput();
 
     void setLB(double lb);
+
+    void setRoot(Node root);
 }

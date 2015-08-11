@@ -17,10 +17,11 @@ public class ComponentSolver implements Solver {
     private TimeLimit tl;
     private double lb;
     private boolean suppressing;
+    private Node root;
 
     public ComponentSolver(RLTSolver solver) {
         this.solver = solver;
-        lb = 0.0;
+        lb = 0;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
     }
 
@@ -53,6 +54,15 @@ public class ComponentSolver implements Solver {
     @Override
     public void setTimeLimit(TimeLimit tl) {
         this.tl = tl;
+    }
+
+    public void setRoot(Node root) {
+        if (root == null) {
+            lb = 0.0;
+        } else {
+            lb = -Double.MAX_VALUE;
+        }
+        solver.setRoot(root);
     }
 
     @Override
