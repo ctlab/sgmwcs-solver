@@ -114,6 +114,16 @@ public class RLTSolver implements Solver {
                 cplex.addLe(cplex.diff(y.get(node), y.get(root)), 0);
             }
         }
+        for (Edge e : graph.edgesOf(root)) {
+            if (!component.contains(Graphs.getOppositeVertex(graph, e, root))) {
+                continue;
+            }
+            if (root == graph.getEdgeSource(e)) {
+                cplex.addEq(x.get(e).first, 0);
+            } else {
+                cplex.addEq(x.get(e).second, 0);
+            }
+        }
         for (Node cp : blocks.cutpointsOf(component)) {
             if (root != cp) {
                 for (Set<Node> comp : blocks.incidentBlocks(cp)) {
