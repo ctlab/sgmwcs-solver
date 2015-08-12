@@ -66,12 +66,11 @@ public class ComponentSolver implements Solver {
         Node res = null;
         for (Node cp : blocks.cutpoints()) {
             int curr = dfs(graph, cp, true, new HashSet<>());
-            if (curr > min) {
+            if (curr < min) {
                 min = curr;
                 res = cp;
             }
         }
-        ;
         return res;
     }
 
@@ -88,7 +87,7 @@ public class ComponentSolver implements Solver {
                 }
             }
         }
-        return res;
+        return isMax ? res : res + 1;
     }
 
     private PriorityQueue<Set<Node>> getComponents(UndirectedGraph<Node, Edge> graph) {
