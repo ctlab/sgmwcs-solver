@@ -5,7 +5,6 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import ru.ifmo.ctddev.gmwcs.LDSU;
-import ru.ifmo.ctddev.gmwcs.graph.Blocks;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
@@ -92,12 +91,10 @@ public class GMWCSTests {
     }
 
     private void check(TestCase test, int num) {
-        List<Node> roots = test.root() == null ? Collections.emptyList() : Collections.singletonList(test.root());
-        List<Unit> expected = referenceSolver.solve(test.graph(), test.synonyms(), roots);
+        List<Unit> expected = referenceSolver.solve(test.graph(), test.synonyms(), Collections.emptyList());
         List<Unit> actual = null;
         try {
             solver.suppressOutput();
-            solver.setRoot(roots.isEmpty() ? null : roots.get(0));
             actual = solver.solve(test.graph(), test.synonyms());
         } catch (SolverException e) {
             System.out.println();
@@ -163,21 +160,11 @@ public class GMWCSTests {
                     seq.add(j);
                 }
                 Collections.shuffle(seq, random);
-                Node root = null;
                 for (int j = 0; j < size - 1; j++) {
                     graph.addEdge(nodes[seq.get(j)], nodes[seq.get(j + 1)], new Edge(j + 1, random.nextInt(16) - 8));
                 }
                 fillEdgesRandomly(graph, count, nodes, size);
-                if (random.nextBoolean()) {
-                    Blocks blocks = new Blocks(graph);
-                    List<Node> cps = new ArrayList<>();
-                    cps.addAll(blocks.cutpoints());
-                    Collections.shuffle(cps, random);
-                    if (cps.size() > 0) {
-                        root = cps.get(0);
-                    }
-                }
-                tests.add(new TestCase(graph, random, root));
+                tests.add(new TestCase(graph, random));
             }
         }
     }
@@ -189,7 +176,7 @@ public class GMWCSTests {
             UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
             Node[] nodes = fillNodes(graph, n);
             fillEdgesRandomly(graph, m, nodes, 1);
-            tests.add(new TestCase(graph, random, null));
+            tests.add(new TestCase(graph, random));
         }
     }
 

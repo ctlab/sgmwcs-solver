@@ -1,23 +1,22 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
+import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
+import ru.ifmo.ctddev.gmwcs.graph.Blocks;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ComponentSolver implements Solver {
+    public static final int THRESHOLD = 500;
     private final RLTSolver solver;
     private TimeLimit tl;
     private double lb;
-    private boolean suppressing;
-    private Node root;
 
     public ComponentSolver(RLTSolver solver) {
         this.solver = solver;
@@ -27,28 +26,76 @@ public class ComponentSolver implements Solver {
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
-        int remains = graph.vertexSet().size();
-        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
-        List<Unit> best = new ArrayList<>();
+        List<Unit> best = null;
         double lb = this.lb;
-        for (Set<Node> component : inspector.connectedSets()) {
-            TimeLimit local;
-            if (tl.getRemainingTime() == Double.POSITIVE_INFINITY) {
-                local = tl;
-            } else {
-                local = tl.subLimit((double) component.size() / remains);
+        PriorityQueue<Set<Node>> components = getComponents(graph);
+        solver.setTimeLimit(tl);
+        while (!components.isEmpty()) {
+            Set<Node> component = components.poll();
+            UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
+            Node root = null;
+            if (component.size() >= THRESHOLD) {
+                root = getRoot(subgraph);
             }
-            remains -= component.size();
+            solver.setRoot(root);
             solver.setLB(lb);
-            solver.setTimeLimit(local);
-            List<Unit> curr = solver.solve(Utils.subgraph(graph, component), synonyms);
-            double currScore = Utils.sum(curr, synonyms);
-            if (currScore > lb) {
-                lb = currScore;
-                best = curr;
+            List<Unit> solution = solver.solve(subgraph, synonyms);
+            if (Utils.sum(solution, synonyms) > Utils.sum(best, synonyms)) {
+                best = solution;
+                lb = Utils.sum(best, synonyms);
+            }
+            if (root != null) {
+                addComponents(subgraph, root, components);
             }
         }
         return best;
+    }
+
+    private void addComponents(UndirectedGraph<Node, Edge> subgraph, Node root, PriorityQueue<Set<Node>> components) {
+        subgraph.removeVertex(root);
+        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(subgraph);
+        components.addAll(inspector.connectedSets());
+    }
+
+    private Node getRoot(UndirectedGraph<Node, Edge> graph) {
+        Blocks blocks = new Blocks(graph);
+        if (blocks.cutpoints().isEmpty()) {
+            return null;
+        }
+        int min = Integer.MAX_VALUE;
+        Node res = null;
+        for (Node cp : blocks.cutpoints()) {
+            int curr = dfs(graph, cp, true, new HashSet<>());
+            if (curr > min) {
+                min = curr;
+                res = cp;
+            }
+        }
+        ;
+        return res;
+    }
+
+    private int dfs(UndirectedGraph<Node, Edge> graph, Node v, boolean isMax, Set<Node> vis) {
+        vis.add(v);
+        int res = 0;
+        for (Node u : Graphs.neighborListOf(graph, v)) {
+            if (!vis.contains(u)) {
+                int val = dfs(graph, u, false, vis);
+                if (isMax) {
+                    res = Math.max(val, res);
+                } else {
+                    res += val;
+                }
+            }
+        }
+        return res;
+    }
+
+    private PriorityQueue<Set<Node>> getComponents(UndirectedGraph<Node, Edge> graph) {
+        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
+        PriorityQueue<Set<Node>> result = new PriorityQueue<>(new SetComparator());
+        result.addAll(inspector.connectedSets());
+        return result;
     }
 
     @Override
@@ -56,18 +103,8 @@ public class ComponentSolver implements Solver {
         this.tl = tl;
     }
 
-    public void setRoot(Node root) {
-        if (root == null) {
-            lb = 0.0;
-        } else {
-            lb = -Double.MAX_VALUE;
-        }
-        solver.setRoot(root);
-    }
-
     @Override
     public void suppressOutput() {
-        this.suppressing = true;
         solver.suppressOutput();
     }
 
@@ -77,5 +114,12 @@ public class ComponentSolver implements Solver {
             return;
         }
         this.lb = lb;
+    }
+
+    private class SetComparator implements Comparator<Set<Node>> {
+        @Override
+        public int compare(Set<Node> o1, Set<Node> o2) {
+            return -Integer.compare(o1.size(), o2.size());
+        }
     }
 }

@@ -9,14 +9,12 @@ import java.util.*;
 public class TestCase {
     private UndirectedGraph<Node, Edge> graph;
     private LDSU<Unit> synonyms;
-    private Node root;
 
-    public TestCase(UndirectedGraph<Node, Edge> graph, Random random, Node root) {
+    public TestCase(UndirectedGraph<Node, Edge> graph, Random random) {
         this.graph = graph;
         synonyms = new LDSU<>();
         makeSynonyms(synonyms, random, graph.vertexSet());
         makeSynonyms(synonyms, random, graph.edgeSet());
-        this.root = root;
     }
 
     private static void makeSynonyms(LDSU<Unit> synonyms, Random random, Set<? extends Unit> set) {
@@ -54,9 +52,5 @@ public class TestCase {
 
     public int m() {
         return graph.edgeSet().size();
-    }
-
-    public Node root() {
-        return root;
     }
 }
