@@ -45,7 +45,6 @@ public class SimpleIO implements GraphIO {
 
     private void parseNodes(Scanner nodes, UndirectedGraph<Node, Edge> graph) throws ParseException {
         int lnum = 0;
-        PriorityQueue<Node> nodeHeap = new PriorityQueue<>();
         while (nodes.hasNextLine()) {
             lnum++;
             String line = nodes.nextLine();
@@ -69,20 +68,15 @@ public class SimpleIO implements GraphIO {
                     throw new ParseException("Duplicate node " + node, 0);
                 }
                 nodeMap.put(node, vertex);
-                nodeHeap.add(vertex);
+                graph.addVertex(vertex);
             } catch (NumberFormatException e) {
                 throw new ParseException("Expected floating point value of node weight in line", lnum);
             }
-        }
-        while (!nodeHeap.isEmpty()) {
-            graph.addVertex(nodeHeap.poll());
         }
     }
 
     private void parseEdges(Scanner edges, UndirectedGraph<Node, Edge> graph) throws ParseException {
         int lnum = 0;
-        PriorityQueue<Edge> edgeHeap = new PriorityQueue<>();
-        Map<Edge, Pair<Node, Node>> incident = new HashMap<>();
         while (edges.hasNextLine()) {
             lnum++;
             String line = edges.nextLine();
@@ -113,8 +107,7 @@ public class SimpleIO implements GraphIO {
                         edgeMap.get(second) != null && edgeMap.get(second).get(first) != null) {
                     throw new ParseException("Duplicate edge " + first + " -- " + second, 0);
                 }
-                edgeHeap.add(edge);
-                incident.put(edge, new Pair<>(from, to));
+                graph.addEdge(from, to, edge);
                 edgeList.add(new Pair<>(first, second));
                 if (!edgeMap.containsKey(first)) {
                     edgeMap.put(first, new LinkedHashMap<>());
@@ -123,11 +116,6 @@ public class SimpleIO implements GraphIO {
             } catch (NumberFormatException e) {
                 throw new ParseException("Expected floating point value of edge in line", lnum);
             }
-        }
-        while (!edgeHeap.isEmpty()) {
-            Edge edge = edgeHeap.poll();
-            Pair<Node, Node> inc = incident.get(edge);
-            graph.addEdge(inc.first, inc.second, edge);
         }
     }
 
@@ -199,10 +187,10 @@ public class SimpleIO implements GraphIO {
             String from = matcher.group(1);
             String to = matcher.group(2);
             if (from == null) {
-                throw new ParseException("No such node " + from + " but it was occured in synonym file", 0);
+                throw new ParseException("No such node " + from + " but it was occurred in synonym file", 0);
             }
             if (to == null) {
-                throw new ParseException("No such node " + to + " but it was occured in synonym file", 0);
+                throw new ParseException("No such node " + to + " but it was occurred in synonym file", 0);
             }
             Edge edge;
             if (edgeMap.get(from).get(to) != null) {
