@@ -45,6 +45,7 @@ public class SimpleIO implements GraphIO {
 
     private void parseNodes(Scanner nodes, UndirectedGraph<Node, Edge> graph) throws ParseException {
         int lnum = 0;
+        PriorityQueue<Node> nodeHeap = new PriorityQueue<>();
         while (nodes.hasNextLine()) {
             lnum++;
             String line = nodes.nextLine();
@@ -68,16 +69,20 @@ public class SimpleIO implements GraphIO {
                     throw new ParseException("Duplicate node " + node, 0);
                 }
                 nodeMap.put(node, vertex);
-                graph.addVertex(vertex);
-
+                nodeHeap.add(vertex);
             } catch (NumberFormatException e) {
                 throw new ParseException("Expected floating point value of node weight in line", lnum);
             }
+        }
+        while (!nodeHeap.isEmpty()) {
+            graph.addVertex(nodeHeap.poll());
         }
     }
 
     private void parseEdges(Scanner edges, UndirectedGraph<Node, Edge> graph) throws ParseException {
         int lnum = 0;
+        PriorityQueue<Edge> edgeHeap = new PriorityQueue<>();
+        Map<Edge, Pair<Node, Node>> incident = new HashMap<>();
         while (edges.hasNextLine()) {
             lnum++;
             String line = edges.nextLine();
@@ -108,7 +113,8 @@ public class SimpleIO implements GraphIO {
                         edgeMap.get(second) != null && edgeMap.get(second).get(first) != null) {
                     throw new ParseException("Duplicate edge " + first + " -- " + second, 0);
                 }
-                graph.addEdge(from, to, edge);
+                edgeHeap.add(edge);
+                incident.put(edge, new Pair<>(from, to));
                 edgeList.add(new Pair<>(first, second));
                 if (!edgeMap.containsKey(first)) {
                     edgeMap.put(first, new LinkedHashMap<>());
@@ -117,6 +123,11 @@ public class SimpleIO implements GraphIO {
             } catch (NumberFormatException e) {
                 throw new ParseException("Expected floating point value of edge in line", lnum);
             }
+        }
+        while (!edgeHeap.isEmpty()) {
+            Edge edge = edgeHeap.poll();
+            Pair<Node, Node> inc = incident.get(edge);
+            graph.addEdge(inc.first, inc.second, edge);
         }
     }
 
