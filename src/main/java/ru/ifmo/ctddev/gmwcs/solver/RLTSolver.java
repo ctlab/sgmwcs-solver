@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
+import static ru.ifmo.ctddev.gmwcs.solver.SupportGraph.Cut;
+
 public class RLTSolver implements Solver {
     public static final double EPS = 0.01;
     private IloCplex cplex;
@@ -124,6 +126,7 @@ public class RLTSolver implements Solver {
                 cplex.addEq(x.get(e).second, 0);
             }
         }
+        separate(component, root);
         for (Node cp : blocks.cutpointsOf(component)) {
             if (root != cp) {
                 for (Set<Node> comp : blocks.incidentBlocks(cp)) {
@@ -131,6 +134,20 @@ public class RLTSolver implements Solver {
                         dfs(cp, comp, false, blocks);
                     }
                 }
+            }
+        }
+    }
+
+    private void separate(Set<Node> component, Node root) throws IloException {
+        SupportGraph supportGraph = new SupportGraph(Utils.subgraph(graph, component));
+        for (Node v : component) {
+            if (v == root || graph.getEdge(v, root) != null) {
+                continue;
+            }
+            Cut cut = supportGraph.findCut(root, v);
+            IloNumExpr sum = cplex.sum(getVars(cut.cut(), y));
+            for (Node r : cut.sink()) {
+                cplex.addLe(y.get(r), sum);
             }
         }
     }
