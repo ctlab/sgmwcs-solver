@@ -33,6 +33,9 @@ public abstract class Unit implements Comparable<Unit> {
 
     @Override
     public int compareTo(Unit u) {
-        return Double.compare(u.weight, weight);
+        if (u.weight != weight) {
+            return Double.compare(u.weight, weight);
+        }
+        return Integer.compare(u.getNum(), num);
     }
 }
