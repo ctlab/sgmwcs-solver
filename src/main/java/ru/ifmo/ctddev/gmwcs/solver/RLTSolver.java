@@ -21,7 +21,7 @@ import java.util.*;
 
 import static ru.ifmo.ctddev.gmwcs.solver.SupportGraph.Cut;
 
-public class RLTSolver implements Solver {
+public class RLTSolver implements RootedSolver {
     public static final double EPS = 0.01;
     private IloCplex cplex;
     private Map<Node, IloNumVar> y;

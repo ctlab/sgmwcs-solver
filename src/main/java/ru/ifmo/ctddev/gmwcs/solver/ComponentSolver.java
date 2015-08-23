@@ -14,11 +14,11 @@ import java.util.*;
 
 public class ComponentSolver implements Solver {
     public static final int THRESHOLD = 500;
-    private final RLTSolver solver;
+    private final RootedSolver solver;
     private TimeLimit tl;
     private double lb;
 
-    public ComponentSolver(RLTSolver solver) {
+    public ComponentSolver(RootedSolver solver) {
         this.solver = solver;
         lb = 0;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
