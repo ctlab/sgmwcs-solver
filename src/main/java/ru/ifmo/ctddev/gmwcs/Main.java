@@ -29,6 +29,8 @@ public class Main {
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
         optionParser.acceptsAll(asList("s", "synonyms"), "Synonym list file").withRequiredArg();
         optionParser.acceptsAll(asList("a", "all"), "Write to out files at each found solution");
+        optionParser.accepts("c", "Threshold for CPE solver").withRequiredArg().
+                ofType(Integer.class).defaultsTo(500);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -53,12 +55,13 @@ public class Main {
             System.exit(2);
         }
         long timelimit = (Long) optionSet.valueOf("timelimit");
+        int threshold = (Integer) optionSet.valueOf("c");
         TimeLimit tl = new TimeLimit(timelimit <= 0 ? Double.POSITIVE_INFINITY : timelimit);
         int threadsNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver();
-        ComponentSolver solver = new ComponentSolver(rltSolver);
+        ComponentSolver solver = new ComponentSolver(rltSolver, threshold);
         solver.setTimeLimit(tl);
         rltSolver.setThreadsNum(threadsNum);
         SimpleIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),

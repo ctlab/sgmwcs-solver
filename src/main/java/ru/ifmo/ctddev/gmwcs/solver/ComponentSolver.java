@@ -13,13 +13,14 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import java.util.*;
 
 public class ComponentSolver implements Solver {
-    public static final int THRESHOLD = 500;
+    public final int threshold;
     private final RootedSolver solver;
     private TimeLimit tl;
     private double lb;
 
-    public ComponentSolver(RootedSolver solver) {
+    public ComponentSolver(RootedSolver solver, int threshold) {
         this.solver = solver;
+        this.threshold = threshold;
         lb = 0;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
     }
@@ -34,7 +35,7 @@ public class ComponentSolver implements Solver {
             Set<Node> component = components.poll();
             UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
             Node root = null;
-            if (component.size() >= THRESHOLD) {
+            if (component.size() >= threshold) {
                 root = getRoot(subgraph);
             }
             solver.setRoot(root);
