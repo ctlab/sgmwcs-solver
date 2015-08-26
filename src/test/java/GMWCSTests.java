@@ -27,7 +27,7 @@ public class GMWCSTests {
 
     public GMWCSTests() {
         random = new Random(SEED);
-        ComponentSolver solver = new ComponentSolver(new RLTSolver(true));
+        ComponentSolver solver = new ComponentSolver(new RLTSolver());
         this.solver = solver;
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
