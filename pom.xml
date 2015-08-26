@@ -21,6 +21,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.5.3</version>
                 <configuration>
+                    <finalName>signal</finalName>
                     <archive>
                         <manifest>
                             <mainClass>ru.ifmo.ctddev.gmwcs.Main</mainClass>
@@ -29,6 +30,7 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
+                    <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
                 <executions>
                     <execution>
