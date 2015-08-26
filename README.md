@@ -16,13 +16,13 @@ After that you can build the project using maven:
 
     mvn install
     
-And jar file with name "gmwcs-solver-1.0-jar-with-dependencies.jar" will appear in "target" directory
+And jar file with name "signal.jar" will appear in "target" directory
     
 Running
 =======
 
 To run program you should set jvm parameter java.library.path to directory of CPLEX binaries like that:
 
-    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1251/cplex/bin/x86-64_sles10_4.1/ -jar gmwcs-solver-1.0-jar-with-dependencies.jar
+    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1251/cplex/bin/x86-64_sles10_4.1/ -jar signal.jar
 
 See more help by using flag -h.

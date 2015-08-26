@@ -29,9 +29,6 @@ public class Main {
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
         optionParser.acceptsAll(asList("s", "synonyms"), "Synonym list file").withRequiredArg();
         optionParser.acceptsAll(asList("a", "all"), "Write to out files at each found solution");
-        optionParser.acceptsAll(asList("b", "break"), "Breaking symmetries");
-        optionParser.accepts("tune", "Time allocated for each cplex tuning test").withRequiredArg().ofType(Double.class);
-        optionParser.accepts("probe", "Time allocated for cplex probing").withRequiredArg().ofType(Double.class);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -60,7 +57,7 @@ public class Main {
         int threadsNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
-        RLTSolver rltSolver = new RLTSolver(optionSet.has("b"));
+        RLTSolver rltSolver = new RLTSolver();
         ComponentSolver solver = new ComponentSolver(rltSolver);
         solver.setTimeLimit(tl);
         rltSolver.setThreadsNum(threadsNum);
@@ -69,12 +66,6 @@ public class Main {
         LDSU<Unit> synonyms = new LDSU<>();
         if (optionSet.has("a")) {
             rltSolver.setCallback(new WritingCallback(graphIO));
-        }
-        if (optionSet.has("tune")) {
-            rltSolver.setTuningTime((Double) optionSet.valueOf("tune"));
-        }
-        if (optionSet.has("probe")) {
-            rltSolver.setProbingTime((Double) optionSet.valueOf("probe"));
         }
         try {
             UndirectedGraph<Node, Edge> graph = graphIO.read();
