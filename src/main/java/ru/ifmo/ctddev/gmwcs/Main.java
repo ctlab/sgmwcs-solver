@@ -7,6 +7,7 @@ import ru.ifmo.ctddev.gmwcs.graph.*;
 import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
+import ru.ifmo.ctddev.gmwcs.solver.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -83,6 +84,7 @@ public class Main {
                 }
             }
             List<Unit> units = solver.solve(graph, synonyms);
+            System.out.println("Final score: " + Utils.sum(units, synonyms));
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
