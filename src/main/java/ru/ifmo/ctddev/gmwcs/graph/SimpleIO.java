@@ -181,7 +181,8 @@ public class SimpleIO implements GraphIO {
     }
 
     private String getEdges(String line, List<Unit> eq) throws ParseException {
-        Pattern pattern = Pattern.compile("([^\\s\\-]+)\\s*--\\s*([^\\s\\-]+)");
+        String edgeRegex = "([^\\s\\-]+)\\s*--\\s*([^\\s\\-]+)";
+        Pattern pattern = Pattern.compile(edgeRegex);
         Matcher matcher = pattern.matcher(line);
         while (matcher.find()) {
             String from = matcher.group(1);
@@ -202,8 +203,8 @@ public class SimpleIO implements GraphIO {
                 throw new ParseException("No such edge " + from + " -- " + to, 0);
             }
             eq.add(edge);
-            line = line.replace(matcher.group(), "");
         }
+        line = line.replaceAll(edgeRegex, "");
         return line;
     }
 
