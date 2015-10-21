@@ -73,6 +73,7 @@ public class RLTSolver implements RootedSolver {
             } else {
                 tighten();
             }
+            breakTreeSymmetries();
             tuning(cplex);
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
@@ -232,7 +233,18 @@ public class RLTSolver implements RootedSolver {
             cplex.addGe(rootSum, nodeMul[i]);
         }
     }
-    
+
+    private void breakTreeSymmetries() throws IloException {
+        for(Edge edge : graph.edgeSet()){
+            Node v = graph.getEdgeSource(edge);
+            Node u = graph.getEdgeTarget(edge);
+            int n = graph.vertexSet().size();
+            IloNumExpr delta = cplex.diff(this.v.get(v), this.v.get(u));
+            cplex.addLazyConstraint(cplex.le(cplex.sum(cplex.prod(n, w.get(edge)), delta), n + 1));
+            cplex.addLazyConstraint(cplex.le(cplex.diff(cplex.prod(n, w.get(edge)), delta), n + 1));
+        }
+    }
+
     public void setCallback(SolutionCallback callback) {
         this.solutionCallback = callback;
     }
