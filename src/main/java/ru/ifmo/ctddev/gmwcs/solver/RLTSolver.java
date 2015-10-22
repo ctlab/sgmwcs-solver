@@ -240,8 +240,8 @@ public class RLTSolver implements RootedSolver {
             Node u = graph.getEdgeTarget(edge);
             int n = graph.vertexSet().size();
             IloNumExpr delta = cplex.diff(this.v.get(v), this.v.get(u));
-            cplex.addLazyConstraint(cplex.le(cplex.sum(cplex.prod(n, w.get(edge)), delta), n + 1));
-            cplex.addLazyConstraint(cplex.le(cplex.diff(cplex.prod(n, w.get(edge)), delta), n + 1));
+            cplex.addLe(cplex.sum(cplex.prod(n, w.get(edge)), delta), n + 1);
+            cplex.addLe(cplex.diff(cplex.prod(n, w.get(edge)), delta), n + 1);
         }
     }
 
