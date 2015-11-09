@@ -52,7 +52,6 @@ public class MaxFlow {
             }
         }
         double maxFlow = 0.0;
-        List<Double> label;
         MAIN:
         while (true) {
             if (maxFlow >= threshold) {
@@ -71,7 +70,6 @@ public class MaxFlow {
             PATH:
             while (true) {
                 if (q.isEmpty()) {
-                    label = min;
                     break MAIN;
                 }
                 int v = q.poll();
@@ -84,37 +82,26 @@ public class MaxFlow {
                             parent.set(u, v);
                             parentIndex.set(u, i);
                         }
-                    }
-                    if (u == t) {
-                        int k = t;
-                        double f = min.get(t);
-                        while (k != s) {
-                            int p = parent.get(k);
-                            int pi = parentIndex.get(k);
-                            push(p, pi, f, flow);
-                            k = p;
+                        if (u == t) {
+                            int k = t;
+                            double f = min.get(t);
+                            while (k != s) {
+                                int p = parent.get(k);
+                                int pi = parentIndex.get(k);
+                                push(p, pi, f, flow);
+                                k = p;
+                            }
+                            break PATH;
                         }
-                        break PATH;
                     }
                 }
             }
         }
-        return getResult(label);
+        return getResult();
     }
 
-    private List<Pair<Integer, Integer>> getResult(List<Double> label) {
-        List<Pair<Integer, Integer>> res = new ArrayList<>();
-        for (int v = 0; v < n; v++) {
-            if (label.get(v) == Double.POSITIVE_INFINITY) {
-                continue;
-            }
-            for (int u : adj.get(v)) {
-                if (label.get(u) == Double.POSITIVE_INFINITY) {
-                    res.add(new Pair<>(v, u));
-                }
-            }
-        }
-        return res;
+    private List<Pair<Integer, Integer>> getResult() {
+        return null;
     }
 
     private double rcap(List<List<Double>> flow, int v, int i) {
@@ -130,9 +117,11 @@ public class MaxFlow {
     private void push(int v, int i, double cap, List<List<Double>> flow) {
         int u = adj.get(v).get(i);
         int j = backIndex.get(v).get(i);
-        double can = Math.min(cap, flow.get(u).get(j));
-        flow.get(u).set(j, flow.get(u).get(j) - can);
-        cap -= can;
+        if (j != -1) {
+            double can = Math.min(cap, flow.get(u).get(j));
+            flow.get(u).set(j, flow.get(u).get(j) - can);
+            cap -= can;
+        }
         if (cap > 0) {
             flow.get(v).set(i, flow.get(v).get(i) + cap);
         }
