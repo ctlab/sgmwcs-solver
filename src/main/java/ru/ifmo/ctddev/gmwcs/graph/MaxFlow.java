@@ -25,16 +25,19 @@ public class MaxFlow {
         }
     }
 
-    public void addEdge(int i, int j) {
+    private void addSingleEdge(int i, int j) {
         adj.get(i).add(j);
         backIndex.get(i).add(-1);
         capacity.get(i).add(0.0);
         indices.get(i).put(j, adj.get(i).size() - 1);
     }
 
-    public void addBiEdge(int i, int j) {
-        addEdge(i, j);
-        addEdge(j, i);
+    public void addEdge(int i, int j) {
+        if (indices.get(i).containsKey(j)) {
+            return;
+        }
+        addSingleEdge(i, j);
+        addSingleEdge(j, i);
         backIndex.get(i).set(backIndex.get(i).size() - 1, adj.get(j).size() - 1);
         backIndex.get(j).set(backIndex.get(j).size() - 1, adj.get(i).size() - 1);
     }
@@ -97,11 +100,37 @@ public class MaxFlow {
                 }
             }
         }
-        return getResult();
+        return getResult(s, flow);
     }
 
-    private List<Pair<Integer, Integer>> getResult() {
-        return null;
+    private List<Pair<Integer, Integer>> getResult(int s, List<List<Double>> flow) {
+        List<Boolean> vis = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            vis.add(false);
+        }
+        dfs(s, vis, flow);
+        List<Pair<Integer, Integer>> res = new ArrayList<>();
+        for (int v = 0; v < n; v++) {
+            if (!vis.get(v)) {
+                continue;
+            }
+            for (int u : adj.get(v)) {
+                if (!vis.get(u)) {
+                    res.add(new Pair<>(v, u));
+                }
+            }
+        }
+        return res;
+    }
+
+    private void dfs(int v, List<Boolean> vis, List<List<Double>> flow) {
+        vis.set(v, true);
+        for (int j = 0; j < adj.get(v).size(); j++) {
+            int u = adj.get(v).get(j);
+            if (!vis.get(u) && rcap(flow, v, j) > 0) {
+                dfs(u, vis, flow);
+            }
+        }
     }
 
     private double rcap(List<List<Double>> flow, int v, int i) {

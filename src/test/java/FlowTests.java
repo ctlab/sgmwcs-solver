@@ -64,7 +64,7 @@ public class FlowTests {
                     if (i == s) {
                         continue;
                     }
-                    double actualCapacity = 0;
+                    double actualCapacity;
                     try {
                         List<Pair<Integer, Integer>> cut = maxFlow.computeMinCut(s, i, Double.POSITIVE_INFINITY);
                         actualCapacity = getCutCapacity(cut, graph);
@@ -72,14 +72,17 @@ public class FlowTests {
                         checker.computeMinCut(s, i);
                         double expectedCapacity = checker.getCutWeight();
                         if (Math.abs(actualCapacity - expectedCapacity) > 1e-4) {
-                            toXDot(graph, s, i);
+                            toXDot(graph, s, i, cut);
                             System.err.println("Test no. " + testNo);
                             System.err.println("Sink: " + i);
                             Assert.assertEquals(expectedCapacity, actualCapacity, 1e-4);
                         }
+                        if (DEBUG_TEST != null) {
+                            return;
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
-                        toXDot(graph, s, i);
+                        toXDot(graph, s, i, null);
                         System.err.println("Test no. " + testNo);
                         System.err.println("Sink: " + i);
                         System.exit(1);
@@ -108,19 +111,13 @@ public class FlowTests {
             int v = graph.getEdgeSource(e);
             int u = graph.getEdgeTarget(e);
             visited.add(e);
-            if (graph.containsEdge(u, v)) {
-                g.addBiEdge(v, u);
-                visited.add(graph.getEdge(u, v));
-                g.setCapacity(u, v, graph.getEdgeWeight(graph.getEdge(u, v)));
-            } else {
-                g.addEdge(v, u);
-            }
+            g.addEdge(v, u);
             g.setCapacity(v, u, graph.getEdgeWeight(e));
         }
         return g;
     }
 
-    private void toXDot(MyGraph graph, int s, int t) throws IOException {
+    private void toXDot(MyGraph graph, int s, int t, List<Pair<Integer, Integer>> cut) throws IOException {
         Runtime runtime = Runtime.getRuntime();
         Process process = runtime.exec("xdot");
         int n = graph.vertexSet().size();
@@ -132,14 +129,22 @@ public class FlowTests {
                     os.print("[color=green]");
                 }
                 if (i == t) {
-                    os.print("[color=red]");
+                    os.print("[color=yellow]");
                 }
                 os.println(";");
             }
             for (int i = 0; i < n; i++) {
+                Set<Integer> marked = new HashSet<>();
+                if (cut != null) {
+                    for (Pair<Integer, Integer> e : cut) {
+                        if (e.first == i) {
+                            marked.add(e.second);
+                        }
+                    }
+                }
                 for (int j = 0; j < n; j++) {
                     if (graph.containsEdge(i, j)) {
-                        os.println(i + " -> " + j + ";");
+                        os.println(i + " -> " + j + (marked.contains(j) ? "[color=red]" : "") + ";");
                         System.err.println(i + " -> " + j + ": " + graph.getEdgeWeight(graph.getEdge(i, j)));
                     }
                 }
