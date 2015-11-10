@@ -5,7 +5,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import ru.ifmo.ctddev.gmwcs.Pair;
-import ru.ifmo.ctddev.gmwcs.graph.MaxFlow;
+import ru.ifmo.ctddev.gmwcs.graph.flow.EdmondsKarp;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -56,7 +56,7 @@ public class FlowTests {
                         continue;
                     }
                 }
-                MaxFlow maxFlow = build(graph);
+                EdmondsKarp maxFlow = build(graph);
                 for (int i = 0; i < n; i++) {
                     if (DEBUG_TEST != null && i != DEBUG_SINK) {
                         continue;
@@ -100,9 +100,9 @@ public class FlowTests {
         return sum;
     }
 
-    private MaxFlow build(MyGraph graph) {
+    private EdmondsKarp build(MyGraph graph) {
         int n = graph.vertexSet().size();
-        MaxFlow g = new MaxFlow(n);
+        EdmondsKarp g = new EdmondsKarp(n);
         Set<Integer> visited = new HashSet<>();
         for (Integer e : graph.edgeSet()) {
             if (visited.contains(e)) {

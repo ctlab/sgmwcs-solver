@@ -1,17 +1,17 @@
-package ru.ifmo.ctddev.gmwcs.graph;
+package ru.ifmo.ctddev.gmwcs.graph.flow;
 
 import ru.ifmo.ctddev.gmwcs.Pair;
 
 import java.util.*;
 
-public class MaxFlow {
+public class EdmondsKarp implements MaxFlow {
     private int n;
     private List<List<Integer>> adj;
     private List<List<Integer>> backIndex;
     private List<List<Double>> capacity;
     private List<Map<Integer, Integer>> indices;
 
-    public MaxFlow(int n) {
+    public EdmondsKarp(int n) {
         this.n = n;
         adj = new ArrayList<>();
         backIndex = new ArrayList<>(n);
