@@ -42,6 +42,15 @@ public class RLTSolver implements RootedSolver {
         this.minimum = -Double.MAX_VALUE;
     }
 
+    static IloNumVar[] getVars(Set<? extends Unit> units, Map<? extends Unit, IloNumVar> vars) {
+        IloNumVar[] result = new IloNumVar[units.size()];
+        int i = 0;
+        for (Unit unit : units) {
+            result[i++] = vars.get(unit);
+        }
+        return result;
+    }
+
     public void setTimeLimit(TimeLimit tl) {
         this.tl = tl;
     }
@@ -91,13 +100,16 @@ public class RLTSolver implements RootedSolver {
         if (!blocks.cutpoints().contains(root)) {
             throw new IllegalArgumentException();
         }
+        Separator separator = new Separator(y, w, cplex);
         for (Set<Node> component : blocks.incidentBlocks(root)) {
-            dfs(root, component, true, blocks);
+            dfs(root, component, true, blocks, separator);
         }
+        cplex.use(separator);
     }
 
-    private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks) throws IloException {
+    private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks, Separator separator) throws IloException {
         if (!fake) {
+            separator.addComponent(Utils.subgraph(graph, component), root);
             for (Node node : component) {
                 cplex.addLe(cplex.diff(y.get(node), y.get(root)), 0);
             }
@@ -116,7 +128,7 @@ public class RLTSolver implements RootedSolver {
             if (root != cp) {
                 for (Set<Node> comp : blocks.incidentBlocks(cp)) {
                     if (comp != component) {
-                        dfs(cp, comp, false, blocks);
+                        dfs(cp, comp, false, blocks, separator);
                     }
                 }
             }
@@ -355,15 +367,6 @@ public class RLTSolver implements RootedSolver {
                 cplex.addLe(cplex.sum(left, right), cplex.sum(tij, tji));
             }
         }
-    }
-
-    public IloNumVar[] getVars(Set<? extends Unit> units, Map<? extends Unit, IloNumVar> vars) {
-        IloNumVar[] result = new IloNumVar[units.size()];
-        int i = 0;
-        for (Unit unit : units) {
-            result[i++] = vars.get(unit);
-        }
-        return result;
     }
 
     private void sumConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
