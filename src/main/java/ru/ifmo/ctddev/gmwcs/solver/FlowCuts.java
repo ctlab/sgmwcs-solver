@@ -22,6 +22,8 @@ public class FlowCuts {
         int i = 0;
         weights = new HashMap<>();
         backLink = new ArrayList<>();
+        nodes = new HashMap<>();
+        edges = new HashMap<>();
         for (Node node : graph.vertexSet()) {
             nodes.put(node, i++);
             backLink.add(node);
