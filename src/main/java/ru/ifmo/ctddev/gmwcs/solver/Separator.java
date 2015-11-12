@@ -30,7 +30,7 @@ public class Separator extends IloCplex.UserCutCallback {
         generators = new HashMap<>();
         generatorList = new ArrayList<>();
         nodes = new ArrayList<>();
-        maxToAdd = 6000;
+        maxToAdd = 25;
         minToConsider = 6000;
         this.cplex = cplex;
     }

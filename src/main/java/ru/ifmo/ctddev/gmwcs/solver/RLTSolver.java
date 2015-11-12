@@ -108,8 +108,8 @@ public class RLTSolver implements RootedSolver {
     }
 
     private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks, Separator separator) throws IloException {
+        separator.addComponent(Utils.subgraph(graph, component), root);
         if (!fake) {
-            separator.addComponent(Utils.subgraph(graph, component), root);
             for (Node node : component) {
                 cplex.addLe(cplex.diff(y.get(node), y.get(root)), 0);
             }
