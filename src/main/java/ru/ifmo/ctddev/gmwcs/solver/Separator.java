@@ -13,7 +13,6 @@ import static ru.ifmo.ctddev.gmwcs.solver.RLTSolver.getVars;
 
 public class Separator extends IloCplex.UserCutCallback {
     public static final double ADDITION_CAPACITY = 1e-6;
-    public static final double THRESHOLD = 1e-4;
 
     private Map<Node, CutGenerator> generators;
     private int maxToAdd;
@@ -30,7 +29,7 @@ public class Separator extends IloCplex.UserCutCallback {
         generators = new HashMap<>();
         generatorList = new ArrayList<>();
         nodes = new ArrayList<>();
-        maxToAdd = 25;
+        maxToAdd = 6000;
         minToConsider = 6000;
         this.cplex = cplex;
     }
@@ -69,11 +68,8 @@ public class Separator extends IloCplex.UserCutCallback {
 
     private void init() throws IloException {
         for (CutGenerator generator : generatorList) {
-            for (Edge edge : generator.getEdges()) {
-                generator.setCapacity(edge, getValue(w.get(edge)) + ADDITION_CAPACITY);
-            }
             for (Node node : generator.getNodes()) {
-                generator.setVertexCapacity(node, getValue(y.get(node)) - THRESHOLD);
+                generator.setCapacity(node, getValue(y.get(node)) + ADDITION_CAPACITY);
             }
         }
     }
