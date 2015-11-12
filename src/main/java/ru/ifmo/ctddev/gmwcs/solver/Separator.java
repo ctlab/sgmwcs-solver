@@ -52,11 +52,11 @@ public class Separator extends IloCplex.UserCutCallback {
         int added = 0;
         for (Node node : now) {
             CutGenerator generator = generators.get(node);
-            List<Edge> cut = generator.findCut(node);
+            List<Node> cut = generator.findCut(node);
             if (cut != null) {
-                Set<Edge> minCut = new HashSet<>();
+                Set<Node> minCut = new HashSet<>();
                 minCut.addAll(cut);
-                add(cplex.le(cplex.diff(y.get(node), cplex.sum(getVars(minCut, w))), 0));
+                add(cplex.le(cplex.diff(y.get(node), cplex.sum(getVars(minCut, y))), 0));
                 added++;
             }
             if (added == maxToAdd) {

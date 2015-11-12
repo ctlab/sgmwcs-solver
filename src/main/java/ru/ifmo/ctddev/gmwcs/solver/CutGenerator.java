@@ -49,16 +49,18 @@ public class CutGenerator {
         weights.put(v, capacity);
     }
 
-    public List<Edge> findCut(Node v) {
+    public List<Node> findCut(Node v) {
         List<Pair<Integer, Integer>> cut = maxFlow.computeMinCut(nodes.get(root), nodes.get(v), weights.get(v));
         if (cut == null) {
             return null;
         }
-        List<Edge> result = new ArrayList<>();
+        Set<Node> result = new HashSet<>();
         for (Pair<Integer, Integer> p : cut) {
-            result.add(graph.getEdge(backLink.get(p.first), backLink.get(p.second)));
+            result.add(backLink.get(p.second));
         }
-        return result;
+        List<Node> toReturn = new ArrayList<>();
+        toReturn.addAll(result);
+        return toReturn;
     }
 
     public Set<Node> getNodes() {
