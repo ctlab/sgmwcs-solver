@@ -13,7 +13,7 @@ import static ru.ifmo.ctddev.gmwcs.solver.RLTSolver.getVars;
 
 public class Separator extends IloCplex.UserCutCallback {
     public static final double ADDITION_CAPACITY = 1e-6;
-    public static final double STEP = 0.1;
+    public static final double STEP = 0.15;
     private Map<Node, CutGenerator> generators;
     private int maxToAdd;
     private int minToConsider;
@@ -56,7 +56,9 @@ public class Separator extends IloCplex.UserCutCallback {
 
     @Override
     protected void main() throws IloException {
+        System.err.print("Separating... ");
         if (!isCutsAllowed()) {
+            System.err.println("rejected");
             return;
         }
         long before = System.currentTimeMillis();
@@ -77,7 +79,7 @@ public class Separator extends IloCplex.UserCutCallback {
                 break;
             }
         }
-        System.err.print("Separation done in " + (System.currentTimeMillis() - before) + " msecs. ");
+        System.err.print("done in " + (System.currentTimeMillis() - before) + " msecs. ");
         System.err.println("Added " + added + " constraints");
     }
 
