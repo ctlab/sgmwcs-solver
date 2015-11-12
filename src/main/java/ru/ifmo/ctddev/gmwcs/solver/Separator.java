@@ -13,7 +13,7 @@ import static ru.ifmo.ctddev.gmwcs.solver.RLTSolver.getVars;
 
 public class Separator extends IloCplex.UserCutCallback {
     public static final double ADDITION_CAPACITY = 1e-6;
-
+    public static final double STEP = 0.1;
     private Map<Node, CutGenerator> generators;
     private int maxToAdd;
     private int minToConsider;
@@ -22,6 +22,8 @@ public class Separator extends IloCplex.UserCutCallback {
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
     private IloCplex cplex;
+    private int waited;
+    private double period;
 
     public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex) {
         this.y = y;
@@ -42,8 +44,21 @@ public class Separator extends IloCplex.UserCutCallback {
         minToConsider = n;
     }
 
+    private synchronized boolean isCutsAllowed() {
+        waited++;
+        if (waited > period) {
+            waited = 0;
+            period += STEP;
+            return true;
+        }
+        return false;
+    }
+
     @Override
     protected void main() throws IloException {
+        if (!isCutsAllowed()) {
+            return;
+        }
         long before = System.currentTimeMillis();
         init();
         Collections.shuffle(nodes);
