@@ -49,7 +49,7 @@ public class CutGenerator {
     }
 
     public List<Node> findCut(Node v) {
-        List<Pair<Integer, Integer>> cut = maxFlow.computeMinCut(nodes.get(root), nodes.get(v), weights.get(v) - EPS);
+        List<Pair<Integer, Integer>> cut = maxFlow.computeMinCut(nodes.get(root) * 2 + 1, nodes.get(v) * 2, weights.get(v) - EPS);
         if (cut == null) {
             return null;
         }
