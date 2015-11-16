@@ -13,7 +13,8 @@ import static ru.ifmo.ctddev.gmwcs.solver.RLTSolver.getVars;
 
 public class Separator extends IloCplex.UserCutCallback {
     public static final double ADDITION_CAPACITY = 1e-6;
-    public static final double STEP = 0.15;
+    public static final double STEP = 0.05;
+    public static final double EPS = 1e-5;
     private Map<Node, CutGenerator> generators;
     private int maxToAdd;
     private int minToConsider;
@@ -68,11 +69,11 @@ public class Separator extends IloCplex.UserCutCallback {
         int added = 0;
         for (Node node : now) {
             CutGenerator generator = generators.get(node);
-            List<Node> cut = generator.findCut(node);
+            List<Edge> cut = generator.findCut(node);
             if (cut != null) {
-                Set<Node> minCut = new HashSet<>();
+                Set<Edge> minCut = new HashSet<>();
                 minCut.addAll(cut);
-                add(cplex.le(cplex.diff(y.get(node), cplex.sum(getVars(minCut, y))), 0));
+                add(cplex.le(cplex.diff(y.get(node), cplex.sum(getVars(minCut, w))), 0));
                 added++;
             }
             if (added == maxToAdd) {
@@ -85,8 +86,11 @@ public class Separator extends IloCplex.UserCutCallback {
 
     private void init() throws IloException {
         for (CutGenerator generator : generatorList) {
+            for (Edge edge : generator.getEdges()) {
+                generator.setCapacity(edge, getValue(w.get(edge)) + ADDITION_CAPACITY);
+            }
             for (Node node : generator.getNodes()) {
-                generator.setCapacity(node, getValue(y.get(node)) + ADDITION_CAPACITY);
+                generator.setVertexCapacity(node, getValue(y.get(node)) - EPS);
             }
         }
     }
