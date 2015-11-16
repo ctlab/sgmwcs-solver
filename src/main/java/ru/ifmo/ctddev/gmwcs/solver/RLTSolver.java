@@ -100,7 +100,7 @@ public class RLTSolver implements RootedSolver {
         if (!blocks.cutpoints().contains(root)) {
             throw new IllegalArgumentException();
         }
-        Separator separator = new Separator(y, w, cplex);
+        Separator separator = new Separator(y, w, cplex, graph);
         for (Set<Node> component : blocks.incidentBlocks(root)) {
             dfs(root, component, true, blocks, separator);
         }

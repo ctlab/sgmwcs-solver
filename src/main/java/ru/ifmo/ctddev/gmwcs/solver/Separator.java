@@ -25,8 +25,9 @@ public class Separator extends IloCplex.UserCutCallback {
     private IloCplex cplex;
     private int waited;
     private double period;
+    private UndirectedGraph<Node, Edge> graph;
 
-    public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex) {
+    public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex, UndirectedGraph<Node, Edge> graph) {
         this.y = y;
         this.w = w;
         generators = new HashMap<>();
@@ -35,6 +36,7 @@ public class Separator extends IloCplex.UserCutCallback {
         maxToAdd = 6000;
         minToConsider = 6000;
         this.cplex = cplex;
+        this.graph = graph;
     }
 
     public void setMaxToAdd(int n) {
@@ -53,6 +55,14 @@ public class Separator extends IloCplex.UserCutCallback {
             return true;
         }
         return false;
+    }
+
+    public Separator clone() {
+        Separator result = new Separator(y, w, cplex, graph);
+        for (CutGenerator generator : generatorList) {
+            result.addComponent(Utils.subgraph(graph, generator.getNodes()), generator.getRoot());
+        }
+        return result;
     }
 
     @Override
