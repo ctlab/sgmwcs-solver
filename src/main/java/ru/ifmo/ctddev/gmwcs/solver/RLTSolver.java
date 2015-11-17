@@ -35,6 +35,7 @@ public class RLTSolver implements RootedSolver {
     private double minimum;
     private Node root;
     private SolutionCallback solutionCallback;
+    private boolean isSolvedToOptimality;
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
@@ -135,7 +136,12 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
+    public boolean isSolvedToOptimality() {
+        return isSolvedToOptimality;
+    }
+
     private List<Unit> getResult() throws IloException {
+        isSolvedToOptimality = false;
         List<Unit> result = new ArrayList<>();
         for (Node node : graph.vertexSet()) {
             if (cplex.getValue(y.get(node)) > EPS) {
@@ -146,6 +152,9 @@ public class RLTSolver implements RootedSolver {
             if (cplex.getValue(w.get(edge)) > EPS) {
                 result.add(edge);
             }
+        }
+        if (cplex.getStatus() == IloCplex.Status.Optimal) {
+            isSolvedToOptimality = true;
         }
         return result;
     }

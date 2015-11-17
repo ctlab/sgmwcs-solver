@@ -85,6 +85,9 @@ public class Main {
             }
             List<Unit> units = solver.solve(graph, synonyms);
             System.out.println("Final score: " + Utils.sum(units, synonyms));
+            if (solver.isSolvedToOptimality()) {
+                System.out.println("SOLVED TO OPTIMALITY");
+            }
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
