@@ -64,6 +64,7 @@ public class GMWCSTests {
                 TestCase test = tests.get(i);
                 System.out.print("\rTest(connected) no. " + (i + 1) + "/" + tests.size());
                 System.out.print(": n = " + test.n() + ", m = " + test.m() + "       ");
+                System.out.flush();
                 check(test, i);
             }
         }
@@ -71,7 +72,7 @@ public class GMWCSTests {
     }
 
     @Test
-    public void test04_random() {
+    public void test03_random() {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
         if (DEBUG_TEST != null) {
             if (DEBUG_TEST < allTests) {
@@ -84,6 +85,7 @@ public class GMWCSTests {
                 TestCase test = tests.get(i);
                 System.out.print("\rTest(random) no. " + (i) + "/" + tests.size());
                 System.out.print(": n = " + test.n() + ", m = " + test.m() + "       ");
+                System.out.flush();
                 check(test, i);
             }
         }

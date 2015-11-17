@@ -12,6 +12,8 @@ import java.util.List;
 public interface Solver {
     List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException;
 
+    boolean isSolvedToOptimality();
+
     void setTimeLimit(TimeLimit tl);
     void suppressOutput();
 

@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
-import static ru.ifmo.ctddev.gmwcs.solver.SupportGraph.Cut;
-
 public class RLTSolver implements RootedSolver {
     public static final double EPS = 0.01;
     private IloCplex cplex;
@@ -37,11 +35,21 @@ public class RLTSolver implements RootedSolver {
     private double minimum;
     private Node root;
     private SolutionCallback solutionCallback;
+    private boolean isSolvedToOptimality;
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
         this.minimum = -Double.MAX_VALUE;
+    }
+
+    static IloNumVar[] getVars(Set<? extends Unit> units, Map<? extends Unit, IloNumVar> vars) {
+        IloNumVar[] result = new IloNumVar[units.size()];
+        int i = 0;
+        for (Unit unit : units) {
+            result[i++] = vars.get(unit);
+        }
+        return result;
     }
 
     public void setTimeLimit(TimeLimit tl) {
@@ -73,6 +81,7 @@ public class RLTSolver implements RootedSolver {
             } else {
                 tighten();
             }
+            breakTreeSymmetries();
             tuning(cplex);
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
@@ -92,12 +101,15 @@ public class RLTSolver implements RootedSolver {
         if (!blocks.cutpoints().contains(root)) {
             throw new IllegalArgumentException();
         }
+        Separator separator = new Separator(y, w, cplex, graph);
         for (Set<Node> component : blocks.incidentBlocks(root)) {
-            dfs(root, component, true, blocks);
+            dfs(root, component, true, blocks, separator);
         }
+        cplex.use(separator);
     }
 
-    private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks) throws IloException {
+    private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks, Separator separator) throws IloException {
+        separator.addComponent(Utils.subgraph(graph, component), root);
         if (!fake) {
             for (Node node : component) {
                 cplex.addLe(cplex.diff(y.get(node), y.get(root)), 0);
@@ -113,33 +125,23 @@ public class RLTSolver implements RootedSolver {
                 cplex.addEq(x.get(e).second, 0);
             }
         }
-        separate(component, root);
         for (Node cp : blocks.cutpointsOf(component)) {
             if (root != cp) {
                 for (Set<Node> comp : blocks.incidentBlocks(cp)) {
                     if (comp != component) {
-                        dfs(cp, comp, false, blocks);
+                        dfs(cp, comp, false, blocks, separator);
                     }
                 }
             }
         }
     }
 
-    private void separate(Set<Node> component, Node root) throws IloException {
-        SupportGraph supportGraph = new SupportGraph(Utils.subgraph(graph, component));
-        for (Node v : component) {
-            if (v == root || graph.getEdge(v, root) != null) {
-                continue;
-            }
-            Cut cut = supportGraph.findCut(root, v);
-            IloNumExpr sum = cplex.sum(getVars(cut.cut(), y));
-            for (Node r : cut.sink()) {
-                cplex.addLe(y.get(r), sum);
-            }
-        }
+    public boolean isSolvedToOptimality() {
+        return isSolvedToOptimality;
     }
 
     private List<Unit> getResult() throws IloException {
+        isSolvedToOptimality = false;
         List<Unit> result = new ArrayList<>();
         for (Node node : graph.vertexSet()) {
             if (cplex.getValue(y.get(node)) > EPS) {
@@ -150,6 +152,9 @@ public class RLTSolver implements RootedSolver {
             if (cplex.getValue(w.get(edge)) > EPS) {
                 result.add(edge);
             }
+        }
+        if (cplex.getStatus() == IloCplex.Status.Optimal) {
+            isSolvedToOptimality = true;
         }
         return result;
     }
@@ -232,7 +237,18 @@ public class RLTSolver implements RootedSolver {
             cplex.addGe(rootSum, nodeMul[i]);
         }
     }
-    
+
+    private void breakTreeSymmetries() throws IloException {
+        for(Edge edge : graph.edgeSet()){
+            Node v = graph.getEdgeSource(edge);
+            Node u = graph.getEdgeTarget(edge);
+            int n = graph.vertexSet().size();
+            IloNumExpr delta = cplex.diff(this.v.get(v), this.v.get(u));
+            cplex.addLe(cplex.sum(cplex.prod(n, w.get(edge)), delta), n + 1);
+            cplex.addLe(cplex.diff(cplex.prod(n, w.get(edge)), delta), n + 1);
+        }
+    }
+
     public void setCallback(SolutionCallback callback) {
         this.solutionCallback = callback;
     }
@@ -360,15 +376,6 @@ public class RLTSolver implements RootedSolver {
                 cplex.addLe(cplex.sum(left, right), cplex.sum(tij, tji));
             }
         }
-    }
-
-    public IloNumVar[] getVars(Set<? extends Unit> units, Map<? extends Unit, IloNumVar> vars) {
-        IloNumVar[] result = new IloNumVar[units.size()];
-        int i = 0;
-        for (Unit unit : units) {
-            result[i++] = vars.get(unit);
-        }
-        return result;
     }
 
     private void sumConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
