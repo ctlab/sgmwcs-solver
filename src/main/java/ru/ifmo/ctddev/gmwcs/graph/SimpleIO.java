@@ -20,8 +20,9 @@ public class SimpleIO implements GraphIO {
     private List<Pair<String, String>> edgeList;
     private Map<String, Node> nodeMap;
     private Map<String, Map<String, Edge>> edgeMap;
+    private boolean ignoreNegatives;
 
-    public SimpleIO(File nodeIn, File nodeOut, File edgeIn, File edgeOut) {
+    public SimpleIO(File nodeIn, File nodeOut, File edgeIn, File edgeOut, boolean ignore) {
         this.nodeIn = nodeIn;
         this.edgeOut = edgeOut;
         this.edgeIn = edgeIn;
@@ -30,6 +31,7 @@ public class SimpleIO implements GraphIO {
         nodeList = new ArrayList<>();
         edgeList = new ArrayList<>();
         edgeMap = new LinkedHashMap<>();
+        ignoreNegatives = ignore;
     }
 
     @Override
@@ -172,6 +174,9 @@ public class SimpleIO implements GraphIO {
                     continue;
                 }
                 Unit main = eq.get(0);
+                if (ignoreNegatives && main.getWeight() <= 0) {
+                    continue;
+                }
                 for (int i = 1; i < eq.size(); i++) {
                     synonyms.merge(main, eq.get(i));
                 }

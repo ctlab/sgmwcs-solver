@@ -32,6 +32,11 @@ public class Main {
         optionParser.acceptsAll(asList("a", "all"), "Write to out files at each found solution");
         optionParser.accepts("c", "Threshold for CPE solver").withRequiredArg().
                 ofType(Integer.class).defaultsTo(500);
+        optionParser.acceptsAll(asList("i", "ignore-negatives"), "Don't consider negative signals");
+        optionParser.accepts("consider-cuts", "Number of considering vertices to find cuts").withRequiredArg().
+                ofType(Integer.class).defaultsTo(Integer.MAX_VALUE);
+        optionParser.accepts("max-cuts", "Maximum cuts per cplex iteration").withRequiredArg().ofType(Integer.class).
+                defaultsTo(Integer.MAX_VALUE);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -65,8 +70,10 @@ public class Main {
         ComponentSolver solver = new ComponentSolver(rltSolver, threshold);
         solver.setTimeLimit(tl);
         rltSolver.setThreadsNum(threadsNum);
+        rltSolver.setConsideringCuts((Integer) optionSet.valueOf("consider-cuts"));
+        rltSolver.setMaxToAddCuts((Integer) optionSet.valueOf("max-cuts"));
         SimpleIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
-                edgeFile, new File(edgeFile.toString() + ".out"));
+                edgeFile, new File(edgeFile.toString() + ".out"), optionSet.has("i"));
         LDSU<Unit> synonyms = new LDSU<>();
         if (optionSet.has("a")) {
             rltSolver.setCallback(new WritingCallback(graphIO));

@@ -36,11 +36,14 @@ public class RLTSolver implements RootedSolver {
     private Node root;
     private SolutionCallback solutionCallback;
     private boolean isSolvedToOptimality;
+    private int maxToAddCuts;
+    private int considerCuts;
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
         this.minimum = -Double.MAX_VALUE;
+        maxToAddCuts = considerCuts = Integer.MAX_VALUE;
     }
 
     static IloNumVar[] getVars(Set<? extends Unit> units, Map<? extends Unit, IloNumVar> vars) {
@@ -50,6 +53,14 @@ public class RLTSolver implements RootedSolver {
             result[i++] = vars.get(unit);
         }
         return result;
+    }
+
+    public void setMaxToAddCuts(int num) {
+        maxToAddCuts = num;
+    }
+
+    public void setConsideringCuts(int num) {
+        considerCuts = num;
     }
 
     public void setTimeLimit(TimeLimit tl) {
@@ -102,6 +113,8 @@ public class RLTSolver implements RootedSolver {
             throw new IllegalArgumentException();
         }
         Separator separator = new Separator(y, w, cplex, graph);
+        separator.setMaxToAdd(maxToAddCuts);
+        separator.setMinToConsider(considerCuts);
         for (Set<Node> component : blocks.incidentBlocks(root)) {
             dfs(root, component, true, blocks, separator);
         }
