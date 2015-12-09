@@ -22,7 +22,7 @@ public class Separator extends IloCplex.UserCutCallback {
     private List<CutGenerator> generatorList;
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
-    private IloCplex cplex;
+    private final IloCplex cplex;
     private int waited;
     private double period;
     private UndirectedGraph<Node, Edge> graph;
@@ -80,7 +80,9 @@ public class Separator extends IloCplex.UserCutCallback {
             if (cut != null) {
                 Set<Edge> minCut = new HashSet<>();
                 minCut.addAll(cut);
-                add(cplex.le(cplex.diff(y.get(node), cplex.sum(getVars(minCut, w))), 0));
+                synchronized (cplex) {
+                    add(cplex.le(cplex.diff(y.get(node), cplex.sum(getVars(minCut, w))), 0));
+                }
                 added++;
             }
             if (added == maxToAdd) {
