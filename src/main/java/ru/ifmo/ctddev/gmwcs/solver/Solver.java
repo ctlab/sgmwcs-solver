@@ -15,7 +15,8 @@ public interface Solver {
     boolean isSolvedToOptimality();
 
     void setTimeLimit(TimeLimit tl);
+    TimeLimit getTimeLimit();
     void suppressOutput();
 
-    void setLB(double lb);
+    void setLB(AtomicDouble lb);
 }

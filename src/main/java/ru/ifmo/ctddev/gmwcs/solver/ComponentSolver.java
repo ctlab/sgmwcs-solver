@@ -11,55 +11,90 @@ import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ComponentSolver implements Solver {
     public final int threshold;
-    private final RootedSolver solver;
     private TimeLimit tl;
-    private double lb;
-    private boolean isSolvedToOptimallity;
+    private AtomicDouble lb;
+    private boolean isSolvedToOptimality;
+    private boolean supressingOutput;
+    private List<Integer> threadConf;
 
-    public ComponentSolver(RootedSolver solver, int threshold) {
-        this.solver = solver;
+    public ComponentSolver(int threshold) {
         this.threshold = threshold;
-        lb = 0;
+        lb = new AtomicDouble(0.0);
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
     }
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
-        isSolvedToOptimallity = true;
-        List<Unit> best = null;
-        double lb = this.lb;
         PriorityQueue<Set<Node>> components = getComponents(graph);
-        solver.setTimeLimit(tl);
-        while (!components.isEmpty()) {
+        List<Worker> workers = new ArrayList<>();
+        List<UndirectedGraph<Node, Edge>> graphs = new ArrayList<>();
+        List<Node> roots = new ArrayList<>();
+        while(!components.isEmpty()){
             Set<Node> component = components.poll();
             UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
+            graphs.add(subgraph);
             Node root = null;
-            if (component.size() >= threshold) {
+            if(component.size() >= threshold){
                 root = getRoot(subgraph);
+                if(root != null){
+                    addComponents(subgraph, root, components);
+                }
             }
-            solver.setRoot(root);
+            roots.add(root);
+        }
+        for(int i = 0; i < threadConf.size(); i++){
+            if(threadConf.isEmpty()){
+                throw new IllegalArgumentException();
+            }
+            int threads = threadConf.get(i);
+            RLTSolver solver = new RLTSolver();
             solver.setLB(lb);
-            List<Unit> solution = solver.solve(subgraph, synonyms);
-            if (!solver.isSolvedToOptimality()) {
-                isSolvedToOptimallity = false;
-            }
-            if (Utils.sum(solution, synonyms) > Utils.sum(best, synonyms)) {
-                best = solution;
-                lb = Utils.sum(best, synonyms);
-            }
-            if (root != null) {
-                addComponents(subgraph, root, components);
+            solver.setTimeLimit(new TimeLimit(tl.getRemainingTime()));
+            solver.setThreadsNum(threads);
+            if(i == threadConf.size() - 1){
+                workers.add(new Worker(graphs, roots, synonyms, solver));
+            } else {
+                if(graphs.isEmpty()){
+                    break;
+                }
+                List<UndirectedGraph<Node, Edge>> gs = Collections.singletonList(graphs.get(0));
+                List<Node> rs = Collections.singletonList(roots.get(0));
+                graphs = graphs.subList(1, graphs.size());
+                roots = roots.subList(1, roots.size());
+                workers.add(new Worker(gs, rs, synonyms, solver));
             }
         }
-        return best;
+        return runWorkers(workers, synonyms);
+    }
+
+    private List<Unit> runWorkers(List<Worker> workers, LDSU<Unit> synonyms) {
+        isSolvedToOptimality = true;
+        List<Thread> threads = workers.stream().map(Thread::new).collect(Collectors.toList());
+        threads.forEach(Thread::start);
+        try {
+            for (Thread t : threads) {
+                t.join();
+            }
+        } catch (InterruptedException ignored) {}
+        List<Unit> solution = new ArrayList<>();
+        for(Worker w : workers){
+            if(!w.isSolvedToOptimality()){
+                isSolvedToOptimality = false;
+            }
+            if(Utils.sum(solution, synonyms) < Utils.sum(w.getResult(), synonyms)){
+                solution = w.getResult();
+            }
+        }
+        return solution;
     }
 
     @Override
     public boolean isSolvedToOptimality() {
-        return isSolvedToOptimallity;
+        return isSolvedToOptimality;
     }
 
     private void addComponents(UndirectedGraph<Node, Edge> subgraph, Node root, PriorityQueue<Set<Node>> components) {
@@ -83,6 +118,10 @@ public class ComponentSolver implements Solver {
             }
         }
         return res;
+    }
+
+    public void setThreadConfiguration(List<Integer> conf){
+        this.threadConf = conf;
     }
 
     private int dfs(UndirectedGraph<Node, Edge> graph, Node v, boolean isMax, Set<Node> vis) {
@@ -114,15 +153,17 @@ public class ComponentSolver implements Solver {
     }
 
     @Override
-    public void suppressOutput() {
-        solver.suppressOutput();
+    public TimeLimit getTimeLimit() {
+        return tl;
     }
 
     @Override
-    public void setLB(double lb) {
-        if (lb < 0.0) {
-            return;
-        }
+    public void suppressOutput() {
+        supressingOutput = true;
+    }
+
+    @Override
+    public void setLB(AtomicDouble lb) {
         this.lb = lb;
     }
 

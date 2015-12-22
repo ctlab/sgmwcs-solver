@@ -32,17 +32,19 @@ public class RLTSolver implements RootedSolver {
     private int threads;
     private boolean suppressOutput;
     private UndirectedGraph<Node, Edge> graph;
-    private double minimum;
     private Node root;
     private SolutionCallback solutionCallback;
     private boolean isSolvedToOptimality;
     private int maxToAddCuts;
     private int considerCuts;
+    private AtomicDouble lb;
+    private boolean isLBShared;
+    private IloNumVar sum;
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
-        this.minimum = -Double.MAX_VALUE;
+        lb = new AtomicDouble(-Double.MAX_VALUE);
         maxToAddCuts = considerCuts = Integer.MAX_VALUE;
     }
 
@@ -67,6 +69,11 @@ public class RLTSolver implements RootedSolver {
         this.tl = tl;
     }
 
+    @Override
+    public TimeLimit getTimeLimit() {
+        return tl;
+    }
+
     public void setThreadsNum(int threads) {
         if (threads < 1) {
             throw new IllegalArgumentException();
@@ -86,7 +93,6 @@ public class RLTSolver implements RootedSolver {
             initVariables();
             addConstraints(graph);
             addObjective(graph, synonyms);
-            long timeBefore = System.currentTimeMillis();
             if (root == null) {
                 breakSymmetry(cplex, graph);
             } else {
@@ -95,7 +101,6 @@ public class RLTSolver implements RootedSolver {
             breakTreeSymmetries();
             tuning(cplex);
             boolean solFound = cplex.solve();
-            tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
             if (solFound) {
                 return getResult();
             }
@@ -112,7 +117,7 @@ public class RLTSolver implements RootedSolver {
         if (!blocks.cutpoints().contains(root)) {
             throw new IllegalArgumentException();
         }
-        Separator separator = new Separator(y, w, cplex, graph);
+        Separator separator = new Separator(y, w, cplex, graph, sum, lb);
         separator.setMaxToAdd(maxToAddCuts);
         separator.setMinToConsider(considerCuts);
         for (Set<Node> component : blocks.incidentBlocks(root)) {
@@ -209,7 +214,7 @@ public class RLTSolver implements RootedSolver {
             cplex.setOut(nos);
             cplex.setWarning(nos);
         }
-        if (solutionCallback != null) {
+        if (solutionCallback != null || isLBShared) {
             cplex.use(new MIPCallback());
         }
         cplex.setParam(IloCplex.IntParam.Threads, threads);
@@ -305,7 +310,9 @@ public class RLTSolver implements RootedSolver {
             }
         }
         IloNumExpr sum = unitScalProd(summands.keySet(), summands);
-        cplex.addGe(sum, minimum);
+        this.sum = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE);
+        cplex.addGe(sum, lb.get());
+        cplex.addEq(this.sum, sum);
         cplex.addMaximize(sum);
     }
 
@@ -430,8 +437,9 @@ public class RLTSolver implements RootedSolver {
         return cplex.scalProd(coef, variables);
     }
 
-    public void setLB(double lb) {
-        this.minimum = lb;
+    public void setLB(AtomicDouble lb) {
+        isLBShared = true;
+        this.lb = lb;
     }
 
     public static abstract class SolutionCallback {
@@ -442,6 +450,14 @@ public class RLTSolver implements RootedSolver {
 
         @Override
         protected void main() throws IloException {
+            if(isLBShared){
+                while(true){
+                    double currLB = lb.get();
+                    if(currLB >= getBestObjValue() || lb.compareAndSet(currLB, getBestObjValue())){
+                        break;
+                    }
+                }
+            }
             if (solutionCallback == null) {
                 return;
             }

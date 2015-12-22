@@ -25,9 +25,13 @@ public class Separator extends IloCplex.UserCutCallback {
     private final IloCplex cplex;
     private int waited;
     private double period;
+    private final IloNumVar sum;
+    private final AtomicDouble lb;
     private UndirectedGraph<Node, Edge> graph;
+    private double last;
 
-    public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex, UndirectedGraph<Node, Edge> graph) {
+    public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex, UndirectedGraph<Node, Edge> graph,
+                     IloNumVar sum, AtomicDouble lb) {
         this.y = y;
         this.w = w;
         generators = new HashMap<>();
@@ -37,6 +41,9 @@ public class Separator extends IloCplex.UserCutCallback {
         minToConsider = Integer.MAX_VALUE;
         this.cplex = cplex;
         this.graph = graph;
+        this.sum = sum;
+        this.lb = lb;
+        last = -Double.MAX_VALUE;
     }
 
     public void setMaxToAdd(int n) {
@@ -58,7 +65,7 @@ public class Separator extends IloCplex.UserCutCallback {
     }
 
     public Separator clone() {
-        Separator result = new Separator(y, w, cplex, graph);
+        Separator result = new Separator(y, w, cplex, graph, sum, lb);
         for (CutGenerator generator : generatorList) {
             result.addComponent(Utils.subgraph(graph, generator.getNodes()), generator.getRoot());
         }
@@ -67,6 +74,11 @@ public class Separator extends IloCplex.UserCutCallback {
 
     @Override
     protected void main() throws IloException {
+        double currLb = lb.get();
+        if(currLb > last){
+            last = currLb;
+            add(cplex.ge(sum, currLb));
+        }
         if (!isCutsAllowed()) {
             return;
         }
