@@ -52,6 +52,9 @@ public class ComponentSolver implements Solver {
             }
             int threads = threadConf.get(i);
             RLTSolver solver = new RLTSolver();
+            if(supressingOutput){
+                solver.suppressOutput();
+            }
             solver.setLB(lb);
             solver.setTimeLimit(new TimeLimit(tl.getRemainingTime()));
             solver.setThreadsNum(threads);
