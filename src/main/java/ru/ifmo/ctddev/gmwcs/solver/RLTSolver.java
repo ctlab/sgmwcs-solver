@@ -33,7 +33,6 @@ public class RLTSolver implements RootedSolver {
     private boolean suppressOutput;
     private UndirectedGraph<Node, Edge> graph;
     private Node root;
-    private SolutionCallback solutionCallback;
     private boolean isSolvedToOptimality;
     private int maxToAddCuts;
     private int considerCuts;
@@ -56,14 +55,6 @@ public class RLTSolver implements RootedSolver {
             result[i++] = vars.get(unit);
         }
         return result;
-    }
-
-    public void setMaxToAddCuts(int num) {
-        maxToAddCuts = num;
-    }
-
-    public void setConsideringCuts(int num) {
-        considerCuts = num;
     }
 
     public void setTimeLimit(TimeLimit tl) {
@@ -218,7 +209,7 @@ public class RLTSolver implements RootedSolver {
             cplex.setOut(nos);
             cplex.setWarning(nos);
         }
-        if (solutionCallback != null || isLBShared) {
+        if (isLBShared) {
             cplex.use(new MIPCallback());
         }
         cplex.setParam(IloCplex.IntParam.Threads, threads);
@@ -269,10 +260,6 @@ public class RLTSolver implements RootedSolver {
             cplex.addLe(cplex.sum(cplex.prod(n, w.get(edge)), delta), n + 1);
             cplex.addLe(cplex.diff(cplex.prod(n, w.get(edge)), delta), n + 1);
         }
-    }
-
-    public void setCallback(SolutionCallback callback) {
-        this.solutionCallback = callback;
     }
 
     private void addObjective(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws IloException {
@@ -450,37 +437,17 @@ public class RLTSolver implements RootedSolver {
         this.lb = lb;
     }
 
-    public static abstract class SolutionCallback {
-        public abstract void main(List<Unit> solution);
-    }
-
     private class MIPCallback extends IloCplex.IncumbentCallback {
 
         @Override
         protected void main() throws IloException {
-            if(isLBShared){
-                while(true){
-                    double currLB = lb.get();
-                    if(currLB >= getObjValue() || lb.compareAndSet(currLB, getObjValue())){
-                        break;
-                    }
+
+            while(true){
+                double currLB = lb.get();
+                if(currLB >= getObjValue() || lb.compareAndSet(currLB, getObjValue())){
+                    break;
                 }
             }
-            if (solutionCallback == null) {
-                return;
-            }
-            List<Unit> result = new ArrayList<>();
-            for (Node node : graph.vertexSet()) {
-                if (getValue(y.get(node)) > EPS) {
-                    result.add(node);
-                }
-            }
-            for (Edge edge : graph.edgeSet()) {
-                if (getValue(w.get(edge)) > EPS) {
-                    result.add(edge);
-                }
-            }
-            solutionCallback.main(result);
         }
     }
 }
