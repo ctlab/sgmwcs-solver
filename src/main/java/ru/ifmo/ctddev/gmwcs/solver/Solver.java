@@ -18,5 +18,5 @@ public interface Solver {
     TimeLimit getTimeLimit();
     void suppressOutput();
 
-    void setLB(AtomicDouble lb);
+    void setLB(double lb);
 }

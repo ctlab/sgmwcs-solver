@@ -17,7 +17,7 @@ import java.util.*;
 public class GMWCSTests {
     public static final int SEED = 20140503;
     public static final int TESTS_PER_SIZE = 300;
-    public static final int MAX_SIZE = 16;
+    public static final int MAX_SIZE = 15;
     public static final int RANDOM_TESTS = 2200;
     public static final Integer DEBUG_TEST = null;
     private List<TestCase> tests;
@@ -27,7 +27,8 @@ public class GMWCSTests {
 
     public GMWCSTests() {
         random = new Random(SEED);
-        ComponentSolver solver = new ComponentSolver(new RLTSolver(), 3);
+        ComponentSolver solver = new ComponentSolver(3);
+        solver.setThreadConfiguration(Arrays.asList(2, 2, 1));
         this.solver = solver;
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();

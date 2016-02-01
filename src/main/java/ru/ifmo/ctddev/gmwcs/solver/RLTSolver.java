@@ -38,13 +38,14 @@ public class RLTSolver implements RootedSolver {
     private int maxToAddCuts;
     private int considerCuts;
     private AtomicDouble lb;
+    private double externLB;
     private boolean isLBShared;
     private IloNumVar sum;
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
-        lb = new AtomicDouble(-Double.MAX_VALUE);
+        externLB = 0.0;
         maxToAddCuts = considerCuts = Integer.MAX_VALUE;
     }
 
@@ -88,6 +89,9 @@ public class RLTSolver implements RootedSolver {
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
         try {
+            if(!isLBShared){
+                lb = new AtomicDouble(externLB);
+            }
             cplex = new IloCplex();
             this.graph = graph;
             initVariables();
@@ -437,7 +441,11 @@ public class RLTSolver implements RootedSolver {
         return cplex.scalProd(coef, variables);
     }
 
-    public void setLB(AtomicDouble lb) {
+    public void setLB(double lb) {
+        this.externLB = lb;
+    }
+
+    public void setSharedLB(AtomicDouble lb){
         isLBShared = true;
         this.lb = lb;
     }
@@ -453,7 +461,7 @@ public class RLTSolver implements RootedSolver {
             if(isLBShared){
                 while(true){
                     double currLB = lb.get();
-                    if(currLB >= getBestObjValue() || lb.compareAndSet(currLB, getBestObjValue())){
+                    if(currLB >= getObjValue() || lb.compareAndSet(currLB, getObjValue())){
                         break;
                     }
                 }

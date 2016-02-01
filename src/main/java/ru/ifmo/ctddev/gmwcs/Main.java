@@ -67,7 +67,7 @@ public class Main {
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver();
-        ComponentSolver solver = new ComponentSolver(rltSolver, threshold);
+        ComponentSolver solver = new ComponentSolver(threshold);
         solver.setTimeLimit(tl);
         rltSolver.setThreadsNum(threadsNum);
         rltSolver.setConsideringCuts((Integer) optionSet.valueOf("consider-cuts"));

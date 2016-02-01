@@ -3,6 +3,7 @@ package ru.ifmo.ctddev.gmwcs.solver;
 import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
+import org.jgrapht.graph.SimpleGraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Blocks;
@@ -16,19 +17,20 @@ import java.util.stream.Collectors;
 public class ComponentSolver implements Solver {
     public final int threshold;
     private TimeLimit tl;
-    private AtomicDouble lb;
+    private Double externLB;
     private boolean isSolvedToOptimality;
-    private boolean supressingOutput;
+    private boolean suppressingOutput;
     private List<Integer> threadConf;
 
     public ComponentSolver(int threshold) {
         this.threshold = threshold;
-        lb = new AtomicDouble(0.0);
+        externLB = 0.0;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
     }
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
+        AtomicDouble lb = new AtomicDouble(externLB);
         PriorityQueue<Set<Node>> components = getComponents(graph);
         List<Worker> workers = new ArrayList<>();
         List<UndirectedGraph<Node, Edge>> graphs = new ArrayList<>();
@@ -52,10 +54,10 @@ public class ComponentSolver implements Solver {
             }
             int threads = threadConf.get(i);
             RLTSolver solver = new RLTSolver();
-            if(supressingOutput){
+            if(suppressingOutput){
                 solver.suppressOutput();
             }
-            solver.setLB(lb);
+            solver.setSharedLB(lb);
             solver.setTimeLimit(new TimeLimit(tl.getRemainingTime()));
             solver.setThreadsNum(threads);
             if(i == threadConf.size() - 1){
@@ -101,8 +103,10 @@ public class ComponentSolver implements Solver {
     }
 
     private void addComponents(UndirectedGraph<Node, Edge> subgraph, Node root, PriorityQueue<Set<Node>> components) {
-        subgraph.removeVertex(root);
-        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(subgraph);
+        UndirectedGraph<Node, Edge> copy = new SimpleGraph<>(Edge.class);
+        Graphs.addGraph(copy, subgraph);
+        copy.removeVertex(root);
+        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(copy);
         components.addAll(inspector.connectedSets());
     }
 
@@ -162,12 +166,12 @@ public class ComponentSolver implements Solver {
 
     @Override
     public void suppressOutput() {
-        supressingOutput = true;
+        suppressingOutput = true;
     }
 
     @Override
-    public void setLB(AtomicDouble lb) {
-        this.lb = lb;
+    public void setLB(double lb) {
+        externLB = lb;
     }
 
     private class SetComparator implements Comparator<Set<Node>> {
