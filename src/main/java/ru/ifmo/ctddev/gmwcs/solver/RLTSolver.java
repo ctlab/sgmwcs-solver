@@ -444,8 +444,11 @@ public class RLTSolver implements RootedSolver {
 
             while(true){
                 double currLB = lb.get();
-                if(currLB >= getObjValue() || lb.compareAndSet(currLB, getObjValue())){
+                if(currLB >= getObjValue()){
                     break;
+                }
+                if(lb.compareAndSet(currLB, getObjValue())){
+                    System.out.println("Found new solution: " + getObjValue());
                 }
             }
         }
