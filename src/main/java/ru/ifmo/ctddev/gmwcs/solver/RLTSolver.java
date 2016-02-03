@@ -275,20 +275,6 @@ public class RLTSolver implements RootedSolver {
     private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
         sumConstraints(graph);
         otherConstraints(graph);
-        maxSizeConstraints(graph);
-    }
-
-    private void maxSizeConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
-        for (Node v : graph.vertexSet()) {
-            for (Node u : Graphs.neighborListOf(graph, v)) {
-                if (u.getWeight() >= 0) {
-                    Edge e = graph.getEdge(v, u);
-                    if (e != null && e.getWeight() >= 0) {
-                        cplex.addLe(y.get(v), w.get(e));
-                    }
-                }
-            }
-        }
     }
 
     private void otherConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
