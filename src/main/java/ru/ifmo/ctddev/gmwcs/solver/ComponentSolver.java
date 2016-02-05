@@ -28,20 +28,29 @@ public class ComponentSolver implements Solver {
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
+        double time = tl.getRemainingTime();
         isSolvedToOptimallity = true;
         List<Unit> best = null;
         double lb = this.lb;
         PriorityQueue<Set<Node>> components = getComponents(graph);
-        solver.setTimeLimit(tl);
+        solver.setTimeLimit(new TimeLimit(tl.getRemainingTime()));
+        double tlFactor = 1;
         while (!components.isEmpty()) {
+            tlFactor /= 2;
             Set<Node> component = components.poll();
+            System.err.println("size = " + component.size());
             UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
             Node root = null;
             if (component.size() >= threshold) {
                 root = getRoot(subgraph);
+            } else if (components.isEmpty() || components.peek().size() < 50) {
+                // there will be no more big components! can take all the time we need
+                tlFactor *= 2;
             }
+            
             solver.setRoot(root);
             solver.setLB(lb);
+            solver.setTimeLimit(new TimeLimit(tl.getRemainingTime() * tlFactor));
             List<Unit> solution = solver.solve(subgraph, synonyms);
             if (!solver.isSolvedToOptimality()) {
                 isSolvedToOptimallity = false;
@@ -50,6 +59,7 @@ public class ComponentSolver implements Solver {
                 best = solution;
                 lb = Utils.sum(best, synonyms);
             }
+           
             if (root != null) {
                 addComponents(subgraph, root, components);
             }
@@ -126,7 +136,7 @@ public class ComponentSolver implements Solver {
         this.lb = lb;
     }
 
-    private class SetComparator implements Comparator<Set<Node>> {
+    private static class SetComparator implements Comparator<Set<Node>> {
         @Override
         public int compare(Set<Node> o1, Set<Node> o2) {
             return -Integer.compare(o1.size(), o2.size());
