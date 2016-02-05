@@ -66,7 +66,7 @@ public class RLTSolver implements RootedSolver {
             addObjective(graph, synonyms);
             long timeBefore = System.currentTimeMillis();
             if (root == null) {
-                breakSymmetry(cplex, graph);
+                breakSymmetry(graph);
             } else {
                 tighten();
             }
@@ -182,33 +182,23 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
-    private void breakSymmetry(IloCplex cplex, UndirectedGraph<Node, Edge> graph) throws IloException {
-        // TODO: чёзанах
+    private void breakSymmetry(UndirectedGraph<Node, Edge> graph) throws IloException {
         int n = graph.vertexSet().size();
-        IloNumVar[] rootMul = new IloNumVar[n];
-        IloNumVar[] nodeMul = new IloNumVar[n];
         PriorityQueue<Node> nodes = new PriorityQueue<>();
         nodes.addAll(graph.vertexSet());
-        int k = nodes.size();
-        int j = nodes.size();
-        double last = Double.POSITIVE_INFINITY;
+        int k = n;
+        IloNumExpr[] terms = new IloNumExpr[n];
+        IloNumExpr[] rs = new IloNumExpr[n];
         while (!nodes.isEmpty()) {
             Node node = nodes.poll();
-            if (node.getWeight() == last) {
-                j++;
-            }
-            last = node.getWeight();
-            nodeMul[k - 1] = cplex.intVar(0, n);
-            rootMul[k - 1] = cplex.intVar(0, n);
-            cplex.addEq(nodeMul[k - 1], cplex.prod(j, y.get(node)));
-            cplex.addEq(rootMul[k - 1], cplex.prod(j, x0.get(node)));
+            terms[k - 1] = cplex.prod(k, x0.get(node));
+            rs[k - 1] = cplex.prod(k, y.get(node));
             k--;
-            j--;
         }
-        IloNumVar rootSum = cplex.intVar(0, n);
-        cplex.addEq(rootSum, cplex.sum(rootMul));
-        for (int i = 0; i < n; i++) {
-            cplex.addGe(rootSum, nodeMul[i]);
+        IloNumVar sum = cplex.numVar(0, n);
+        cplex.addEq(sum, cplex.sum(terms));
+        for(int i = 0; i < n; i++){
+            cplex.addGe(sum, rs[i]);
         }
     }
 
