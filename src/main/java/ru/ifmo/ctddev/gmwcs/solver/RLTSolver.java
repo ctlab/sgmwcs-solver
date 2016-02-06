@@ -62,14 +62,15 @@ public class RLTSolver implements RootedSolver {
             cplex = new IloCplex();
             this.graph = graph;
             initVariables();
-            addConstraints(graph);
-            addObjective(graph, synonyms);
+            addConstraints();
+            addObjective(synonyms);
             long timeBefore = System.currentTimeMillis();
             if (root == null) {
-                breakSymmetry(graph);
+                breakRootSymmetry();
             } else {
                 tighten();
             }
+            breakTreeSymmetries();
             tuning(cplex);
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
@@ -81,6 +82,16 @@ public class RLTSolver implements RootedSolver {
             throw new SolverException();
         } finally {
             cplex.end();
+        }
+    }
+
+    private void breakTreeSymmetries() throws IloException {
+        int n = graph.vertexSet().size();
+        for(Edge e : graph.edgeSet()){
+            Node from = graph.getEdgeSource(e);
+            Node to = graph.getEdgeTarget(e);
+            cplex.addLe(cplex.sum(d.get(from), w.get(e)), cplex.sum(n, d.get(to)));
+            cplex.addLe(cplex.sum(d.get(to), w.get(e)), cplex.sum(n, d.get(from)));
         }
     }
 
@@ -182,7 +193,7 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
-    private void breakSymmetry(UndirectedGraph<Node, Edge> graph) throws IloException {
+    private void breakRootSymmetry() throws IloException {
         int n = graph.vertexSet().size();
         PriorityQueue<Node> nodes = new PriorityQueue<>();
         nodes.addAll(graph.vertexSet());
@@ -206,7 +217,7 @@ public class RLTSolver implements RootedSolver {
         this.solutionCallback = callback;
     }
 
-    private void addObjective(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws IloException {
+    private void addObjective(LDSU<Unit> synonyms) throws IloException {
         Map<Unit, IloNumVar> summands = new LinkedHashMap<>();
         Set<Unit> toConsider = new LinkedHashSet<>();
         toConsider.addAll(graph.vertexSet());
@@ -258,13 +269,13 @@ public class RLTSolver implements RootedSolver {
         suppressOutput = true;
     }
 
-    private void addConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
-        sumConstraints(graph);
-        otherConstraints(graph);
-        distanceConstraints(graph);
+    private void addConstraints() throws IloException {
+        sumConstraints();
+        otherConstraints();
+        distanceConstraints();
     }
 
-    private void distanceConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
+    private void distanceConstraints() throws IloException {
         int n = graph.vertexSet().size();
         for(Node v : graph.vertexSet()){
             cplex.addLe(d.get(v), cplex.diff(n, cplex.prod(n, x0.get(v))));
@@ -284,7 +295,7 @@ public class RLTSolver implements RootedSolver {
         cplex.addLe(cplex.sum(d.get(to), cplex.prod(n - 1, z)), cplex.sum(d.get(from), n));
     }
 
-    private void otherConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
+    private void otherConstraints() throws IloException {
         // (36), (39)
         for (Edge edge : graph.edgeSet()) {
             Pair<IloNumVar, IloNumVar> arcs = x.get(edge);
@@ -305,7 +316,7 @@ public class RLTSolver implements RootedSolver {
         return result;
     }
 
-    private void sumConstraints(UndirectedGraph<Node, Edge> graph) throws IloException {
+    private void sumConstraints() throws IloException {
         // (31)
         cplex.addEq(cplex.sum(getVars(graph.vertexSet(), x0)), 1);
         if (root != null) {
