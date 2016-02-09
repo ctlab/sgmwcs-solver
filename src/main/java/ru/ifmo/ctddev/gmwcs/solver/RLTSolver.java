@@ -201,13 +201,8 @@ public class RLTSolver implements RootedSolver {
 
     private void tuning(IloCplex cplex) throws IloException {
         if (suppressOutput) {
-            OutputStream nos = new OutputStream() {
-                @Override
-                public void write(int b) throws IOException {
-                }
-            };
-            cplex.setOut(nos);
-            cplex.setWarning(nos);
+            cplex.setOut(null);
+            // cplex.setWarning(null);
         }
         if (solutionCallback != null) {
             cplex.use(new MIPCallback());

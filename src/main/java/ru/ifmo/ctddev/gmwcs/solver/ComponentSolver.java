@@ -38,7 +38,6 @@ public class ComponentSolver implements Solver {
         while (!components.isEmpty()) {
             tlFactor /= 2;
             Set<Node> component = components.poll();
-            System.err.println("size = " + component.size());
             UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
             Node root = null;
             if (component.size() >= threshold) {
@@ -46,6 +45,10 @@ public class ComponentSolver implements Solver {
             } else if (components.isEmpty() || components.peek().size() < 50) {
                 // there will be no more big components! can take all the time we need
                 tlFactor *= 2;
+            }
+
+            if (component.size() < 50) {
+                solver.suppressOutput();
             }
             
             solver.setRoot(root);
