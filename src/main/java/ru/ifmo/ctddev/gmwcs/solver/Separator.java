@@ -6,6 +6,7 @@ import ilog.cplex.IloCplex;
 import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
+import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
 
@@ -26,6 +27,9 @@ public class Separator extends IloCplex.UserCutCallback {
     private int waited;
     private double period;
     private UndirectedGraph<Node, Edge> graph;
+    private boolean inited;
+    private Map<Unit, Integer> indices;
+    private IloNumVar[] vars;
 
     public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex, UndirectedGraph<Node, Edge> graph) {
         this.y = y;
@@ -70,7 +74,7 @@ public class Separator extends IloCplex.UserCutCallback {
         if (!isCutsAllowed()) {
             return;
         }
-        init();
+        initWeights();
         Collections.shuffle(nodes);
         List<Node> now = nodes.subList(0, Math.min(nodes.size(), minToConsider));
         int added = 0;
@@ -91,14 +95,33 @@ public class Separator extends IloCplex.UserCutCallback {
         }
     }
 
-    private void init() throws IloException {
+    private void initWeights() throws IloException {
+        if(!inited){
+            init();
+        }
+        double[] values = getValues(vars);
         for (CutGenerator generator : generatorList) {
             for (Edge edge : generator.getEdges()) {
-                generator.setCapacity(edge, getValue(w.get(edge)) + ADDITION_CAPACITY);
+                generator.setCapacity(edge, values[indices.get(edge)] + ADDITION_CAPACITY);
             }
             for (Node node : generator.getNodes()) {
-                generator.setVertexCapacity(node, getValue(y.get(node)) - EPS);
+                generator.setVertexCapacity(node, values[indices.get(node)] - EPS);
             }
+        }
+    }
+
+    private void init() {
+        inited = true;
+        indices = new HashMap<>();
+        int i = 0;
+        vars = new IloNumVar[w.size() + y.size()];
+        for(Edge e : graph.edgeSet()){
+            vars[i] = w.get(e);
+            indices.put(e, i++);
+        }
+        for(Node v : graph.vertexSet()){
+            vars[i] = y.get(v);
+            indices.put(v, i++);
         }
     }
 
@@ -111,5 +134,6 @@ public class Separator extends IloCplex.UserCutCallback {
                 nodes.add(node);
             }
         }
+        inited = false;
     }
 }

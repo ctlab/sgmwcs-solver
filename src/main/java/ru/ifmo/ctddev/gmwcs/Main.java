@@ -117,7 +117,7 @@ public class Main {
             try {
                 graphIO.write(solution);
             } catch (IOException e) {
-                System.err.println("Solution couldn't be written to disk. Input output error occured.");
+                System.err.println("Solution couldn't be written to disk. Input output error occurred.");
             }
         }
     }

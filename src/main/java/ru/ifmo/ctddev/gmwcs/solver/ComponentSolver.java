@@ -17,7 +17,7 @@ public class ComponentSolver implements Solver {
     private final RootedSolver solver;
     private TimeLimit tl;
     private double lb;
-    private boolean isSolvedToOptimallity;
+    private boolean isSolvedToOptimality;
 
     public ComponentSolver(RootedSolver solver, int threshold) {
         this.solver = solver;
@@ -29,7 +29,7 @@ public class ComponentSolver implements Solver {
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
         double time = tl.getRemainingTime();
-        isSolvedToOptimallity = true;
+        isSolvedToOptimality = true;
         List<Unit> best = null;
         double lb = this.lb;
         PriorityQueue<Set<Node>> components = getComponents(graph);
@@ -56,7 +56,7 @@ public class ComponentSolver implements Solver {
             solver.setTimeLimit(new TimeLimit(tl.getRemainingTime() * tlFactor));
             List<Unit> solution = solver.solve(subgraph, synonyms);
             if (!solver.isSolvedToOptimality()) {
-                isSolvedToOptimallity = false;
+                isSolvedToOptimality = false;
             }
             if (Utils.sum(solution, synonyms) > Utils.sum(best, synonyms)) {
                 best = solution;
@@ -72,7 +72,7 @@ public class ComponentSolver implements Solver {
 
     @Override
     public boolean isSolvedToOptimality() {
-        return isSolvedToOptimallity;
+        return isSolvedToOptimality;
     }
 
     private void addComponents(UndirectedGraph<Node, Edge> subgraph, Node root, PriorityQueue<Set<Node>> components) {
