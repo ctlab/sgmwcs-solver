@@ -68,6 +68,8 @@ Yellow vertices - vertex group, red edges - edge group.
 Red units in graph below - solution.
 
 ![Sample](/sample_solved.png?raw=true "Solution")
-    
-    
 
+Running sample
+==============
+
+java -Djava.library.path=PATH_TO_CPLEX -jar signal.jar -n nodes -e edges -s signals

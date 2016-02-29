@@ -28,7 +28,7 @@ public class Main {
                 .ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
-        optionParser.acceptsAll(asList("s", "synonyms"), "Synonym list file").withRequiredArg();
+        optionParser.acceptsAll(asList("s", "synonyms", "signals", "groups"), "Synonym list file").withRequiredArg();
         optionParser.acceptsAll(asList("a", "all"), "Write to out files at each found solution");
         optionParser.accepts("c", "Threshold for CPE solver").withRequiredArg().
                 ofType(Integer.class).defaultsTo(500);
