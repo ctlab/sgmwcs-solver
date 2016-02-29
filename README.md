@@ -72,4 +72,4 @@ Red units in graph below - solution.
 Running sample
 ==============
 
-java -Djava.library.path=PATH_TO_CPLEX -jar signal.jar -n nodes -e edges -s signals
+    java -Djava.library.path=PATH_TO_CPLEX -jar signal.jar -n nodes -e edges -s signals
