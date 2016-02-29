@@ -37,16 +37,16 @@ vertex or edge presents in solution.
 Sample
 =========
 
-Node file:
+Node file(node_name  node_weight):
 
-    1   7
-    2   40
-    3   15
-    4   8
-    5   7
-    6   7
+    1   7.0
+    2   40.0
+    3   15.0
+    4   8.0
+    5   7.0
+    6   7.0
 
-Edge file:
+Edge file(edge_from edge_to edge_weight):
 
     1   2   3.0
     2   3   -20.0
