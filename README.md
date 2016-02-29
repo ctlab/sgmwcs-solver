@@ -57,6 +57,7 @@ Edge file:
     1   5   -15.3
 
 Signal file:
+
     2 -- 3  3 -- 4
     1   5   6
     
