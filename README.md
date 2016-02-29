@@ -26,3 +26,47 @@ To run program you should set jvm parameter java.library.path to directory of CP
     java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1251/cplex/bin/x86-64_sles10_4.1/ -jar signal.jar
 
 See more help by using flag -h.
+
+Problem
+=========
+
+Solver solves Maximum Weighted Connected Subgraph with weighted vertices and edges. Besides, there is possibility to
+create groups of vertices or edges. Weight of group takes into consideration in goal function only if at least one
+vertex or edge presents in solution.
+
+Sample
+=========
+
+Node file:
+
+    1   7
+    2   40
+    3   15
+    4   8
+    5   7
+    6   7
+
+Edge file:
+
+    1   2   3.0
+    2   3   -20.0
+    2   4   -7
+    3   4   -20.0
+    4   6   -10.0
+    5   6   -2.0
+    1   5   -15.3
+
+Signal file:
+    2 -- 3  3 -- 4
+    1   5   6
+    
+Yellow vertices - vertex group, red edges - edge group.
+
+![Sample](/sample.png?raw=true "Sample")
+
+Red units in graph below - solution.
+
+![Sample](/sample_solved.png?raw=true "Solution")
+    
+    
+
