@@ -30,7 +30,7 @@ See more help by using flag -h.
 Problem
 =========
 
-Solver solves Maximum Weighted Connected Subgraph with weighted vertices and edges. Besides, there is possibility to
+Solver solves Maximum Weighted Connected Subgraph problem with weighted vertices and edges. Besides, there is possibility to
 create groups of vertices or edges. Weight of group takes into consideration in goal function only if at least one
 vertex or edge presents in solution.
 
