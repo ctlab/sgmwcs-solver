@@ -8,6 +8,8 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
 
+import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
+
 public class ReferenceSolver {
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms, List<Node> roots) {
         for (Node root : roots) {
@@ -67,18 +69,5 @@ public class ReferenceSolver {
             }
         }
         return maxSet;
-    }
-
-    private double sum(Collection<? extends Unit> units, LDSU<Unit> synonyms) {
-        double result = 0;
-        Set<Unit> visited = new LinkedHashSet<>();
-        for (Unit unit : units) {
-            if (visited.contains(unit)) {
-                continue;
-            }
-            visited.addAll(synonyms.listOf(unit));
-            result += unit.getWeight();
-        }
-        return result;
     }
 }

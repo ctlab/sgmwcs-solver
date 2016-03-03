@@ -54,7 +54,10 @@ public class ComponentSolver implements Solver {
             solver.setRoot(root);
             solver.setLB(lb);
             solver.setTimeLimit(new TimeLimit(tl.getRemainingTime() * tlFactor));
-            List<Unit> solution = solver.solve(subgraph, synonyms);
+            Set<Unit> subset = new HashSet<>();
+            subset.addAll(subgraph.edgeSet());
+            subset.addAll(subgraph.vertexSet());
+            List<Unit> solution = solver.solve(subgraph, new LDSU<>(synonyms, subset));
             if (!solver.isSolvedToOptimality()) {
                 isSolvedToOptimality = false;
             }

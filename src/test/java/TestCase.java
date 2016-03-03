@@ -25,12 +25,12 @@ public class TestCase {
         units.addAll(set);
         Collections.shuffle(units, random);
         Unit last = units.get(0);
-        synonyms.add(last);
+        synonyms.add(last, last.getWeight());
         for (int i = 1; i < units.size(); i++) {
             Unit current = units.get(i);
-            synonyms.add(current);
+            synonyms.add(current, current.getWeight());
             if (random.nextBoolean()) {
-                synonyms.merge(current, last);
+                synonyms.joinSet(current, last);
                 current.setWeight(last.getWeight());
             } else {
                 last = current;

@@ -13,6 +13,8 @@ import ru.ifmo.ctddev.gmwcs.solver.*;
 import java.io.IOException;
 import java.util.*;
 
+import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
+
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GMWCSTests {
     public static final int SEED = 20140503;
@@ -123,18 +125,15 @@ public class GMWCSTests {
 
     private String error(TestCase test) throws IOException {
         System.err.println();
-        Set<Unit> visited = new LinkedHashSet<>();
-        Set<Unit> toVisit = new LinkedHashSet<>();
-        toVisit.addAll(test.graph().vertexSet());
-        toVisit.addAll(test.graph().edgeSet());
         String message = "";
-        for (Unit unit : toVisit) {
-            if (visited.contains(unit)) {
+        LDSU<Unit> s = test.synonyms();
+        for(int i = 0; i < s.size(); i++){
+            List<Unit> set = s.set(i);
+            if(set.isEmpty()){
                 continue;
             }
-            for (Unit element : test.synonyms().listOf(unit)) {
-                message += element + " ";
-                visited.add(element);
+            for(Unit unit : set){
+                message += unit + " ";
             }
             message += "\n";
         }
@@ -202,21 +201,5 @@ public class GMWCSTests {
             }
             graph.addEdge(nodes[u], nodes[v], new Edge(offset + j, random.nextInt(16) - 8));
         }
-    }
-
-    private double sum(Collection<? extends Unit> units, LDSU<Unit> synonyms) {
-        if (units == null) {
-            return 0;
-        }
-        double result = 0;
-        Set<Unit> visited = new LinkedHashSet<>();
-        for (Unit unit : units) {
-            if (visited.contains(unit)) {
-                continue;
-            }
-            visited.addAll(synonyms.listOf(unit));
-            result += unit.getWeight();
-        }
-        return result;
     }
 }

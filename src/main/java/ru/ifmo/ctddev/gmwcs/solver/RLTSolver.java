@@ -1,9 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import ilog.concert.IloException;
-import ilog.concert.IloLinearNumExpr;
-import ilog.concert.IloNumExpr;
-import ilog.concert.IloNumVar;
+import ilog.concert.*;
 import ilog.cplex.IloCplex;
 import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
@@ -18,6 +15,8 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 public class RLTSolver implements RootedSolver {
     public static final double EPS = 0.01;
@@ -248,44 +247,30 @@ public class RLTSolver implements RootedSolver {
     }
 
     private void addObjective(LDSU<Unit> synonyms) throws IloException {
-        Map<Unit, IloNumVar> summands = new LinkedHashMap<>();
-        Set<Unit> toConsider = new LinkedHashSet<>();
-        toConsider.addAll(graph.vertexSet());
-        toConsider.addAll(graph.edgeSet());
-        Set<Unit> visited = new LinkedHashSet<>();
-        for (Unit unit : toConsider) {
-            if (visited.contains(unit)) {
+        List<Double> ks = new ArrayList<>();
+        List<IloNumVar> vs = new ArrayList<>();
+        for (int i = 0; i < synonyms.size(); i++) {
+            double weight = synonyms.weight(i);
+            List<Unit> set = synonyms.set(i);
+            if(set.size() == 0 || weight == 0.0){
                 continue;
             }
-            visited.addAll(synonyms.listOf(unit));
-            List<Unit> eq = synonyms.listOf(unit);
-            if (eq.size() == 1) {
-                summands.put(unit, getVar(unit));
+            ks.add(synonyms.weight(i));
+            if(set.size() == 1){
+                vs.add(getVar(set.get(0)));
                 continue;
             }
-            IloNumVar var = cplex.boolVar();
-            summands.put(unit, var);
-            int num = eq.size();
-            for (Unit i : eq) {
-                if (getVar(i) == null) {
-                    num--;
-                }
-            }
-            IloNumVar[] args = new IloNumVar[num];
-            int j = 0;
-            for (Unit anEq : eq) {
-                if (getVar(anEq) == null) {
-                    continue;
-                }
-                args[j++] = getVar(anEq);
-            }
-            if (unit.getWeight() > 0) {
-                cplex.addLe(var, cplex.sum(args));
+            IloNumVar x = cplex.boolVar("s" + i);
+            vs.add(x);
+            IloNumExpr[] vars = set.stream().map(this::getVar).toArray(IloNumExpr[]::new);
+            if(weight > 0){
+                cplex.addLe(x, cplex.sum(vars));
             } else {
-                cplex.addGe(cplex.prod(eq.size() + 0.5, var), cplex.sum(args));
+                cplex.addGe(cplex.prod(vars.length, x), cplex.sum(vars));
             }
         }
-        IloNumExpr sum = unitScalProd(summands.keySet(), summands);
+        IloNumExpr sum = cplex.scalProd(ks.stream().mapToDouble(d -> d).toArray(),
+                                        vs.toArray(new IloNumVar[vs.size()]));
         cplex.addGe(sum, minimum);
         cplex.addMaximize(sum);
     }

@@ -17,13 +17,16 @@ public class Utils {
             return 0;
         }
         double result = 0;
-        Set<Unit> visited = new LinkedHashSet<>();
-        for (Unit unit : units) {
-            if (visited.contains(unit)) {
-                continue;
+        Set<Unit> us = new HashSet<>();
+        us.addAll(units);
+        for(int i = 0; i < synonyms.size(); i++){
+            List<Unit> set = synonyms.set(i);
+            for(Unit unit : set){
+                if(us.contains(unit)){
+                    result += synonyms.weight(i);
+                    break;
+                }
             }
-            visited.addAll(synonyms.listOf(unit));
-            result += unit.getWeight();
         }
         return result;
     }

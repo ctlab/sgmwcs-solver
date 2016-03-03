@@ -84,10 +84,10 @@ public class Main {
                 synonyms = graphIO.getSynonyms(new File((String) optionSet.valueOf("s")));
             } else {
                 for (Node node : graph.vertexSet()) {
-                    synonyms.add(node);
+                    synonyms.add(node, node.getWeight());
                 }
                 for (Edge edge : graph.edgeSet()) {
-                    synonyms.add(edge);
+                    synonyms.add(edge, edge.getWeight());
                 }
             }
             List<Unit> units = solver.solve(graph, synonyms);
