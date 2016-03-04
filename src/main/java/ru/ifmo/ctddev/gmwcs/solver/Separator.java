@@ -10,12 +10,11 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
 
-import static ru.ifmo.ctddev.gmwcs.solver.RLTSolver.getVars;
-
 public class Separator extends IloCplex.UserCutCallback {
     public static final double ADDITION_CAPACITY = 1e-6;
     public static final double STEP = 0.1;
     public static final double EPS = 1e-5;
+    private final IloCplex cplex;
     private Map<Node, CutGenerator> generators;
     private int maxToAdd;
     private int minToConsider;
@@ -23,7 +22,6 @@ public class Separator extends IloCplex.UserCutCallback {
     private List<CutGenerator> generatorList;
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
-    private final IloCplex cplex;
     private int waited;
     private double period;
     private UndirectedGraph<Node, Edge> graph;
@@ -85,7 +83,8 @@ public class Separator extends IloCplex.UserCutCallback {
                 Set<Edge> minCut = new HashSet<>();
                 minCut.addAll(cut);
                 synchronized (cplex) {
-                    add(cplex.le(cplex.diff(y.get(node), cplex.sum(getVars(minCut, w))), 0));
+                    IloNumVar[] evars = minCut.stream().map(x -> w.get(x)).toArray(IloNumVar[]::new);
+                    add(cplex.le(cplex.diff(y.get(node), cplex.sum(evars)), 0));
                 }
                 added++;
             }

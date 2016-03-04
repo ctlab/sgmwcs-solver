@@ -28,7 +28,6 @@ public class ComponentSolver implements Solver {
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
-        double time = tl.getRemainingTime();
         isSolvedToOptimality = true;
         List<Unit> best = null;
         double lb = this.lb;
@@ -46,11 +45,9 @@ public class ComponentSolver implements Solver {
                 // there will be no more big components! can take all the time we need
                 tlFactor *= 2;
             }
-
             if (component.size() < 50) {
                 solver.suppressOutput();
             }
-            
             solver.setRoot(root);
             solver.setLB(lb);
             solver.setTimeLimit(new TimeLimit(tl.getRemainingTime() * tlFactor));
@@ -62,7 +59,6 @@ public class ComponentSolver implements Solver {
                 best = solution;
                 lb = Utils.sum(best, synonyms);
             }
-           
             if (root != null) {
                 addComponents(subgraph, root, components);
             }

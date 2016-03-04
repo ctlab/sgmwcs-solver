@@ -8,6 +8,8 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
 
+import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
+
 public class ReferenceSolver {
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms, List<Node> roots) {
         for (Node root : roots) {
@@ -28,11 +30,8 @@ public class ReferenceSolver {
                 maxSet.add(node);
             }
         }
-        Edge[] edges = new Edge[graph.edgeSet().size()];
-        int m = 0;
-        for (Edge edge : graph.edgeSet()) {
-            edges[m++] = edge;
-        }
+        Edge[] edges = graph.edgeSet().stream().toArray(Edge[]::new);
+        int m = edges.length;
         for (int i = 0; i < (1 << m); i++) {
             Set<Edge> currEdges = new LinkedHashSet<>();
             for (int j = 0; j < m; j++) {
@@ -40,6 +39,7 @@ public class ReferenceSolver {
                     currEdges.add(edges[j]);
                 }
             }
+
             UndirectedGraph<Node, Edge> subgraph = new UndirectedSubgraph<>(graph, graph.vertexSet(), currEdges);
             ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(subgraph);
             for (Set<Node> component : inspector.connectedSets()) {
@@ -67,18 +67,5 @@ public class ReferenceSolver {
             }
         }
         return maxSet;
-    }
-
-    private double sum(Collection<? extends Unit> units, LDSU<Unit> synonyms) {
-        double result = 0;
-        Set<Unit> visited = new LinkedHashSet<>();
-        for (Unit unit : units) {
-            if (visited.contains(unit)) {
-                continue;
-            }
-            visited.addAll(synonyms.listOf(unit));
-            result += unit.getWeight();
-        }
-        return result;
     }
 }

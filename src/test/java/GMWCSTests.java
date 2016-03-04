@@ -1,5 +1,5 @@
 import org.jgrapht.UndirectedGraph;
-import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.graph.Multigraph;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -43,7 +43,7 @@ public class GMWCSTests {
         if (DEBUG_TEST != null) {
             return;
         }
-        UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
+        UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
         List<Unit> res = solver.solve(graph, new LDSU<>());
         if (!(res == null || res.isEmpty())) {
             Assert.assertTrue(false);
@@ -155,7 +155,7 @@ public class GMWCSTests {
             }
             Collections.sort(edgesCount);
             for (int count : edgesCount) {
-                UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
+                UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
                 Node[] nodes = fillNodes(graph, size);
                 List<Integer> seq = new ArrayList<>();
                 for (int j = 0; j < size; j++) {
@@ -175,7 +175,7 @@ public class GMWCSTests {
         for (int i = 0; i < RANDOM_TESTS; i++) {
             int n = random.nextInt(MAX_SIZE) + 1;
             int m = Math.min((n * (n - 1)) / 2, random.nextInt(MAX_SIZE));
-            UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
+            UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
             Node[] nodes = fillNodes(graph, n);
             fillEdgesRandomly(graph, m, nodes, 1);
             tests.add(new TestCase(graph, random));
@@ -196,7 +196,7 @@ public class GMWCSTests {
         for (int j = 0; j < count; j++) {
             int u = random.nextInt(size);
             int v = random.nextInt(size);
-            if (u == v || graph.getEdge(nodes[u], nodes[v]) != null) {
+            if (u == v) {
                 j--;
                 continue;
             }
