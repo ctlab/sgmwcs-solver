@@ -1,12 +1,38 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public abstract class Unit implements Comparable<Unit> {
     protected int num;
     protected double weight;
+    protected List<Unit> absorbed;
 
     public Unit(int num, double weight) {
         this.num = num;
         this.weight = weight;
+        absorbed = new ArrayList<>();
+    }
+
+    public void absorb(Unit unit){
+        for(Unit u : unit.getAbsorbed()){
+            absorbed.add(u);
+            weight += u.weight;
+        }
+        unit.clear();
+        absorbed.add(unit);
+        weight += unit.weight;
+    }
+
+    public void clear(){
+        for(Unit unit : absorbed){
+            weight -= unit.getWeight();
+        }
+        absorbed.clear();
+    }
+
+    public List<Unit> getAbsorbed(){
+        return new ArrayList<>(absorbed);
     }
 
     @Override

@@ -52,18 +52,20 @@ public class LDSU<T> {
         List<Integer> result = new ArrayList<>();
         while(i != x.size() || j != main.size()){
             int set;
-            if(i == x.size() || main.get(j) < x.get(i)){
+            if(!(j == main.size()) && (i == x.size() || main.get(j) < x.get(i))){
                 set = main.get(j);
                 ++j;
             } else {
                 set = x.get(i);
                 sets.get(set).remove(what);
+                sets.get(set).add(with);
                 ++i;
             }
             if(result.isEmpty() || result.get(result.size() - 1) != set){
                 result.add(set);
             }
         }
+        unitsSets.put(with, result);
         unitsSets.remove(what);
     }
 

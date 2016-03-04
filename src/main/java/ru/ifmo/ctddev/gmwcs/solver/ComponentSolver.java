@@ -3,6 +3,7 @@ package ru.ifmo.ctddev.gmwcs.solver;
 import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
+import org.jgrapht.graph.SimpleGraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Blocks;
@@ -28,6 +29,14 @@ public class ComponentSolver implements Solver {
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
+        UndirectedGraph<Node, Edge> g = new SimpleGraph<>(Edge.class);
+        Graphs.addGraph(g, graph);
+        graph = g;
+        Set<Unit> units = new HashSet<>(g.vertexSet());
+        units.addAll(g.edgeSet());
+        synonyms = new LDSU<>(synonyms, units);
+        Preprocessor.preprocess(graph, synonyms);
+
         double time = tl.getRemainingTime();
         isSolvedToOptimality = true;
         List<Unit> best = null;
@@ -70,7 +79,19 @@ public class ComponentSolver implements Solver {
                 addComponents(subgraph, root, components);
             }
         }
-        return best;
+        return extract(best);
+    }
+
+    private List<Unit> extract(List<Unit> s) {
+        if(s == null){
+            return null;
+        }
+        List<Unit> l = new ArrayList<>(s);
+        for(Unit u : s){
+            l.addAll(u.getAbsorbed());
+            u.clear();
+        }
+        return l;
     }
 
     @Override
