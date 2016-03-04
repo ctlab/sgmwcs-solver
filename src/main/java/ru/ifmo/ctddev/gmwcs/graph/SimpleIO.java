@@ -1,7 +1,7 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
 import org.jgrapht.UndirectedGraph;
-import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.graph.Multigraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
 
@@ -38,7 +38,7 @@ public class SimpleIO implements GraphIO {
     public UndirectedGraph<Node, Edge> read() throws FileNotFoundException, ParseException {
         try (Scanner nodes = new Scanner(new BufferedReader(new FileReader(nodeIn)));
              Scanner edges = new Scanner(new BufferedReader(new FileReader(edgeIn)))) {
-            UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
+            UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
             parseNodes(nodes, graph);
             parseEdges(edges, graph);
             return graph;

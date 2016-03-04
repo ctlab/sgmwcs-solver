@@ -3,7 +3,7 @@ package ru.ifmo.ctddev.gmwcs.solver;
 import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
-import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.graph.Multigraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Blocks;
@@ -29,7 +29,7 @@ public class ComponentSolver implements Solver {
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
-        UndirectedGraph<Node, Edge> g = new SimpleGraph<>(Edge.class);
+        UndirectedGraph<Node, Edge> g = new Multigraph<>(Edge.class);
         Graphs.addGraph(g, graph);
         graph = g;
         Set<Unit> units = new HashSet<>(g.vertexSet());
@@ -37,7 +37,6 @@ public class ComponentSolver implements Solver {
         synonyms = new LDSU<>(synonyms, units);
         Preprocessor.preprocess(graph, synonyms);
 
-        double time = tl.getRemainingTime();
         isSolvedToOptimality = true;
         List<Unit> best = null;
         double lb = this.lb;
@@ -55,11 +54,9 @@ public class ComponentSolver implements Solver {
                 // there will be no more big components! can take all the time we need
                 tlFactor *= 2;
             }
-
             if (component.size() < 50) {
                 solver.suppressOutput();
             }
-            
             solver.setRoot(root);
             solver.setLB(lb);
             solver.setTimeLimit(new TimeLimit(tl.getRemainingTime() * tlFactor));
@@ -74,7 +71,6 @@ public class ComponentSolver implements Solver {
                 best = solution;
                 lb = Utils.sum(best, synonyms);
             }
-           
             if (root != null) {
                 addComponents(subgraph, root, components);
             }

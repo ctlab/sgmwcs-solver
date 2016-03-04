@@ -30,11 +30,8 @@ public class ReferenceSolver {
                 maxSet.add(node);
             }
         }
-        Edge[] edges = new Edge[graph.edgeSet().size()];
-        int m = 0;
-        for (Edge edge : graph.edgeSet()) {
-            edges[m++] = edge;
-        }
+        Edge[] edges = graph.edgeSet().stream().toArray(Edge[]::new);
+        int m = edges.length;
         for (int i = 0; i < (1 << m); i++) {
             Set<Edge> currEdges = new LinkedHashSet<>();
             for (int j = 0; j < m; j++) {
@@ -42,6 +39,7 @@ public class ReferenceSolver {
                     currEdges.add(edges[j]);
                 }
             }
+
             UndirectedGraph<Node, Edge> subgraph = new UndirectedSubgraph<>(graph, graph.vertexSet(), currEdges);
             ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(subgraph);
             for (Set<Node> component : inspector.connectedSets()) {

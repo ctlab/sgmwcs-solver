@@ -1,6 +1,9 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import ilog.concert.*;
+import ilog.concert.IloException;
+import ilog.concert.IloLinearNumExpr;
+import ilog.concert.IloNumExpr;
+import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
@@ -12,11 +15,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.*;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 public class RLTSolver implements RootedSolver {
     public static final double EPS = 0.01;
@@ -42,15 +41,6 @@ public class RLTSolver implements RootedSolver {
         threads = 1;
         this.minimum = -Double.MAX_VALUE;
         maxToAddCuts = considerCuts = Integer.MAX_VALUE;
-    }
-
-    static IloNumVar[] getVars(Set<? extends Unit> units, Map<? extends Unit, IloNumVar> vars) {
-        IloNumVar[] result = new IloNumVar[units.size()];
-        int i = 0;
-        for (Unit unit : units) {
-            result[i++] = vars.get(unit);
-        }
-        return result;
     }
 
     public void setMaxToAddCuts(int num) {
@@ -141,11 +131,7 @@ public class RLTSolver implements RootedSolver {
             if (!component.contains(Graphs.getOppositeVertex(graph, e, root))) {
                 continue;
             }
-            if (root == graph.getEdgeSource(e)) {
-                cplex.addEq(x.get(e).first, 0);
-            } else {
-                cplex.addEq(x.get(e).second, 0);
-            }
+            cplex.addEq(getX(e, root), 0);
         }
         for (Node cp : blocks.cutpointsOf(component)) {
             if (root != cp) {
@@ -337,7 +323,7 @@ public class RLTSolver implements RootedSolver {
 
     private void sumConstraints() throws IloException {
         // (31)
-        cplex.addEq(cplex.sum(getVars(graph.vertexSet(), x0)), 1);
+        cplex.addLe(cplex.sum(graph.vertexSet().stream().map(x -> x0.get(x)).toArray(IloNumVar[]::new)), 1);
         if (root != null) {
             cplex.addEq(x0.get(root), 1);
         }

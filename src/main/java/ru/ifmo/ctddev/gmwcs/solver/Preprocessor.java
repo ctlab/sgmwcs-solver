@@ -13,7 +13,6 @@ import java.util.Set;
 
 public class Preprocessor {
     public static void preprocess(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms){
-        // TODO: multigraph
         for(Edge edge : new ArrayList<>(graph.edgeSet())){
             if(!graph.containsEdge(edge)){
                 continue;
@@ -24,7 +23,7 @@ public class Preprocessor {
                 merge(graph, synonyms, edge, from, to);
             }
         }
-        for(Node v : graph.vertexSet()){
+        for (Node v : new ArrayList<>(graph.vertexSet())) {
             if(v.getWeight() < 0 && graph.degreeOf(v) == 2){
                 Edge[] edges = graph.edgesOf(v).stream().toArray(Edge[]::new);
                 if(edges[1].getWeight() > 0 || edges[0].getWeight() > 0){
@@ -32,10 +31,14 @@ public class Preprocessor {
                 }
                 Node left = Graphs.getOppositeVertex(graph, edges[0], v);
                 Node right = Graphs.getOppositeVertex(graph, edges[1], v);
-                graph.removeVertex(v);
-                absorb(synonyms, edges[0], v);
-                absorb(synonyms, edges[0], edges[1]);
-                graph.addEdge(left, right, edges[0]);
+                if (left == right) {
+                    graph.removeVertex(v);
+                } else {
+                    graph.removeVertex(v);
+                    absorb(synonyms, edges[0], v);
+                    absorb(synonyms, edges[0], edges[1]);
+                    graph.addEdge(left, right, edges[0]);
+                }
             }
         }
     }
@@ -70,14 +73,18 @@ public class Preprocessor {
             Edge m = graph.getEdge(main, opposite);
             graph.removeEdge(a);
             if(m == null){
+                if (opposite == main) {
+                    if (a.getWeight() >= 0) {
+                        absorb(ss, main, a);
+                    }
+                    continue;
+                }
                 graph.addEdge(main, opposite, a);
             } else {
                 if(a.getWeight() >= 0 && m.getWeight() >= 0) {
                     absorb(ss, m, a);
                 } else {
-                    Edge big = a.getWeight() > m.getWeight() ? a : m;
-                    graph.removeEdge(m);
-                    graph.addEdge(main, opposite, big);
+                    graph.addEdge(main, opposite, a);
                 }
             }
         }
