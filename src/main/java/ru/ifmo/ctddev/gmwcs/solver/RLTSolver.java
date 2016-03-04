@@ -117,7 +117,7 @@ public class RLTSolver implements RootedSolver {
         for (Set<Node> component : blocks.incidentBlocks(root)) {
             dfs(root, component, true, blocks, separator);
         }
-        //cplex.use(separator);
+        cplex.use(separator);
     }
 
     private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks, Separator separator) throws IloException {

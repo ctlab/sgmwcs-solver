@@ -100,8 +100,17 @@ public class Separator extends IloCplex.UserCutCallback {
         }
         double[] values = getValues(vars);
         for (CutGenerator generator : generatorList) {
+            Set<Edge> visited = new HashSet<>();
             for (Edge edge : generator.getEdges()) {
-                generator.setCapacity(edge, values[indices.get(edge)] + ADDITION_CAPACITY);
+                if (visited.contains(edge)) {
+                    continue;
+                }
+                double weight = 0;
+                for (Edge e : graph.getAllEdges(graph.getEdgeSource(edge), graph.getEdgeTarget(edge))) {
+                    weight += values[indices.get(e)];
+                    visited.add(e);
+                }
+                generator.setCapacity(edge, weight + ADDITION_CAPACITY);
             }
             for (Node node : generator.getNodes()) {
                 generator.setVertexCapacity(node, values[indices.get(node)] - EPS);
