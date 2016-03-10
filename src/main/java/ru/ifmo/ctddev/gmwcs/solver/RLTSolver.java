@@ -1,7 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
 import ilog.concert.IloException;
-import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
@@ -184,8 +183,8 @@ public class RLTSolver implements RootedSolver {
             Node to = graph.getEdgeTarget(edge);
             String edgeName = (from.getNum() + 1) + "_" + (to.getNum() + 1);
             w.put(edge, cplex.boolVar("w_" + edgeName));
-            IloNumVar in = cplex.boolVar();
-            IloNumVar out = cplex.boolVar();
+            IloNumVar in = cplex.boolVar("x_" + edgeName + "_in");
+            IloNumVar out = cplex.boolVar("x_" + edgeName + "_out");
             x.put(edge, new Pair<>(in, out));
         }
     }
@@ -221,7 +220,7 @@ public class RLTSolver implements RootedSolver {
             rs[k - 1] = cplex.prod(k, y.get(node));
             k--;
         }
-        IloNumVar sum = cplex.numVar(0, n);
+        IloNumVar sum = cplex.numVar(0, n, "prSum");
         cplex.addEq(sum, cplex.sum(terms));
         for(int i = 0; i < n; i++){
             cplex.addGe(sum, rs[i]);
@@ -346,18 +345,6 @@ public class RLTSolver implements RootedSolver {
         } else {
             return x.get(e).second;
         }
-    }
-
-    private IloLinearNumExpr unitScalProd(Set<? extends Unit> units, Map<? extends Unit, IloNumVar> vars) throws IloException {
-        int n = units.size();
-        double[] coef = new double[n];
-        IloNumVar[] variables = new IloNumVar[n];
-        int i = 0;
-        for (Unit unit : units) {
-            coef[i] = unit.getWeight();
-            variables[i++] = vars.get(unit);
-        }
-        return cplex.scalProd(coef, variables);
     }
 
     public void setLB(double lb) {

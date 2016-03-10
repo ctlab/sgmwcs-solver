@@ -19,6 +19,7 @@ public class ComponentSolver implements Solver {
     private TimeLimit tl;
     private double lb;
     private boolean isSolvedToOptimality;
+    private boolean suppressOutput;
 
     public ComponentSolver(RootedSolver solver, int threshold) {
         this.solver = solver;
@@ -31,12 +32,15 @@ public class ComponentSolver implements Solver {
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
         UndirectedGraph<Node, Edge> g = new Multigraph<>(Edge.class);
         Graphs.addGraph(g, graph);
-        graph = g;
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
         synonyms = new LDSU<>(synonyms, units);
-        Preprocessor.preprocess(graph, synonyms);
-
+        Preprocessor.preprocess(g, synonyms);
+        if (!suppressOutput) {
+            System.out.print("Preprocessing deleted " + (graph.vertexSet().size() - g.vertexSet().size()) + " nodes ");
+            System.out.println("and " + (graph.edgeSet().size() - g.edgeSet().size()) + " edges.");
+        }
+        graph = g;
         isSolvedToOptimality = true;
         List<Unit> best = null;
         double lb = this.lb;
@@ -75,18 +79,19 @@ public class ComponentSolver implements Solver {
                 addComponents(subgraph, root, components);
             }
         }
-        return extract(best);
+        return extract(best, graph);
     }
 
-    private List<Unit> extract(List<Unit> s) {
+    private List<Unit> extract(List<Unit> s, UndirectedGraph<Node, Edge> graph) {
         if(s == null){
             return null;
         }
         List<Unit> l = new ArrayList<>(s);
         for(Unit u : s){
             l.addAll(u.getAbsorbed());
-            u.clear();
         }
+        graph.vertexSet().forEach(Unit::clear);
+        graph.edgeSet().forEach(Unit::clear);
         return l;
     }
 
@@ -149,6 +154,7 @@ public class ComponentSolver implements Solver {
     @Override
     public void suppressOutput() {
         solver.suppressOutput();
+        suppressOutput = true;
     }
 
     @Override
