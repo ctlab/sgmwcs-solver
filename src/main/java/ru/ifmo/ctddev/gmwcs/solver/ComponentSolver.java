@@ -59,7 +59,7 @@ public class ComponentSolver implements Solver {
             UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
             Node root = null;
             if (component.size() >= threshold) {
-                root = getRoot(subgraph, new Blocks(subgraph).cutpoints());
+                root = getRoot(subgraph, new Blocks(subgraph));
             } else if (components.isEmpty() || components.peek().size() < 50) {
                 // there will be no more big components! can take all the time we need
                 tlFactor *= 2;
@@ -85,13 +85,13 @@ public class ComponentSolver implements Solver {
         return extract(best, graph);
     }
 
-    private Node getRoot(UndirectedGraph<Node, Edge> graph, Set<Node> cutpoints) {
+    private Node getRoot(UndirectedGraph<Node, Edge> graph, Blocks blocks) {
         Map<Node, Integer> maximum = new HashMap<>();
-        if(graph.vertexSet().isEmpty()){
+        if (blocks.cutpoints().isEmpty()) {
             return null;
         }
-        Node v = graph.vertexSet().iterator().next();
-        dfs(graph, v, cutpoints, maximum, new HashSet<>());
+        Node v = blocks.cutpoints().iterator().next();
+        dfs(v, null, blocks, maximum, graph.vertexSet().size());
         if(maximum.isEmpty()){
             return null;
         }
@@ -104,26 +104,28 @@ public class ComponentSolver implements Solver {
         return best;
     }
 
-    private int dfs(UndirectedGraph<Node, Edge> g, Node v, Set<Node> cps, Map<Node, Integer> max, Set<Node> vis) {
-        vis.add(v);
+    private int dfs(Node v, Node p, Blocks blocks, Map<Node, Integer> max, int n) {
         int res = 0;
-        for(Node u : Graphs.neighborListOf(g, v)){
-            if(vis.contains(u)){
+        for (Set<Node> c : blocks.incidentBlocks(v)) {
+            if (c.contains(p)) {
                 continue;
             }
-            int sum = dfs(g, u, cps, max, vis);
-            res += sum;
-            if(cps.contains(v)){
-                if(!max.containsKey(v) || max.get(v) < sum){
-                    max.put(v, sum);
+            int sum = c.size() - 1;
+            for (Node cp : blocks.cutpointsOf(c)) {
+                if (cp != v) {
+                    sum += dfs(cp, v, blocks, max, n);
                 }
             }
+            if (!max.containsKey(v) || max.get(v) < sum) {
+                max.put(v, sum);
+            }
+            res += sum;
         }
-        int rest = g.vertexSet().size() - res - 1;
-        if(cps.contains(v) && (!max.containsKey(v) || max.get(v) < rest)){
+        int rest = n - res - 1;
+        if (!max.containsKey(v) || max.get(v) < rest) {
             max.put(v, rest);
         }
-        return res + 1;
+        return res;
     }
 
     private List<Unit> extract(List<Unit> s, UndirectedGraph<Node, Edge> graph) {
