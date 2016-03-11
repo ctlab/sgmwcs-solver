@@ -11,42 +11,39 @@ import java.util.List;
 
 public class Worker implements Runnable {
     private final LDSU<Unit> synonyms;
-    private final List<UndirectedGraph<Node, Edge>> graphs;
+    private final UndirectedGraph<Node, Edge> graph;
     private final RootedSolver solver;
-    private final List<Node> roots;
+    private final Node root;
     private List<Unit> result;
     private boolean isSolvedToOptimality;
     private boolean isOk;
+    private long startTime;
 
-    public Worker(List<UndirectedGraph<Node, Edge>> graphs, List<Node> roots, LDSU<Unit> synonyms, RootedSolver solver){
+    public Worker(UndirectedGraph<Node, Edge> graph, Node root, LDSU<Unit> synonyms, RootedSolver solver, long time) {
         this.solver = solver;
-        this.graphs = graphs;
+        this.graph = graph;
         this.synonyms = synonyms;
-        this.roots = roots;
+        this.root = root;
         solver.suppressOutput();
         isSolvedToOptimality = true;
         isOk = true;
+        startTime = time;
     }
 
     @Override
     public void run() {
-        for(int i = 0; i < graphs.size(); i++){
-            long startTime = System.currentTimeMillis();
-            solver.setRoot(roots.get(i));
-            try {
-                List<Unit> sol = solver.solve(graphs.get(i), synonyms);
-                if(Utils.sum(sol, synonyms) > Utils.sum(result, synonyms)){
-                    result = sol;
-                }
-            } catch (SolverException e) {
-                isOk = false;
+        solver.setRoot(root);
+        solver.setTimeLimit(new TimeLimit((System.currentTimeMillis() - startTime) / 1000.0));
+        try {
+            List<Unit> sol = solver.solve(graph, synonyms);
+            if (Utils.sum(sol, synonyms) > Utils.sum(result, synonyms)) {
+                result = sol;
             }
-            long time = System.currentTimeMillis();
-            if(!solver.isSolvedToOptimality()){
-                isSolvedToOptimality = false;
-            }
-            TimeLimit tl = solver.getTimeLimit();
-            tl.spend((time - startTime) / 1000.0);
+        } catch (SolverException e) {
+            isOk = false;
+        }
+        if (!solver.isSolvedToOptimality()) {
+            isSolvedToOptimality = false;
         }
     }
 

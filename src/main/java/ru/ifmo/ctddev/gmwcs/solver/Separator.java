@@ -6,15 +6,17 @@ import ilog.cplex.IloCplex;
 import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
+import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
-
-import static ru.ifmo.ctddev.gmwcs.solver.RLTSolver.getVars;
 
 public class Separator extends IloCplex.UserCutCallback {
     public static final double ADDITION_CAPACITY = 1e-6;
     public static final double STEP = 0.1;
     public static final double EPS = 1e-5;
+    private final IloCplex cplex;
+    private final IloNumVar sum;
+    private final AtomicDouble lb;
     private Map<Node, CutGenerator> generators;
     private int maxToAdd;
     private int minToConsider;
@@ -22,13 +24,13 @@ public class Separator extends IloCplex.UserCutCallback {
     private List<CutGenerator> generatorList;
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
-    private final IloCplex cplex;
     private int waited;
     private double period;
-    private final IloNumVar sum;
-    private final AtomicDouble lb;
     private UndirectedGraph<Node, Edge> graph;
     private double last;
+    private boolean inited;
+    private Map<Unit, Integer> indices;
+    private IloNumVar[] vars;
 
     public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex, UndirectedGraph<Node, Edge> graph,
                      IloNumVar sum, AtomicDouble lb) {
@@ -82,7 +84,7 @@ public class Separator extends IloCplex.UserCutCallback {
         if (!isCutsAllowed()) {
             return;
         }
-        init();
+        initWeights();
         Collections.shuffle(nodes);
         List<Node> now = nodes.subList(0, Math.min(nodes.size(), minToConsider));
         int added = 0;
@@ -93,7 +95,8 @@ public class Separator extends IloCplex.UserCutCallback {
                 Set<Edge> minCut = new HashSet<>();
                 minCut.addAll(cut);
                 synchronized (cplex) {
-                    add(cplex.le(cplex.diff(y.get(node), cplex.sum(getVars(minCut, w))), 0));
+                    IloNumVar[] evars = minCut.stream().map(x -> w.get(x)).toArray(IloNumVar[]::new);
+                    add(cplex.le(cplex.diff(y.get(node), cplex.sum(evars)), 0));
                 }
                 added++;
             }
@@ -103,14 +106,42 @@ public class Separator extends IloCplex.UserCutCallback {
         }
     }
 
-    private void init() throws IloException {
+    private void initWeights() throws IloException {
+        if (!inited) {
+            init();
+        }
+        double[] values = getValues(vars);
         for (CutGenerator generator : generatorList) {
+            Set<Edge> visited = new HashSet<>();
             for (Edge edge : generator.getEdges()) {
-                generator.setCapacity(edge, getValue(w.get(edge)) + ADDITION_CAPACITY);
+                if (visited.contains(edge)) {
+                    continue;
+                }
+                double weight = 0;
+                for (Edge e : graph.getAllEdges(graph.getEdgeSource(edge), graph.getEdgeTarget(edge))) {
+                    weight += values[indices.get(e)];
+                    visited.add(e);
+                }
+                generator.setCapacity(edge, weight + ADDITION_CAPACITY);
             }
             for (Node node : generator.getNodes()) {
-                generator.setVertexCapacity(node, getValue(y.get(node)) - EPS);
+                generator.setVertexCapacity(node, values[indices.get(node)] - EPS);
             }
+        }
+    }
+
+    private void init() {
+        inited = true;
+        indices = new HashMap<>();
+        int i = 0;
+        vars = new IloNumVar[w.size() + y.size()];
+        for (Edge e : graph.edgeSet()) {
+            vars[i] = w.get(e);
+            indices.put(e, i++);
+        }
+        for (Node v : graph.vertexSet()) {
+            vars[i] = y.get(v);
+            indices.put(v, i++);
         }
     }
 
@@ -123,5 +154,6 @@ public class Separator extends IloCplex.UserCutCallback {
                 nodes.add(node);
             }
         }
+        inited = false;
     }
 }

@@ -1,5 +1,5 @@
 import org.jgrapht.UndirectedGraph;
-import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.graph.Multigraph;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -8,14 +8,22 @@ import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
-import ru.ifmo.ctddev.gmwcs.solver.*;
+import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
+import ru.ifmo.ctddev.gmwcs.solver.Solver;
+import ru.ifmo.ctddev.gmwcs.solver.SolverException;
+import ru.ifmo.ctddev.gmwcs.solver.Utils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+
+import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GMWCSTests {
-    public static final int SEED = 20140503;
+    public static final int SEED = 20160309;
     public static final int TESTS_PER_SIZE = 300;
     public static final int MAX_SIZE = 15;
     public static final int RANDOM_TESTS = 2200;
@@ -28,7 +36,6 @@ public class GMWCSTests {
     public GMWCSTests() {
         random = new Random(SEED);
         ComponentSolver solver = new ComponentSolver(3);
-        solver.setThreadConfiguration(Arrays.asList(2, 2, 1));
         this.solver = solver;
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
@@ -44,7 +51,7 @@ public class GMWCSTests {
         if (DEBUG_TEST != null) {
             return;
         }
-        UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
+        UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
         List<Unit> res = solver.solve(graph, new LDSU<>());
         if (!(res == null || res.isEmpty())) {
             Assert.assertTrue(false);
@@ -124,18 +131,15 @@ public class GMWCSTests {
 
     private String error(TestCase test) throws IOException {
         System.err.println();
-        Set<Unit> visited = new LinkedHashSet<>();
-        Set<Unit> toVisit = new LinkedHashSet<>();
-        toVisit.addAll(test.graph().vertexSet());
-        toVisit.addAll(test.graph().edgeSet());
         String message = "";
-        for (Unit unit : toVisit) {
-            if (visited.contains(unit)) {
+        LDSU<Unit> s = test.synonyms();
+        for (int i = 0; i < s.size(); i++) {
+            List<Unit> set = s.set(i);
+            if (set.isEmpty()) {
                 continue;
             }
-            for (Unit element : test.synonyms().listOf(unit)) {
-                message += element + " ";
-                visited.add(element);
+            for (Unit unit : set) {
+                message += unit + " ";
             }
             message += "\n";
         }
@@ -156,7 +160,7 @@ public class GMWCSTests {
             }
             Collections.sort(edgesCount);
             for (int count : edgesCount) {
-                UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
+                UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
                 Node[] nodes = fillNodes(graph, size);
                 List<Integer> seq = new ArrayList<>();
                 for (int j = 0; j < size; j++) {
@@ -176,7 +180,7 @@ public class GMWCSTests {
         for (int i = 0; i < RANDOM_TESTS; i++) {
             int n = random.nextInt(MAX_SIZE) + 1;
             int m = Math.min((n * (n - 1)) / 2, random.nextInt(MAX_SIZE));
-            UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
+            UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
             Node[] nodes = fillNodes(graph, n);
             fillEdgesRandomly(graph, m, nodes, 1);
             tests.add(new TestCase(graph, random));
@@ -197,27 +201,11 @@ public class GMWCSTests {
         for (int j = 0; j < count; j++) {
             int u = random.nextInt(size);
             int v = random.nextInt(size);
-            if (u == v || graph.getEdge(nodes[u], nodes[v]) != null) {
+            if (u == v) {
                 j--;
                 continue;
             }
             graph.addEdge(nodes[u], nodes[v], new Edge(offset + j, random.nextInt(16) - 8));
         }
-    }
-
-    private double sum(Collection<? extends Unit> units, LDSU<Unit> synonyms) {
-        if (units == null) {
-            return 0;
-        }
-        double result = 0;
-        Set<Unit> visited = new LinkedHashSet<>();
-        for (Unit unit : units) {
-            if (visited.contains(unit)) {
-                continue;
-            }
-            visited.addAll(synonyms.listOf(unit));
-            result += unit.getWeight();
-        }
-        return result;
     }
 }

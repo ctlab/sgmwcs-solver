@@ -1,7 +1,7 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
 import org.jgrapht.UndirectedGraph;
-import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.graph.Multigraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
 
@@ -38,7 +38,7 @@ public class SimpleIO implements GraphIO {
     public UndirectedGraph<Node, Edge> read() throws FileNotFoundException, ParseException {
         try (Scanner nodes = new Scanner(new BufferedReader(new FileReader(nodeIn)));
              Scanner edges = new Scanner(new BufferedReader(new FileReader(edgeIn)))) {
-            UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
+            UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
             parseNodes(nodes, graph);
             parseEdges(edges, graph);
             return graph;
@@ -159,10 +159,12 @@ public class SimpleIO implements GraphIO {
 
     public LDSU<Unit> getSynonyms(File s) throws FileNotFoundException, ParseException {
         LDSU<Unit> synonyms = new LDSU<>();
-        nodeMap.values().forEach(synonyms::add);
+        for (Node node : nodeMap.values()) {
+            synonyms.add(node, node.getWeight());
+        }
         for (Pair<String, String> p : edgeList) {
             Edge edge = edgeMap.get(p.first).get(p.second);
-            synonyms.add(edge);
+            synonyms.add(edge, edge.getWeight());
         }
         try (Scanner sc = new Scanner(new BufferedReader(new FileReader(s)))) {
             while (sc.hasNextLine()) {
@@ -178,7 +180,7 @@ public class SimpleIO implements GraphIO {
                     continue;
                 }
                 for (int i = 1; i < eq.size(); i++) {
-                    synonyms.merge(main, eq.get(i));
+                    synonyms.joinSet(main, eq.get(i));
                 }
             }
         }

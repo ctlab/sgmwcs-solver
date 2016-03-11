@@ -56,7 +56,7 @@ public class CutGenerator {
         }
         List<Edge> result = new ArrayList<>();
         for (Pair<Integer, Integer> p : cut) {
-            result.add(graph.getEdge(backLink.get(p.first), backLink.get(p.second)));
+            result.addAll(graph.getAllEdges(backLink.get(p.first), backLink.get(p.second)));
         }
         return result;
     }

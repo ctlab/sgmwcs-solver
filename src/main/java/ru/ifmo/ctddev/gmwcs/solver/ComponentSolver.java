@@ -3,7 +3,7 @@ package ru.ifmo.ctddev.gmwcs.solver;
 import org.jgrapht.Graphs;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
-import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.graph.Multigraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Blocks;
@@ -12,7 +12,10 @@ import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class ComponentSolver implements Solver {
     public final int threshold;
@@ -20,7 +23,7 @@ public class ComponentSolver implements Solver {
     private Double externLB;
     private boolean isSolvedToOptimality;
     private boolean suppressingOutput;
-    private List<Integer> threadConf;
+    private int threads;
 
     public ComponentSolver(int threshold) {
         this.threshold = threshold;
@@ -30,15 +33,27 @@ public class ComponentSolver implements Solver {
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
+        long timeBefore = System.currentTimeMillis();
+        isSolvedToOptimality = true;
+        UndirectedGraph<Node, Edge> g = new Multigraph<>(Edge.class);
+        Graphs.addGraph(g, graph);
+        Set<Unit> units = new HashSet<>(g.vertexSet());
+        units.addAll(g.edgeSet());
+        synonyms = new LDSU<>(synonyms, units);
+        Preprocessor.preprocess(g, synonyms);
+        if (!suppressingOutput) {
+            System.out.print("Preprocessing deleted " + (graph.vertexSet().size() - g.vertexSet().size()) + " nodes ");
+            System.out.println("and " + (graph.edgeSet().size() - g.edgeSet().size()) + " edges.");
+        }
+        graph = g;
         AtomicDouble lb = new AtomicDouble(externLB);
         PriorityQueue<Set<Node>> components = getComponents(graph);
-        List<Worker> workers = new ArrayList<>();
-        List<UndirectedGraph<Node, Edge>> graphs = new ArrayList<>();
-        List<Node> roots = new ArrayList<>();
+        List<Worker> memorized = new ArrayList<>();
+        BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(threads, threads, Long.MAX_VALUE, TimeUnit.NANOSECONDS, queue);
         while(!components.isEmpty()){
             Set<Node> component = components.poll();
             UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
-            graphs.add(subgraph);
             Node root = null;
             if(component.size() >= threshold){
                 root = getRoot(subgraph);
@@ -46,55 +61,53 @@ public class ComponentSolver implements Solver {
                     addComponents(subgraph, root, components);
                 }
             }
-            roots.add(root);
-        }
-        for(int i = 0; i < threadConf.size(); i++){
-            if(threadConf.isEmpty()){
-                throw new IllegalArgumentException();
-            }
-            int threads = threadConf.get(i);
             RLTSolver solver = new RLTSolver();
+            solver.setSharedLB(lb);
             if(suppressingOutput){
                 solver.suppressOutput();
             }
-            solver.setSharedLB(lb);
-            solver.setTimeLimit(new TimeLimit(tl.getRemainingTime()));
-            solver.setThreadsNum(threads);
-            if(i == threadConf.size() - 1){
-                workers.add(new Worker(graphs, roots, synonyms, solver));
-            } else {
-                if(graphs.isEmpty()){
-                    break;
-                }
-                List<UndirectedGraph<Node, Edge>> gs = Collections.singletonList(graphs.get(0));
-                List<Node> rs = Collections.singletonList(roots.get(0));
-                graphs = graphs.subList(1, graphs.size());
-                roots = roots.subList(1, roots.size());
-                workers.add(new Worker(gs, rs, synonyms, solver));
-            }
+            Set<Unit> subset = new HashSet<>(subgraph.vertexSet());
+            subset.addAll(subgraph.edgeSet());
+            Worker worker = new Worker(subgraph, root, new LDSU<>(synonyms, subset), solver, timeBefore);
+            executor.execute(worker);
+            memorized.add(worker);
         }
-        return runWorkers(workers, synonyms);
+        executor.shutdown();
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException ignored) {
+        }
+        return getResult(memorized, graph, synonyms);
     }
 
-    private List<Unit> runWorkers(List<Worker> workers, LDSU<Unit> synonyms) {
-        isSolvedToOptimality = true;
-        List<Thread> threads = workers.stream().map(Thread::new).collect(Collectors.toList());
-        threads.forEach(Thread::start);
-        try {
-            for (Thread t : threads) {
-                t.join();
+    private List<Unit> getResult(List<Worker> memorized, UndirectedGraph<Node, Edge> graph, LDSU<Unit> signals) {
+        List<Unit> best = null;
+        double bestScore = -Double.MAX_VALUE;
+        for (Worker worker : memorized) {
+            List<Unit> solution = worker.getResult();
+            if (bestScore < Utils.sum(solution, signals)) {
+                best = solution;
+                bestScore = Utils.sum(solution, signals);
             }
-        } catch (InterruptedException ignored) {}
-        List<Unit> solution = new ArrayList<>();
-        for(Worker w : workers){
-            if(!w.isSolvedToOptimality()){
+            if (!worker.isSolvedToOptimality()) {
                 isSolvedToOptimality = false;
             }
-            if(Utils.sum(solution, synonyms) < Utils.sum(w.getResult(), synonyms)){
-                solution = w.getResult();
-            }
         }
-        return solution;
+        List<Unit> result = extract(best);
+        graph.vertexSet().forEach(Unit::clear);
+        graph.edgeSet().forEach(Unit::clear);
+        return result;
+    }
+
+    private List<Unit> extract(List<Unit> s) {
+        if (s == null) {
+            return null;
+        }
+        List<Unit> l = new ArrayList<>(s);
+        for (Unit u : s) {
+            l.addAll(u.getAbsorbed());
+        }
+        return l;
     }
 
     @Override
@@ -103,7 +116,7 @@ public class ComponentSolver implements Solver {
     }
 
     private void addComponents(UndirectedGraph<Node, Edge> subgraph, Node root, PriorityQueue<Set<Node>> components) {
-        UndirectedGraph<Node, Edge> copy = new SimpleGraph<>(Edge.class);
+        UndirectedGraph<Node, Edge> copy = new Multigraph<>(Edge.class);
         Graphs.addGraph(copy, subgraph);
         copy.removeVertex(root);
         ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(copy);
@@ -125,10 +138,6 @@ public class ComponentSolver implements Solver {
             }
         }
         return res;
-    }
-
-    public void setThreadConfiguration(List<Integer> conf){
-        this.threadConf = conf;
     }
 
     private int dfs(UndirectedGraph<Node, Edge> graph, Node v, boolean isMax, Set<Node> vis) {
@@ -155,13 +164,13 @@ public class ComponentSolver implements Solver {
     }
 
     @Override
-    public void setTimeLimit(TimeLimit tl) {
-        this.tl = tl;
+    public TimeLimit getTimeLimit() {
+        return tl;
     }
 
     @Override
-    public TimeLimit getTimeLimit() {
-        return tl;
+    public void setTimeLimit(TimeLimit tl) {
+        this.tl = tl;
     }
 
     @Override
@@ -169,12 +178,19 @@ public class ComponentSolver implements Solver {
         suppressingOutput = true;
     }
 
+    public void setThreadsNum(int n) {
+        if (n < 1) {
+            throw new IllegalArgumentException();
+        }
+        threads = n;
+    }
+
     @Override
     public void setLB(double lb) {
         externLB = lb;
     }
 
-    private class SetComparator implements Comparator<Set<Node>> {
+    private static class SetComparator implements Comparator<Set<Node>> {
         @Override
         public int compare(Set<Node> o1, Set<Node> o2) {
             return -Integer.compare(o1.size(), o2.size());
