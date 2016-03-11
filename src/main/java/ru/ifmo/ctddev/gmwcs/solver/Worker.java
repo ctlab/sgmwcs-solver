@@ -33,7 +33,8 @@ public class Worker implements Runnable {
     @Override
     public void run() {
         solver.setRoot(root);
-        solver.setTimeLimit(new TimeLimit((System.currentTimeMillis() - startTime) / 1000.0));
+        double tl = solver.getTimeLimit().getRemainingTime() - (System.currentTimeMillis() - startTime) / 1000.0;
+        solver.setTimeLimit(new TimeLimit(Math.max(tl, 0.0)));
         try {
             List<Unit> sol = solver.solve(graph, synonyms);
             if (Utils.sum(sol, synonyms) > Utils.sum(result, synonyms)) {

@@ -12,10 +12,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class ComponentSolver implements Solver {
     public final int threshold;
@@ -29,6 +26,7 @@ public class ComponentSolver implements Solver {
         this.threshold = threshold;
         externLB = 0.0;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
+        threads = 1;
     }
 
     @Override
@@ -50,7 +48,7 @@ public class ComponentSolver implements Solver {
         PriorityQueue<Set<Node>> components = getComponents(graph);
         List<Worker> memorized = new ArrayList<>();
         BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(threads, threads, Long.MAX_VALUE, TimeUnit.NANOSECONDS, queue);
+        ExecutorService executor = new ThreadPoolExecutor(threads, threads, Long.MAX_VALUE, TimeUnit.NANOSECONDS, queue);
         while(!components.isEmpty()){
             Set<Node> component = components.poll();
             UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
@@ -63,6 +61,7 @@ public class ComponentSolver implements Solver {
             }
             RLTSolver solver = new RLTSolver();
             solver.setSharedLB(lb);
+            solver.setTimeLimit(tl);
             if(suppressingOutput){
                 solver.suppressOutput();
             }
