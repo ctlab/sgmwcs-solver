@@ -40,8 +40,14 @@ public class ComponentSolver implements Solver {
             System.out.print("Preprocessing deleted " + (graph.vertexSet().size() - g.vertexSet().size()) + " nodes ");
             System.out.println("and " + (graph.edgeSet().size() - g.edgeSet().size()) + " edges.");
         }
-        graph = g;
         isSolvedToOptimality = true;
+        if(g.vertexSet().size() == 0){
+            return null;
+        }
+        return afterPreprocessing(g, new LDSU<>(synonyms, units));
+    }
+
+    private List<Unit> afterPreprocessing(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
         List<Unit> best = null;
         double lb = this.lb;
         PriorityQueue<Set<Node>> components = getComponents(graph);
@@ -53,7 +59,7 @@ public class ComponentSolver implements Solver {
             UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
             Node root = null;
             if (component.size() >= threshold) {
-                root = getRoot(subgraph);
+                root = getRoot(subgraph, new Blocks(subgraph).cutpoints());
             } else if (components.isEmpty() || components.peek().size() < 50) {
                 // there will be no more big components! can take all the time we need
                 tlFactor *= 2;
@@ -64,8 +70,7 @@ public class ComponentSolver implements Solver {
             solver.setRoot(root);
             solver.setLB(lb);
             solver.setTimeLimit(new TimeLimit(tl.getRemainingTime() * tlFactor));
-            Set<Unit> subset = new HashSet<>();
-            subset.addAll(subgraph.edgeSet());
+            Set<Unit> subset = new HashSet<>(subgraph.edgeSet());
             subset.addAll(subgraph.vertexSet());
             List<Unit> solution = solver.solve(subgraph, new LDSU<>(synonyms, subset));
             if (!solver.isSolvedToOptimality()) {
@@ -75,11 +80,50 @@ public class ComponentSolver implements Solver {
                 best = solution;
                 lb = Utils.sum(best, synonyms);
             }
-            if (root != null) {
-                addComponents(subgraph, root, components);
-            }
+            addComponents(subgraph, root, components);
         }
         return extract(best, graph);
+    }
+
+    private Node getRoot(UndirectedGraph<Node, Edge> graph, Set<Node> cutpoints) {
+        Map<Node, Integer> maximum = new HashMap<>();
+        if(graph.vertexSet().isEmpty()){
+            return null;
+        }
+        Node v = graph.vertexSet().iterator().next();
+        dfs(graph, v, cutpoints, maximum, new HashSet<>());
+        if(maximum.isEmpty()){
+            return null;
+        }
+        Node best = maximum.keySet().iterator().next();
+        for(Node u : maximum.keySet()){
+            if(maximum.get(u) < maximum.get(best)){
+                best = u;
+            }
+        }
+        return best;
+    }
+
+    private int dfs(UndirectedGraph<Node, Edge> g, Node v, Set<Node> cps, Map<Node, Integer> max, Set<Node> vis) {
+        vis.add(v);
+        int res = 0;
+        for(Node u : Graphs.neighborListOf(g, v)){
+            if(vis.contains(u)){
+                continue;
+            }
+            int sum = dfs(g, u, cps, max, vis);
+            res += sum;
+            if(cps.contains(v)){
+                if(!max.containsKey(v) || max.get(v) < sum){
+                    max.put(v, sum);
+                }
+            }
+        }
+        int rest = g.vertexSet().size() - res - 1;
+        if(cps.contains(v) && (!max.containsKey(v) || max.get(v) < rest)){
+            max.put(v, rest);
+        }
+        return res + 1;
     }
 
     private List<Unit> extract(List<Unit> s, UndirectedGraph<Node, Edge> graph) {
@@ -101,42 +145,12 @@ public class ComponentSolver implements Solver {
     }
 
     private void addComponents(UndirectedGraph<Node, Edge> subgraph, Node root, PriorityQueue<Set<Node>> components) {
+        if(root == null){
+            return;
+        }
         subgraph.removeVertex(root);
         ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(subgraph);
         components.addAll(inspector.connectedSets());
-    }
-
-    private Node getRoot(UndirectedGraph<Node, Edge> graph) {
-        Blocks blocks = new Blocks(graph);
-        if (blocks.cutpoints().isEmpty()) {
-            return null;
-        }
-        int min = Integer.MAX_VALUE;
-        Node res = null;
-        for (Node cp : blocks.cutpoints()) {
-            int curr = dfs(graph, cp, true, new HashSet<>());
-            if (curr < min) {
-                min = curr;
-                res = cp;
-            }
-        }
-        return res;
-    }
-
-    private int dfs(UndirectedGraph<Node, Edge> graph, Node v, boolean isMax, Set<Node> vis) {
-        vis.add(v);
-        int res = 0;
-        for (Node u : Graphs.neighborListOf(graph, v)) {
-            if (!vis.contains(u)) {
-                int val = dfs(graph, u, false, vis);
-                if (isMax) {
-                    res = Math.max(val, res);
-                } else {
-                    res += val;
-                }
-            }
-        }
-        return isMax ? res : res + 1;
     }
 
     private PriorityQueue<Set<Node>> getComponents(UndirectedGraph<Node, Edge> graph) {
