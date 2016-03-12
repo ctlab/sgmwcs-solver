@@ -43,7 +43,7 @@ public class ComponentSolver implements Solver {
             System.out.println("and " + (graph.edgeSet().size() - g.edgeSet().size()) + " edges.");
         }
         isSolvedToOptimality = true;
-        if(g.vertexSet().size() == 0){
+        if (g.vertexSet().size() == 0) {
             return null;
         }
         return afterPreprocessing(g, new LDSU<>(synonyms, units));
@@ -112,12 +112,12 @@ public class ComponentSolver implements Solver {
         }
         Node v = blocks.cutpoints().iterator().next();
         dfs(v, null, blocks, maximum, graph.vertexSet().size());
-        if(maximum.isEmpty()){
+        if (maximum.isEmpty()) {
             return null;
         }
         Node best = maximum.keySet().iterator().next();
-        for(Node u : maximum.keySet()){
-            if(maximum.get(u) < maximum.get(best)){
+        for (Node u : maximum.keySet()) {
+            if (maximum.get(u) < maximum.get(best)) {
                 best = u;
             }
         }
@@ -149,7 +149,7 @@ public class ComponentSolver implements Solver {
     }
 
     private List<Unit> extract(List<Unit> s) {
-        if(s == null){
+        if (s == null) {
             return null;
         }
         List<Unit> l = new ArrayList<>(s);
