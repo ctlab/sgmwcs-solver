@@ -31,7 +31,6 @@ public class ComponentSolver implements Solver {
 
     @Override
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
-        long timeBefore = System.currentTimeMillis();
         isSolvedToOptimality = true;
         UndirectedGraph<Node, Edge> g = new Multigraph<>(Edge.class);
         Graphs.addGraph(g, graph);
@@ -43,7 +42,15 @@ public class ComponentSolver implements Solver {
             System.out.print("Preprocessing deleted " + (graph.vertexSet().size() - g.vertexSet().size()) + " nodes ");
             System.out.println("and " + (graph.edgeSet().size() - g.edgeSet().size()) + " edges.");
         }
-        graph = g;
+        isSolvedToOptimality = true;
+        if(g.vertexSet().size() == 0){
+            return null;
+        }
+        return afterPreprocessing(g, new LDSU<>(synonyms, units));
+    }
+
+    private List<Unit> afterPreprocessing(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
+        long timeBefore = System.currentTimeMillis();
         AtomicDouble lb = new AtomicDouble(externLB);
         PriorityQueue<Set<Node>> components = getComponents(graph);
         List<Worker> memorized = new ArrayList<>();
@@ -54,7 +61,7 @@ public class ComponentSolver implements Solver {
             UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
             Node root = null;
             if(component.size() >= threshold){
-                root = getRoot(subgraph);
+                root = getRoot(subgraph, new Blocks(subgraph));
                 if(root != null){
                     addComponents(subgraph, root, components);
                 }
@@ -98,8 +105,51 @@ public class ComponentSolver implements Solver {
         return result;
     }
 
+    private Node getRoot(UndirectedGraph<Node, Edge> graph, Blocks blocks) {
+        Map<Node, Integer> maximum = new HashMap<>();
+        if (blocks.cutpoints().isEmpty()) {
+            return null;
+        }
+        Node v = blocks.cutpoints().iterator().next();
+        dfs(v, null, blocks, maximum, graph.vertexSet().size());
+        if(maximum.isEmpty()){
+            return null;
+        }
+        Node best = maximum.keySet().iterator().next();
+        for(Node u : maximum.keySet()){
+            if(maximum.get(u) < maximum.get(best)){
+                best = u;
+            }
+        }
+        return best;
+    }
+
+    private int dfs(Node v, Node p, Blocks blocks, Map<Node, Integer> max, int n) {
+        int res = 0;
+        for (Set<Node> c : blocks.incidentBlocks(v)) {
+            if (c.contains(p)) {
+                continue;
+            }
+            int sum = c.size() - 1;
+            for (Node cp : blocks.cutpointsOf(c)) {
+                if (cp != v) {
+                    sum += dfs(cp, v, blocks, max, n);
+                }
+            }
+            if (!max.containsKey(v) || max.get(v) < sum) {
+                max.put(v, sum);
+            }
+            res += sum;
+        }
+        int rest = n - res - 1;
+        if (!max.containsKey(v) || max.get(v) < rest) {
+            max.put(v, rest);
+        }
+        return res;
+    }
+
     private List<Unit> extract(List<Unit> s) {
-        if (s == null) {
+        if(s == null){
             return null;
         }
         List<Unit> l = new ArrayList<>(s);
@@ -114,45 +164,13 @@ public class ComponentSolver implements Solver {
         return isSolvedToOptimality;
     }
 
-    private void addComponents(UndirectedGraph<Node, Edge> subgraph, Node root, PriorityQueue<Set<Node>> components) {
+    private void addComponents(UndirectedGraph<Node, Edge> graph, Node root, PriorityQueue<Set<Node>> components) {
         UndirectedGraph<Node, Edge> copy = new Multigraph<>(Edge.class);
-        Graphs.addGraph(copy, subgraph);
-        copy.removeVertex(root);
-        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(copy);
+        Graphs.addGraph(copy, graph);
+        graph = copy;
+        graph.removeVertex(root);
+        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
         components.addAll(inspector.connectedSets());
-    }
-
-    private Node getRoot(UndirectedGraph<Node, Edge> graph) {
-        Blocks blocks = new Blocks(graph);
-        if (blocks.cutpoints().isEmpty()) {
-            return null;
-        }
-        int min = Integer.MAX_VALUE;
-        Node res = null;
-        for (Node cp : blocks.cutpoints()) {
-            int curr = dfs(graph, cp, true, new HashSet<>());
-            if (curr < min) {
-                min = curr;
-                res = cp;
-            }
-        }
-        return res;
-    }
-
-    private int dfs(UndirectedGraph<Node, Edge> graph, Node v, boolean isMax, Set<Node> vis) {
-        vis.add(v);
-        int res = 0;
-        for (Node u : Graphs.neighborListOf(graph, v)) {
-            if (!vis.contains(u)) {
-                int val = dfs(graph, u, false, vis);
-                if (isMax) {
-                    res = Math.max(val, res);
-                } else {
-                    res += val;
-                }
-            }
-        }
-        return isMax ? res : res + 1;
     }
 
     private PriorityQueue<Set<Node>> getComponents(UndirectedGraph<Node, Edge> graph) {
