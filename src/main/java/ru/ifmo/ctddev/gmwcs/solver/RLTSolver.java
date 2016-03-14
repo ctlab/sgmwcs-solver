@@ -4,15 +4,10 @@ import ilog.concert.IloException;
 import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
-import org.jgrapht.Graphs;
-import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
-import ru.ifmo.ctddev.gmwcs.graph.Blocks;
-import ru.ifmo.ctddev.gmwcs.graph.Edge;
-import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 
@@ -27,7 +22,7 @@ public class RLTSolver implements RootedSolver {
     private TimeLimit tl;
     private int threads;
     private boolean suppressOutput;
-    private UndirectedGraph<Node, Edge> graph;
+    private Graph graph;
     private Node root;
     private boolean isSolvedToOptimality;
     private int maxToAddCuts;
@@ -73,7 +68,7 @@ public class RLTSolver implements RootedSolver {
     }
 
     @Override
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
+    public List<Unit> solve(Graph graph, LDSU<Unit> synonyms) throws SolverException {
         try {
             if(!isLBShared){
                 lb = new AtomicDouble(externLB);
@@ -128,14 +123,14 @@ public class RLTSolver implements RootedSolver {
     }
 
     private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks, Separator separator) throws IloException {
-        separator.addComponent(Utils.subgraph(graph, component), root);
+        separator.addComponent(graph.subgraph(component), root);
         if (!fake) {
             for (Node node : component) {
                 cplex.addLe(cplex.diff(y.get(node), y.get(root)), 0);
             }
         }
         for (Edge e : graph.edgesOf(root)) {
-            if (!component.contains(Graphs.getOppositeVertex(graph, e, root))) {
+            if (!component.contains(graph.getOppositeVertex(root, e))) {
                 continue;
             }
             cplex.addEq(getX(e, root), 0);
@@ -303,7 +298,7 @@ public class RLTSolver implements RootedSolver {
 
     private void maxSizeConstraints() throws IloException {
         for (Node v : graph.vertexSet()) {
-            for (Node u : Graphs.neighborListOf(graph, v)) {
+            for (Node u : graph.neighborListOf(v)) {
                 if (u.getWeight() >= 0) {
                     Edge e = graph.getEdge(v, u);
                     if (e != null && e.getWeight() >= 0) {

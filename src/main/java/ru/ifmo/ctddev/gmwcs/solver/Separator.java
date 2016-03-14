@@ -3,8 +3,8 @@ package ru.ifmo.ctddev.gmwcs.solver;
 import ilog.concert.IloException;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
-import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
@@ -26,13 +26,13 @@ public class Separator extends IloCplex.UserCutCallback {
     private Map<Edge, IloNumVar> w;
     private int waited;
     private double period;
-    private UndirectedGraph<Node, Edge> graph;
+    private Graph graph;
     private double last;
     private boolean inited;
     private Map<Unit, Integer> indices;
     private IloNumVar[] vars;
 
-    public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex, UndirectedGraph<Node, Edge> graph,
+    public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex, Graph graph,
                      IloNumVar sum, AtomicDouble lb) {
         this.y = y;
         this.w = w;
@@ -69,7 +69,7 @@ public class Separator extends IloCplex.UserCutCallback {
     public Separator clone() {
         Separator result = new Separator(y, w, cplex, graph, sum, lb);
         for (CutGenerator generator : generatorList) {
-            result.addComponent(Utils.subgraph(graph, generator.getNodes()), generator.getRoot());
+            result.addComponent(graph.subgraph(generator.getNodes()), generator.getRoot());
         }
         return result;
     }
@@ -145,7 +145,7 @@ public class Separator extends IloCplex.UserCutCallback {
         }
     }
 
-    public void addComponent(UndirectedGraph<Node, Edge> graph, Node root) {
+    public void addComponent(Graph graph, Node root) {
         CutGenerator generator = new CutGenerator(graph, root);
         generatorList.add(generator);
         for (Node node : generator.getNodes()) {

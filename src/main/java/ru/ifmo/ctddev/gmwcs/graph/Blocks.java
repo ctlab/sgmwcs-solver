@@ -1,12 +1,9 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
-import org.jgrapht.Graphs;
-import org.jgrapht.UndirectedGraph;
-
 import java.util.*;
 
 public class Blocks {
-    private UndirectedGraph<Node, Edge> graph;
+    private Graph graph;
     private Map<Node, Integer> enter;
     private Map<Node, Integer> up;
     private Stack<Edge> stack;
@@ -19,7 +16,7 @@ public class Blocks {
     private int rootChildren;
     private int time;
 
-    public Blocks(UndirectedGraph<Node, Edge> graph) {
+    public Blocks(Graph graph) {
         enter = new LinkedHashMap<>();
         up = new LinkedHashMap<>();
         stack = new Stack<>();
@@ -78,7 +75,7 @@ public class Blocks {
         time++;
         enter.put(v, time);
         up.put(v, time);
-        for (Node u : Graphs.neighborListOf(graph, v)) {
+        for (Node u : graph.neighborListOf(v)) {
             if (u == parent) {
                 continue;
             }

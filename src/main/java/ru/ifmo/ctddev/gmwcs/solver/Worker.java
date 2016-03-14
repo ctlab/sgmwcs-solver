@@ -1,9 +1,8 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
-import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
@@ -11,7 +10,7 @@ import java.util.List;
 
 public class Worker implements Runnable {
     private final LDSU<Unit> synonyms;
-    private final UndirectedGraph<Node, Edge> graph;
+    private final Graph graph;
     private final RootedSolver solver;
     private final Node root;
     private List<Unit> result;
@@ -19,7 +18,7 @@ public class Worker implements Runnable {
     private boolean isOk;
     private long startTime;
 
-    public Worker(UndirectedGraph<Node, Edge> graph, Node root, LDSU<Unit> synonyms, RootedSolver solver, long time) {
+    public Worker(Graph graph, Node root, LDSU<Unit> synonyms, RootedSolver solver, long time) {
         this.solver = solver;
         this.graph = graph;
         this.synonyms = synonyms;

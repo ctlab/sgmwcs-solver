@@ -2,11 +2,7 @@ package ru.ifmo.ctddev.gmwcs;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import org.jgrapht.UndirectedGraph;
-import ru.ifmo.ctddev.gmwcs.graph.Edge;
-import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.SimpleIO;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.*;
 import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 import ru.ifmo.ctddev.gmwcs.solver.Utils;
@@ -69,7 +65,7 @@ public class Main {
                 edgeFile, new File(edgeFile.toString() + ".out"), optionSet.has("i"));
         LDSU<Unit> synonyms = new LDSU<>();
         try {
-            UndirectedGraph<Node, Edge> graph = graphIO.read();
+            Graph graph = graphIO.read();
             if (optionSet.has("s")) {
                 synonyms = graphIO.getSynonyms(new File((String) optionSet.valueOf("s")));
             } else {
