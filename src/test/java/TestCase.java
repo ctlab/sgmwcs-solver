@@ -1,16 +1,14 @@
-import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
-import ru.ifmo.ctddev.gmwcs.graph.Edge;
-import ru.ifmo.ctddev.gmwcs.graph.Node;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
 
 public class TestCase {
-    private UndirectedGraph<Node, Edge> graph;
+    private Graph graph;
     private LDSU<Unit> synonyms;
 
-    public TestCase(UndirectedGraph<Node, Edge> graph, Random random) {
+    public TestCase(Graph graph, Random random) {
         this.graph = graph;
         synonyms = new LDSU<>();
         makeSynonyms(synonyms, random, graph.vertexSet());
@@ -42,7 +40,7 @@ public class TestCase {
         return synonyms;
     }
 
-    public UndirectedGraph<Node, Edge> graph() {
+    public Graph graph() {
         return graph;
     }
 

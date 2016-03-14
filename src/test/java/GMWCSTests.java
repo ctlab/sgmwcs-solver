@@ -1,11 +1,10 @@
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.graph.Multigraph;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import ru.ifmo.ctddev.gmwcs.solver.*;
@@ -48,7 +47,7 @@ public class GMWCSTests {
         if (DEBUG_TEST != null) {
             return;
         }
-        UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
+        Graph graph = new Graph();
         List<Unit> res = solver.solve(graph, new LDSU<>());
         if (!(res == null || res.isEmpty())) {
             Assert.assertTrue(false);
@@ -157,7 +156,7 @@ public class GMWCSTests {
             }
             Collections.sort(edgesCount);
             for (int count : edgesCount) {
-                UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
+                Graph graph = new Graph();
                 Node[] nodes = fillNodes(graph, size);
                 List<Integer> seq = new ArrayList<>();
                 for (int j = 0; j < size; j++) {
@@ -177,14 +176,14 @@ public class GMWCSTests {
         for (int i = 0; i < RANDOM_TESTS; i++) {
             int n = random.nextInt(MAX_SIZE) + 1;
             int m = Math.min((n * (n - 1)) / 2, random.nextInt(MAX_SIZE));
-            UndirectedGraph<Node, Edge> graph = new Multigraph<>(Edge.class);
+            Graph graph = new Graph();
             Node[] nodes = fillNodes(graph, n);
             fillEdgesRandomly(graph, m, nodes, 1);
             tests.add(new TestCase(graph, random));
         }
     }
 
-    private Node[] fillNodes(UndirectedGraph<Node, Edge> graph, int size) {
+    private Node[] fillNodes(Graph graph, int size) {
         Node[] nodes = new Node[size];
         for (int j = 0; j < size; j++) {
             nodes[j] = new Node(j + 1, random.nextInt(16) - 8);
@@ -193,7 +192,7 @@ public class GMWCSTests {
         return nodes;
     }
 
-    private void fillEdgesRandomly(UndirectedGraph<Node, Edge> graph, int count, Node[] nodes, int offset) {
+    private void fillEdgesRandomly(Graph graph, int count, Node[] nodes, int offset) {
         int size = graph.vertexSet().size();
         for (int j = 0; j < count; j++) {
             int u = random.nextInt(size);

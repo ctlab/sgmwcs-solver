@@ -1,8 +1,8 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.flow.EdmondsKarp;
 import ru.ifmo.ctddev.gmwcs.graph.flow.MaxFlow;
@@ -16,9 +16,9 @@ public class CutGenerator {
     private Map<Edge, Pair<Integer, Integer>> edges;
     private List<Node> backLink;
     private Map<Node, Double> weights;
-    private UndirectedGraph<Node, Edge> graph;
+    private Graph graph;
 
-    public CutGenerator(UndirectedGraph<Node, Edge> graph, Node root) {
+    public CutGenerator(Graph graph, Node root) {
         int i = 0;
         weights = new HashMap<>();
         backLink = new ArrayList<>();

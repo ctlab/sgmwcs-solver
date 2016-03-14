@@ -1,15 +1,17 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.graph.UndirectedSubgraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class Utils {
     public static double sum(Collection<? extends Unit> units, LDSU<Unit> synonyms) {
@@ -31,18 +33,6 @@ public class Utils {
         return result;
     }
 
-    public static UndirectedGraph<Node, Edge> subgraph(UndirectedGraph<Node, Edge> source, Set<Node> nodes) {
-        Set<Edge> edges = new TreeSet<>();
-        for (Edge edge : source.edgeSet()) {
-            if (nodes.contains(source.getEdgeSource(edge)) && nodes.contains(source.getEdgeTarget(edge))) {
-                edges.add(edge);
-            }
-        }
-        Set<Node> sortedNodes = new TreeSet<>();
-        sortedNodes.addAll(nodes);
-        return new UndirectedSubgraph<>(source, sortedNodes, edges);
-    }
-
     private static String dotColor(Unit unit, List<Unit> expected, List<Unit> actual) {
         if (actual != null && expected.contains(unit) && actual.contains(unit)) {
             return "YELLOW";
@@ -56,7 +46,7 @@ public class Utils {
         return "BLACK";
     }
 
-    public static void toXdot(UndirectedGraph<Node, Edge> graph, List<Unit> expected, List<Unit> actual) throws IOException {
+    public static void toXdot(Graph graph, List<Unit> expected, List<Unit> actual) throws IOException {
         Runtime runtime = Runtime.getRuntime();
         Process process = runtime.exec("xdot");
         try (PrintWriter os = new PrintWriter(process.getOutputStream())) {

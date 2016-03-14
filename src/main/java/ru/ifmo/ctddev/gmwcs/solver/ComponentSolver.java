@@ -1,13 +1,9 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import org.jgrapht.Graphs;
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.alg.ConnectivityInspector;
-import org.jgrapht.graph.Multigraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Blocks;
-import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
@@ -29,9 +25,8 @@ public class ComponentSolver implements Solver {
     }
 
     @Override
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
-        UndirectedGraph<Node, Edge> g = new Multigraph<>(Edge.class);
-        Graphs.addGraph(g, graph);
+    public List<Unit> solve(Graph graph, LDSU<Unit> synonyms) throws SolverException {
+        Graph g = graph.subgraph(graph.vertexSet());
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
         synonyms = new LDSU<>(synonyms, units);
@@ -47,7 +42,7 @@ public class ComponentSolver implements Solver {
         return afterPreprocessing(g, new LDSU<>(synonyms, units));
     }
 
-    private List<Unit> afterPreprocessing(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms) throws SolverException {
+    private List<Unit> afterPreprocessing(Graph graph, LDSU<Unit> synonyms) throws SolverException {
         List<Unit> best = null;
         double lb = this.lb;
         PriorityQueue<Set<Node>> components = getComponents(graph);
@@ -56,7 +51,7 @@ public class ComponentSolver implements Solver {
         while (!components.isEmpty()) {
             tlFactor /= 2;
             Set<Node> component = components.poll();
-            UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
+            Graph subgraph = graph.subgraph(component);
             Node root = null;
             if (component.size() >= threshold) {
                 root = getRoot(subgraph, new Blocks(subgraph));
@@ -85,7 +80,7 @@ public class ComponentSolver implements Solver {
         return extract(best, graph);
     }
 
-    private Node getRoot(UndirectedGraph<Node, Edge> graph, Blocks blocks) {
+    private Node getRoot(Graph graph, Blocks blocks) {
         Map<Node, Integer> maximum = new HashMap<>();
         if (blocks.cutpoints().isEmpty()) {
             return null;
@@ -128,7 +123,7 @@ public class ComponentSolver implements Solver {
         return res;
     }
 
-    private List<Unit> extract(List<Unit> s, UndirectedGraph<Node, Edge> graph) {
+    private List<Unit> extract(List<Unit> s, Graph graph) {
         if(s == null){
             return null;
         }
@@ -146,19 +141,17 @@ public class ComponentSolver implements Solver {
         return isSolvedToOptimality;
     }
 
-    private void addComponents(UndirectedGraph<Node, Edge> subgraph, Node root, PriorityQueue<Set<Node>> components) {
+    private void addComponents(Graph subgraph, Node root, PriorityQueue<Set<Node>> components) {
         if(root == null){
             return;
         }
         subgraph.removeVertex(root);
-        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(subgraph);
-        components.addAll(inspector.connectedSets());
+        components.addAll(subgraph.connectedSets());
     }
 
-    private PriorityQueue<Set<Node>> getComponents(UndirectedGraph<Node, Edge> graph) {
-        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
+    private PriorityQueue<Set<Node>> getComponents(Graph graph) {
         PriorityQueue<Set<Node>> result = new PriorityQueue<>(new SetComparator());
-        result.addAll(inspector.connectedSets());
+        result.addAll(graph.connectedSets());
         return result;
     }
 

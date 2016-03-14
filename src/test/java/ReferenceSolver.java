@@ -1,8 +1,6 @@
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.alg.ConnectivityInspector;
-import org.jgrapht.graph.UndirectedSubgraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
@@ -11,7 +9,7 @@ import java.util.*;
 import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
 
 public class ReferenceSolver {
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms, List<Node> roots) {
+    public List<Unit> solve(Graph graph, LDSU<Unit> synonyms, List<Node> roots) {
         for (Node root : roots) {
             if (!graph.containsVertex(root)) {
                 throw new IllegalArgumentException();
@@ -40,16 +38,15 @@ public class ReferenceSolver {
                 }
             }
 
-            UndirectedGraph<Node, Edge> subgraph = new UndirectedSubgraph<>(graph, graph.vertexSet(), currEdges);
-            ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(subgraph);
-            for (Set<Node> component : inspector.connectedSets()) {
+            Graph subgraph = graph.subgraph(graph.vertexSet(), currEdges);
+            for (Set<Node> component : subgraph.connectedSets()) {
                 if (component.size() == 1) {
                     subgraph.removeVertex(component.iterator().next());
                 }
             }
-            inspector = new ConnectivityInspector<>(subgraph);
-            if (inspector.connectedSets().size() == 1) {
-                Set<Node> res = inspector.connectedSets().iterator().next();
+            List<Set<Node>> connectedSets = subgraph.connectedSets();
+            if (connectedSets.size() == 1) {
+                Set<Node> res = connectedSets.iterator().next();
                 boolean containsRoots = true;
                 for (Node root : roots) {
                     if (!res.contains(root)) {

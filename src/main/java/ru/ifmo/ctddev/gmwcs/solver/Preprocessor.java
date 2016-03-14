@@ -1,9 +1,8 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import org.jgrapht.Graphs;
-import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
@@ -12,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Preprocessor {
-    public static void preprocess(UndirectedGraph<Node, Edge> graph, LDSU<Unit> synonyms){
+    public static void preprocess(Graph graph, LDSU<Unit> synonyms) {
         for(Edge edge : new ArrayList<>(graph.edgeSet())){
             if(!graph.containsEdge(edge)){
                 continue;
@@ -29,8 +28,8 @@ public class Preprocessor {
                 if(edges[1].getWeight() > 0 || edges[0].getWeight() > 0){
                     continue;
                 }
-                Node left = Graphs.getOppositeVertex(graph, edges[0], v);
-                Node right = Graphs.getOppositeVertex(graph, edges[1], v);
+                Node left = graph.getOppositeVertex(v, edges[0]);
+                Node right = graph.getOppositeVertex(v, edges[1]);
                 if (left == right) {
                     graph.removeVertex(v);
                 } else {
@@ -43,7 +42,7 @@ public class Preprocessor {
         }
     }
 
-    private static void merge(UndirectedGraph<Node, Edge> graph, LDSU<Unit> ss, Unit... units) {
+    private static void merge(Graph graph, LDSU<Unit> ss, Unit... units) {
         Set<Node> nodes = new HashSet<>();
         Set<Edge> edges = new HashSet<>();
         for(Unit unit : units){
@@ -63,13 +62,13 @@ public class Preprocessor {
         }
     }
 
-    private static void contract(UndirectedGraph<Node, Edge> graph, LDSU<Unit> ss, Edge e) {
+    private static void contract(Graph graph, LDSU<Unit> ss, Edge e) {
         Node main = graph.getEdgeSource(e);
         Node aux = graph.getEdgeTarget(e);
         Set<Edge> auxEdges = new HashSet<>(graph.edgesOf(aux));
         auxEdges.remove(e);
         for(Edge a : auxEdges){
-            Node opposite = Graphs.getOppositeVertex(graph, a, aux);
+            Node opposite = graph.getOppositeVertex(aux, a);
             Edge m = graph.getEdge(main, opposite);
             graph.removeEdge(a);
             if(m == null){

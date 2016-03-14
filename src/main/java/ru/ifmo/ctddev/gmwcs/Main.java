@@ -2,7 +2,6 @@ package ru.ifmo.ctddev.gmwcs;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.graph.*;
 import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
@@ -79,7 +78,7 @@ public class Main {
             rltSolver.setCallback(new WritingCallback(graphIO));
         }
         try {
-            UndirectedGraph<Node, Edge> graph = graphIO.read();
+            Graph graph = graphIO.read();
             if (optionSet.has("s")) {
                 synonyms = graphIO.getSynonyms(new File((String) optionSet.valueOf("s")));
             } else {
