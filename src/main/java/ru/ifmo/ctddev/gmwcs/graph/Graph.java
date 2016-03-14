@@ -49,7 +49,7 @@ public class Graph {
 
     private void addToConnected(Node v, Node u, Link l) {
         Map<Node, LinksList> m = connected.get(v);
-        if (m.containsKey(u)) {
+        if (!m.containsKey(u)) {
             m.put(u, new LinksList());
         }
         m.get(u).add(l);
@@ -94,7 +94,15 @@ public class Graph {
     }
 
     public Edge getEdge(Node v, Node u) {
-        Iterator<Link> it = connected.get(v).get(u).iterator();
+        Map<Node, LinksList> vadj = connected.get(v);
+        if (vadj == null) {
+            throw new IllegalArgumentException();
+        }
+        LinksList edges = connected.get(v).get(u);
+        if (edges == null) {
+            return null;
+        }
+        Iterator<Link> it = edges.iterator();
         return it.hasNext() ? it.next().e : null;
     }
 
@@ -133,11 +141,26 @@ public class Graph {
     }
 
     public Graph subgraph(Set<Node> nodes) {
-        Graph graph = new Graph();
+        Set<Edge> edges = new LinkedHashSet<>();
+        for (Node v : nodes) {
+            for (Node u : neighborListOf(v)) {
+                if (nodes.contains(u)) {
+                    edges.addAll(getAllEdges(v, u));
+                }
+            }
+        }
+        return subgraph(nodes, edges);
     }
 
     public Graph subgraph(Set<Node> nodes, Set<Edge> edges) {
-
+        Graph res = new Graph();
+        nodes.stream().forEach(res::addVertex);
+        for (Edge e : edges) {
+            if (containsEdge(e)) {
+                res.addEdge(getEdgeSource(e), getEdgeTarget(e), e);
+            }
+        }
+        return res;
     }
 
     public List<Set<Node>> connectedSets() {
@@ -219,7 +242,9 @@ public class Graph {
             if (next == null) {
                 throw new NoSuchElementException();
             }
-            return next;
+            Link res = next;
+            step();
+            return res;
         }
     }
 
