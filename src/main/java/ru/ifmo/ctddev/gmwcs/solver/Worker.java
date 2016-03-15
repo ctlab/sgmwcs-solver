@@ -34,6 +34,7 @@ public class Worker implements Runnable {
         solver.setRoot(root);
         double tl = solver.getTimeLimit().getRemainingTime() - (System.currentTimeMillis() - startTime) / 1000.0;
         if (tl <= 0) {
+            isSolvedToOptimality = false;
             return;
         }
         solver.setTimeLimit(new TimeLimit(Math.max(tl, 0.0)));
