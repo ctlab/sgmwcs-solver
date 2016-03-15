@@ -55,7 +55,8 @@ public class ComponentSolver implements Solver {
             Set<Node> component = components.poll();
             Graph subgraph = graph.subgraph(component);
             Node root = null;
-            if(component.size() >= threshold){
+            double timeRemains = tl.getRemainingTime() - (System.currentTimeMillis() - timeBefore) / 1000.0;
+            if (component.size() >= threshold && timeRemains > 0) {
                 root = getRoot(subgraph, new Blocks(subgraph));
                 if(root != null){
                     addComponents(subgraph, root, components);

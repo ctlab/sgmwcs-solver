@@ -33,6 +33,9 @@ public class Worker implements Runnable {
     public void run() {
         solver.setRoot(root);
         double tl = solver.getTimeLimit().getRemainingTime() - (System.currentTimeMillis() - startTime) / 1000.0;
+        if (tl <= 0) {
+            return;
+        }
         solver.setTimeLimit(new TimeLimit(Math.max(tl, 0.0)));
         try {
             List<Unit> sol = solver.solve(graph, synonyms);
