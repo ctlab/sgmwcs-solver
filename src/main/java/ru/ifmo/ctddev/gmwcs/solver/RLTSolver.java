@@ -70,6 +70,7 @@ public class RLTSolver implements RootedSolver {
     @Override
     public List<Unit> solve(Graph graph, LDSU<Unit> synonyms) throws SolverException {
         try {
+            isSolvedToOptimality = false;
             if(!isLBShared){
                 lb = new AtomicDouble(externLB);
             }
@@ -87,6 +88,9 @@ public class RLTSolver implements RootedSolver {
             breakTreeSymmetries();
             tuning(cplex);
             boolean solFound = cplex.solve();
+            if (cplex.getCplexStatus() != IloCplex.CplexStatus.AbortTimeLim) {
+                isSolvedToOptimality = true;
+            }
             if (solFound) {
                 return getResult();
             }
@@ -151,7 +155,6 @@ public class RLTSolver implements RootedSolver {
     }
 
     private List<Unit> getResult() throws IloException {
-        isSolvedToOptimality = false;
         List<Unit> result = new ArrayList<>();
         for (Node node : graph.vertexSet()) {
             if (cplex.getValue(y.get(node)) > EPS) {
@@ -162,9 +165,6 @@ public class RLTSolver implements RootedSolver {
             if (cplex.getValue(w.get(edge)) > EPS) {
                 result.add(edge);
             }
-        }
-        if (cplex.getStatus() == IloCplex.Status.Optimal) {
-            isSolvedToOptimality = true;
         }
         return result;
     }
