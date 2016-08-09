@@ -17,12 +17,14 @@ public class ComponentSolver implements Solver {
     private boolean isSolvedToOptimality;
     private boolean suppressingOutput;
     private int threads;
+    private double edgePenalty;
 
     public ComponentSolver(int threshold) {
         this.threshold = threshold;
         externLB = 0.0;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
+        edgePenalty = 0;
     }
 
     @Override
@@ -32,10 +34,12 @@ public class ComponentSolver implements Solver {
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
         synonyms = new LDSU<>(synonyms, units);
-        Preprocessor.preprocess(g, synonyms);
-        if (!suppressingOutput) {
-            System.out.print("Preprocessing deleted " + (graph.vertexSet().size() - g.vertexSet().size()) + " nodes ");
-            System.out.println("and " + (graph.edgeSet().size() - g.edgeSet().size()) + " edges.");
+        if (edgePenalty == 0) {
+            Preprocessor.preprocess(g, synonyms);
+            if (!suppressingOutput) {
+                System.out.print("Preprocessing deleted " + (graph.vertexSet().size() - g.vertexSet().size()) + " nodes ");
+                System.out.println("and " + (graph.edgeSet().size() - g.edgeSet().size()) + " edges.");
+            }
         }
         isSolvedToOptimality = true;
         if (g.vertexSet().size() == 0) {
@@ -65,6 +69,7 @@ public class ComponentSolver implements Solver {
             RLTSolver solver = new RLTSolver();
             solver.setSharedLB(lb);
             solver.setTimeLimit(tl);
+            solver.setEdgePenalty(edgePenalty);
             if(suppressingOutput){
                 solver.suppressOutput();
             }
@@ -181,6 +186,10 @@ public class ComponentSolver implements Solver {
     @Override
     public void setTimeLimit(TimeLimit tl) {
         this.tl = tl;
+    }
+
+    public void setEdgePenalty(double edgePenalty) {
+        this.edgePenalty = edgePenalty;
     }
 
     @Override

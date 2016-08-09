@@ -28,6 +28,8 @@ public class Main {
         optionParser.acceptsAll(asList("s", "synonyms", "signals", "groups"), "Synonym list file").withRequiredArg();
         optionParser.accepts("c", "Threshold for CPE solver").withRequiredArg().
                 ofType(Integer.class).defaultsTo(500);
+        optionParser.acceptsAll(asList("p", "penalty"), "Penalty for each additional edge")
+                .withRequiredArg().ofType(Double.class).defaultsTo(.0);
         optionParser.acceptsAll(asList("i", "ignore-negatives"), "Don't consider negative signals");
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
@@ -58,9 +60,15 @@ public class Main {
         int threads = (Integer) optionSet.valueOf("m");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
+        double edgePenalty = (Double) optionSet.valueOf("p");
+        if (edgePenalty < 0) {
+            System.err.println("Edge penalty can't be negative");
+            System.exit(1);
+        }
         ComponentSolver solver = new ComponentSolver(threshold);
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
+        solver.setEdgePenalty(edgePenalty);
         SimpleIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"), optionSet.has("i"));
         LDSU<Unit> synonyms = new LDSU<>();

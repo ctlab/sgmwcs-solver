@@ -31,12 +31,14 @@ public class RLTSolver implements RootedSolver {
     private double externLB;
     private boolean isLBShared;
     private IloNumVar sum;
+    private double edgePenalty;
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
         externLB = 0.0;
         maxToAddCuts = considerCuts = Integer.MAX_VALUE;
+        edgePenalty = 0;
     }
 
     public void setMaxToAddCuts(int num) {
@@ -63,6 +65,10 @@ public class RLTSolver implements RootedSolver {
         this.threads = threads;
     }
 
+    public void setEdgePenalty(double edgePenalty) {
+        this.edgePenalty = edgePenalty;
+    }
+
     public void setRoot(Node root) {
         this.root = root;
     }
@@ -79,7 +85,9 @@ public class RLTSolver implements RootedSolver {
             initVariables();
             addConstraints();
             addObjective(synonyms);
-            maxSizeConstraints();
+            if (edgePenalty <= 0) {
+                maxSizeConstraints();
+            }
             if (root == null) {
                 breakRootSymmetry();
             } else {
@@ -253,9 +261,23 @@ public class RLTSolver implements RootedSolver {
                 cplex.addGe(cplex.prod(vars.length, x), cplex.sum(vars));
             }
         }
+
+        if (edgePenalty > 0) {
+            IloNumVar numEdges = cplex.numVar(0, Double.MAX_VALUE);
+
+            IloNumExpr edgesSum = cplex.sum(w.values().toArray(new IloNumVar[0])); 
+
+            ks.add(-edgePenalty);
+            vs.add(numEdges);
+
+            cplex.addEq(numEdges, edgesSum);
+        }
+
         IloNumExpr sum = cplex.scalProd(ks.stream().mapToDouble(d -> d).toArray(),
                 vs.toArray(new IloNumVar[vs.size()]));
+        
         this.sum = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE);
+
         cplex.addGe(sum, lb.get());
         cplex.addEq(this.sum, sum);
         cplex.addMaximize(sum);
