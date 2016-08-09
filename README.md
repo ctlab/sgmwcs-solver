@@ -1,4 +1,7 @@
-# gmwcs-solver
+# sgmwcs-solver
+
+This is a solver for signal version of generalized maximum-weight connected subgraph problem (SGMWCS).
+
 Compilation
 ===========
 
@@ -30,11 +33,12 @@ See more help by using flag -h.
 Problem
 =========
 
-Solver solves Maximum Weighted Connected Subgraph problem with weighted vertices and edges. Besides, there is possibility to
-create groups of vertices or edges. Weight of group takes into consideration in goal function only if at least one
-vertex or edge presents in solution.
+The solver solves a signal version of generalized Maximum Weighted Connected Subgraph problem with weighted vertices and edges.
+Input of the problem is graph with node and edge weights (positive or negative). 
+Some of the nodes or edges are grouped into a signal so that each node/edge in the signal has the same score.
+The goal is to find a connected subgraph with a maximal weight, considered nodes/edges in a signal group are counted maximum one time.
 
-Sample
+Example
 =========
 
 Node file(node_name  node_weight):
