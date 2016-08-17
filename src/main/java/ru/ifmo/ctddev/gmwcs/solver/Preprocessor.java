@@ -23,7 +23,7 @@ public class Preprocessor {
             }
         }
         for (Node v : new ArrayList<>(graph.vertexSet())) {
-            if (v.getWeight() < 0 && graph.degreeOf(v) == 2) {
+            if (v.getWeight() <= 0 && graph.degreeOf(v) == 2) {
                 Edge[] edges = graph.edgesOf(v).stream().toArray(Edge[]::new);
                 if (edges[1].getWeight() > 0 || edges[0].getWeight() > 0) {
                     continue;
