@@ -15,7 +15,7 @@ public class ComponentSolver implements Solver {
     private TimeLimit tl;
     private Double externLB;
     private boolean isSolvedToOptimality;
-    private boolean suppressingOutput;
+    private int logLevel;
     private int threads;
     private double edgePenalty;
 
@@ -36,7 +36,7 @@ public class ComponentSolver implements Solver {
         synonyms = new LDSU<>(synonyms, units);
         if (edgePenalty == 0) {
             Preprocessor.preprocess(g, synonyms);
-            if (!suppressingOutput) {
+            if (logLevel > 0) {
                 System.out.print("Preprocessing deleted " + (graph.vertexSet().size() - g.vertexSet().size()) + " nodes ");
                 System.out.println("and " + (graph.edgeSet().size() - g.edgeSet().size()) + " edges.");
             }
@@ -70,9 +70,7 @@ public class ComponentSolver implements Solver {
             solver.setSharedLB(lb);
             solver.setTimeLimit(tl);
             solver.setEdgePenalty(edgePenalty);
-            if(suppressingOutput){
-                solver.suppressOutput();
-            }
+            solver.setLogLevel(logLevel);
             Set<Unit> subset = new HashSet<>(subgraph.vertexSet());
             subset.addAll(subgraph.edgeSet());
             Worker worker = new Worker(subgraph, root, new LDSU<>(synonyms, subset), solver, timeBefore);
@@ -193,8 +191,8 @@ public class ComponentSolver implements Solver {
     }
 
     @Override
-    public void suppressOutput() {
-        suppressingOutput = true;
+    public void setLogLevel(int logLevel) {
+        this.logLevel = logLevel;
     }
 
     public void setThreadsNum(int n) {

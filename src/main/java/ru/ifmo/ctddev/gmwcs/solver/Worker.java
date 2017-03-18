@@ -23,7 +23,6 @@ public class Worker implements Runnable {
         this.graph = graph;
         this.synonyms = synonyms;
         this.root = root;
-        solver.suppressOutput();
         isSolvedToOptimality = true;
         isOk = true;
         startTime = time;

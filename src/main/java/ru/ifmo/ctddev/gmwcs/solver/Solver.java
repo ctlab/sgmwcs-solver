@@ -16,7 +16,7 @@ public interface Solver {
 
     void setTimeLimit(TimeLimit tl);
 
-    void suppressOutput();
+    void setLogLevel(int logLevel);
 
     void setLB(double lb);
 }

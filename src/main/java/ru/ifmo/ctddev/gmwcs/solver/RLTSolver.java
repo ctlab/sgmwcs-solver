@@ -21,7 +21,7 @@ public class RLTSolver implements RootedSolver {
     private Map<Node, IloNumVar> x0;
     private TimeLimit tl;
     private int threads;
-    private boolean suppressOutput;
+    private int logLevel;
     private Graph graph;
     private Node root;
     private boolean isSolvedToOptimality;
@@ -201,12 +201,12 @@ public class RLTSolver implements RootedSolver {
     }
 
     private void tuning(IloCplex cplex) throws IloException {
-        if (suppressOutput) {
+        if (logLevel < 2) {
             cplex.setOut(null);
             cplex.setWarning(null);
         }
         if (isLBShared) {
-            cplex.use(new MIPCallback(suppressOutput));
+            cplex.use(new MIPCallback(logLevel == 0));
         }
         cplex.setParam(IloCplex.IntParam.Threads, threads);
         cplex.setParam(IloCplex.IntParam.ParallelMode, -1);
@@ -288,8 +288,8 @@ public class RLTSolver implements RootedSolver {
     }
 
     @Override
-    public void suppressOutput() {
-        suppressOutput = true;
+    public void setLogLevel(int logLevel) {
+        this.logLevel = logLevel;
     }
 
     private void addConstraints() throws IloException {

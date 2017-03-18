@@ -49,7 +49,7 @@ public class GMWCSTest {
             return;
         }
         Graph graph = new Graph();
-        solver.suppressOutput();
+        solver.setLogLevel(0);
         List<Unit> res = solver.solve(graph, new LDSU<>());
         if (!(res == null || res.isEmpty())) {
             Assert.assertTrue(false);
@@ -102,7 +102,7 @@ public class GMWCSTest {
         List<Unit> expected = referenceSolver.solve(test.graph(), test.synonyms(), Collections.emptyList());
         List<Unit> actual = null;
         try {
-            solver.suppressOutput();
+            solver.setLogLevel(0);
             actual = solver.solve(test.graph(), test.synonyms());
         } catch (SolverException e) {
             System.out.println();

@@ -70,6 +70,7 @@ public class Main {
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
         solver.setEdgePenalty(edgePenalty);
+        solver.setLogLevel(1);
         SimpleIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"), optionSet.has("i"));
         LDSU<Unit> synonyms = new LDSU<>();
