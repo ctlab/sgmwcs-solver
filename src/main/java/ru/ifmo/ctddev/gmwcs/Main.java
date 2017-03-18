@@ -22,7 +22,8 @@ public class Main {
         OptionSet optionSet = optionParser.parse(args);
         optionParser.acceptsAll(asList("n", "nodes"), "Node list file").withRequiredArg().required();
         optionParser.acceptsAll(asList("e", "edges"), "Edge list file").withRequiredArg().required();
-        optionParser.acceptsAll(asList("m", "threads"), "Number of threads").withRequiredArg().ofType(Integer.class);
+        optionParser.acceptsAll(asList("m", "threads"), "Number of threads")
+            .withRequiredArg().ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
         optionParser.acceptsAll(asList("s", "synonyms", "signals", "groups"), "Synonym list file").withRequiredArg();
