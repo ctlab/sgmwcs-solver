@@ -1,8 +1,9 @@
+package ru.ifmo.ctddev.gmwcs;
+
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
@@ -10,9 +11,9 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.Solver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
-import ru.ifmo.ctddev.gmwcs.solver.Utils;
 
-import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -21,26 +22,23 @@ import java.util.Random;
 import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class GMWCSTests {
-    public static final int SEED = 20160309;
-    public static final int TESTS_PER_SIZE = 300;
-    public static final int MAX_SIZE = 15;
-    public static final int RANDOM_TESTS = 2200;
-    public static final Integer DEBUG_TEST = null;
+public class GMWCSTest {
+    private static final int SEED = 20160309;
+    private static final int TESTS_PER_SIZE = 300;
+    private static final int MAX_SIZE = 15;
+    private static final int RANDOM_TESTS = 2200;
+    private static final Integer DEBUG_TEST = null;
     private List<TestCase> tests;
     private Solver solver;
     private ReferenceSolver referenceSolver;
     private Random random;
 
-    public GMWCSTests() {
+    public GMWCSTest() {
         random = new Random(SEED);
         ComponentSolver solver = new ComponentSolver(3);
         this.solver = solver;
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
-        if (System.getProperty("skipTests") != null) {
-            System.exit(0);
-        }
         makeConnectedGraphs();
         makeUnconnectedGraphs();
     }
@@ -51,6 +49,7 @@ public class GMWCSTests {
             return;
         }
         Graph graph = new Graph();
+        solver.suppressOutput();
         List<Unit> res = solver.solve(graph, new LDSU<>());
         if (!(res == null || res.isEmpty())) {
             Assert.assertTrue(false);
@@ -114,35 +113,59 @@ public class GMWCSTests {
                     "try invoking java with java -Djava.library.path=...");
             System.exit(1);
         }
-        try {
-            if (Math.abs(sum(expected, test.synonyms()) - sum(actual, test.synonyms())) > 0.1) {
-                System.err.println(error(test));
-                System.err.println("Expected: " + sum(expected, test.synonyms()) + ", but actual: "
-                        + sum(actual, test.synonyms()));
-                Utils.toXdot(test.graph(), expected, actual);
-                System.exit(1);
-            }
-        } catch (IOException e) {
-            System.err.println(e.getMessage());
+        if (Math.abs(sum(expected, test.synonyms()) - sum(actual, test.synonyms())) > 0.1) {
+            System.err.println("Expected: " + sum(expected, test.synonyms()) + ", but actual: "
+                    + sum(actual, test.synonyms()));
+            reportError(test, expected);
             System.exit(1);
         }
     }
 
-    private String error(TestCase test) throws IOException {
-        System.err.println();
-        String message = "";
-        LDSU<Unit> s = test.synonyms();
-        for (int i = 0; i < s.size(); i++) {
-            List<Unit> set = s.set(i);
-            if (set.isEmpty()) {
-                continue;
+    private void reportError(TestCase test, List<Unit> expected) {
+        try (PrintWriter nodeWriter = new PrintWriter("nodes.error");
+             PrintWriter edgeWriter = new PrintWriter("edges.error");
+             PrintWriter signalWriter = new PrintWriter("signals.error")) {
+            Graph g = test.graph();
+            for (Node v : g.vertexSet()) {
+                nodeWriter.println(v.getNum() + "\t" + v.getWeight());
             }
-            for (Unit unit : set) {
-                message += unit + " ";
+            for (Edge e : g.edgeSet()) {
+                Node from = g.getEdgeSource(e);
+                Node to = g.getEdgeTarget(e);
+                edgeWriter.println(from.getNum() + "\t" + to.getNum() + "\t" + e.getWeight());
             }
-            message += "\n";
+            reportSignals(test, signalWriter);
+            System.err.println("Correct solution(one of): ");
+            for (Unit u : expected) {
+                if (u instanceof Edge) {
+                    Edge e = (Edge) u;
+                    System.err.println(g.getEdgeSource(e).getNum() + "\t" + g.getEdgeTarget(e).getNum());
+                } else {
+                    System.err.println(u.getNum());
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.err.println("Writing to *.error file failed.");
         }
-        return message;
+    }
+
+    private void reportSignals(TestCase test, PrintWriter signalWriter) {
+        LDSU<Unit> signals = test.synonyms();
+        Graph g = test.graph();
+        for (int i = 0; i < signals.size(); i++) {
+            List<Unit> set = signals.set(i);
+            for (Unit u : set) {
+                if (u instanceof Edge) {
+                    Edge e = (Edge) u;
+                    signalWriter.print(g.getEdgeSource(e).getNum() + " -- " + g.getEdgeTarget(e).getNum() + "\t");
+                } else {
+                    signalWriter.print(u.getNum() + "\t");
+                }
+            }
+            if (!set.isEmpty()) {
+                signalWriter.println();
+            }
+        }
     }
 
     private void makeConnectedGraphs() {

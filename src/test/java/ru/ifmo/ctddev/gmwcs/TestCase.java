@@ -1,4 +1,5 @@
-import ru.ifmo.ctddev.gmwcs.LDSU;
+package ru.ifmo.ctddev.gmwcs;
+
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 

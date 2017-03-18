@@ -206,7 +206,7 @@ public class RLTSolver implements RootedSolver {
             cplex.setWarning(null);
         }
         if (isLBShared) {
-            cplex.use(new MIPCallback());
+            cplex.use(new MIPCallback(suppressOutput));
         }
         cplex.setParam(IloCplex.IntParam.Threads, threads);
         cplex.setParam(IloCplex.IntParam.ParallelMode, -1);
@@ -380,6 +380,11 @@ public class RLTSolver implements RootedSolver {
     }
 
     private class MIPCallback extends IloCplex.IncumbentCallback {
+        private boolean silence;
+
+        public MIPCallback(boolean silence) {
+            this.silence = silence;
+        }
 
         @Override
         protected void main() throws IloException {
@@ -389,7 +394,7 @@ public class RLTSolver implements RootedSolver {
                 if(currLB >= getObjValue()){
                     break;
                 }
-                if(lb.compareAndSet(currLB, getObjValue())){
+                if (lb.compareAndSet(currLB, getObjValue()) && !silence) {
                     System.out.println("Found new solution: " + getObjValue());
                 }
             }

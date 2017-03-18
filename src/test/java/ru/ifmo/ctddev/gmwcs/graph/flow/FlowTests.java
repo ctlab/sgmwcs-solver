@@ -1,3 +1,5 @@
+package ru.ifmo.ctddev.gmwcs.graph.flow;
+
 import org.jgrapht.alg.MinSourceSinkCut;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.junit.Assert;
@@ -5,7 +7,6 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import ru.ifmo.ctddev.gmwcs.Pair;
-import ru.ifmo.ctddev.gmwcs.graph.flow.EdmondsKarp;
 
 import java.io.IOException;
 import java.io.PrintWriter;
