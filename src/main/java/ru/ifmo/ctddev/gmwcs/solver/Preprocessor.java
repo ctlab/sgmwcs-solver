@@ -12,6 +12,7 @@ import java.util.Set;
 
 public class Preprocessor {
     public static void preprocess(Graph graph, LDSU<Unit> synonyms) {
+        Node primaryNode = null;
         for (Edge edge : new ArrayList<>(graph.edgeSet())) {
             if (!graph.containsEdge(edge)) {
                 continue;
@@ -23,6 +24,9 @@ public class Preprocessor {
             }
         }
         for (Node v : new ArrayList<>(graph.vertexSet())) {
+            if (v.getWeight() > 0) {
+                primaryNode = v;
+            }
             if (v.getWeight() <= 0 && graph.degreeOf(v) == 2) {
                 Edge[] edges = graph.edgesOf(v).stream().toArray(Edge[]::new);
                 if (edges[1].getWeight() > 0 || edges[0].getWeight() > 0) {
@@ -40,6 +44,40 @@ public class Preprocessor {
                 }
             }
         }
+        if (primaryNode != null) {
+            Set<Node> toRemove = new HashSet<>();
+            negR(graph, primaryNode, primaryNode, new HashSet<>(), toRemove);
+            toRemove.forEach(graph::removeVertex);
+        }
+    }
+
+    private static boolean negR(Graph g, Node v, Node r, Set<Node> vis, Set<Node> toRemove) {
+        boolean safe = false;
+        vis.add(v);
+        for (Edge e : g.edgesOf(v)) {
+            Node u = g.getOppositeVertex(v, e);
+            if (vis.contains(u)) {
+                if (u != r && !toRemove.contains(u)) {
+                    safe = true;
+                }
+                continue;
+            }
+            boolean res = negR(g, u, v, vis, toRemove);
+            if (u.getWeight() > 0) {
+                res = true;
+            } else {
+                for (Edge edge : g.getAllEdges(v, u)) {
+                    if (edge.getWeight() > 0) {
+                        res = true;
+                    }
+                }
+            }
+            if (!res) {
+                toRemove.add(u);
+            }
+            safe = res || safe;
+        }
+        return safe;
     }
 
     private static void merge(Graph graph, LDSU<Unit> ss, Unit... units) {
