@@ -1,0 +1,8 @@
+language:	java
+
+install: 
+  -  git clone https://github.com/ctlab/private-libraries.git .
+  -  mvn install:install-file -Dfile=lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
+
+script: mvn -DskipTests=false -Djava.library.path=lib install
+
