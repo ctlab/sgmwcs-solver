@@ -8,7 +8,7 @@ before_install:
   - ssh-add ~/.ssh/id_rsa
 
 install: 
-  - git clone https://github.com/ctlab/private-libraries.git libs
+  - git clone git@github.com:ctlab/private-libraries.git libs
   - mvn install:install-file -Dfile=libs/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
 
 script: mvn -DskipTests=false -Djava.library.path=libs/lib install
