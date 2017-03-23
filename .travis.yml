@@ -1,8 +1,15 @@
 language:	java
 
+before_install:
+  - echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  - echo -e "$travis_pull_private_key" > ~/.ssh/id_rsa 
+  - chmod 600 ~/.ssh/id_rsa
+  - eval `ssh-agent -s`
+  - ssh-add ~/.ssh/id_rsa
+
 install: 
-  -  git clone https://github.com/ctlab/private-libraries.git .
-  -  mvn install:install-file -Dfile=lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
+  - git clone https://github.com/ctlab/private-libraries.git .
+  - mvn install:install-file -Dfile=lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
 
 script: mvn -DskipTests=false -Djava.library.path=lib install
 
