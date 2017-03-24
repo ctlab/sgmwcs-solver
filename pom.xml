@@ -10,11 +10,13 @@
 
     <properties>
         <skipTests>true</skipTests>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <build>
         <plugins>
             <plugin>
+                <version>3.6.1</version>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <source>1.8</source>
@@ -26,7 +28,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.5.3</version>
                 <configuration>
-                    <finalName>signal</finalName>
+                    <finalName>sgmwcs-solver</finalName>
                     <archive>
                         <manifest>
                             <mainClass>ru.ifmo.ctddev.gmwcs.Main</mainClass>
