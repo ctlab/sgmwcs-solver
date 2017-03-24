@@ -8,8 +8,7 @@ install:
   - mvn install:install-file -Dfile=cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
 
 script:
-  - mvn cobertura:cobertura
-  - mvn -DskipTests=false -Djava.library.path=. install
+  - mvn -DskipTests=false -Djava.library.path=. cobertura:cobertura
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
