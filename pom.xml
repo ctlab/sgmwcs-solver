@@ -56,7 +56,11 @@
                 <version>2.19.1</version>
                 <configuration>
                     <skipTests>${skipTests}</skipTests>
-                    <argLine>-Djava.library.path=${java.library.path}</argLine>
+                    <argLine>
+                        -Djava.library.path=${java.library.path} 
+                        -Xmx512m
+                        -Xms512m
+                    </argLine>
                 </configuration>
             </plugin>
         </plugins>
