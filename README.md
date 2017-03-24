@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.org/ctlab/sgmwcs-solver.svg?branch=master)]
-(https://travis-ci.org/ctlab/sgmwcs-solver)
+[![Build Status](https://travis-ci.org/ctlab/sgmwcs-solver.svg?branch=master)](https://travis-ci.org/ctlab/sgmwcs-solver)
 
 # sgmwcs-solver
 
