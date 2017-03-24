@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ctlab/sgmwcs-solver.svg?branch=master)](https://travis-ci.org/ctlab/sgmwcs-solver)
+
 # sgmwcs-solver
 
 This is a solver for signal version of generalized maximum-weight connected subgraph problem (SGMWCS).

@@ -52,7 +52,7 @@ public class GMWCSTest {
         solver.setLogLevel(0);
         List<Unit> res = solver.solve(graph, new LDSU<>());
         if (!(res == null || res.isEmpty())) {
-            Assert.assertTrue(false);
+            Assert.assertTrue("An empty graph can't contain non-empty subgraph", false);
         }
     }
 
@@ -114,9 +114,11 @@ public class GMWCSTest {
             System.exit(1);
         }
         if (Math.abs(sum(expected, test.synonyms()) - sum(actual, test.synonyms())) > 0.1) {
+            System.err.println();
             System.err.println("Expected: " + sum(expected, test.synonyms()) + ", but actual: "
                     + sum(actual, test.synonyms()));
             reportError(test, expected);
+            Assert.assertTrue("A test has failed. See nodes.error, edges.error, signal.error.", false);
             System.exit(1);
         }
     }

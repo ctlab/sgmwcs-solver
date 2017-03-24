@@ -1,0 +1,11 @@
+language:	java
+
+jdk:
+  - oraclejdk8
+
+install: 
+  - wget $cplex_jar -O cplex.jar
+  - wget $cplex_so -O libcplex1263.so
+  - mvn install:install-file -Dfile=cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
+
+script: mvn -DskipTests=false -Djava.library.path=. install
