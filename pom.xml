@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ifmo.ru</groupId>
-    <artifactId>gmwcs-solver</artifactId>
-    <version>1.0</version>
+    <artifactId>sgmwcs-solver</artifactId>
+    <version>0.9-SNAPSHOT</version>
 
     <properties>
         <skipTests>true</skipTests>
