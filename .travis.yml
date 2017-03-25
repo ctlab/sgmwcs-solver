@@ -2,13 +2,26 @@ language: java
 
 jdk: oraclejdk8
 
-install: 
-  - wget $cplex_jar -O cplex.jar
-  - wget $cplex_so -O libcplex1263.so
-  - mvn install:install-file -Dfile=cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
+before_install:
+- echo -e "machine github.com\n  login $CI_USER_TOKEN" >> ~/.netrc
+- chmod 600 ~/.netrc
+
+install:
+- git clone https://github.com/ctlab/private-libraries.git lib
+- mvn install:install-file -Dfile=lib/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3
+  -Dpackaging=jar
 
 script:
-  - mvn -DskipTests=false -Djava.library.path=. cobertura:cobertura
+- mvn -DskipTests=false -Djava.library.path=lib/lib cobertura:cobertura
+- mvn install
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+- bash <(curl -s https://codecov.io/bash)
+
+deploy:
+  provider: releases
+  api_key: $CI_USER_TOKEN
+  file: target/signal.jar
+  skip_cleanup: true
+  on:
+    tags: true

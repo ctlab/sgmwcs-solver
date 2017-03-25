@@ -15,10 +15,13 @@ import java.util.List;
 import static java.util.Arrays.asList;
 
 public class Main {
+    public static final String VERSION = "0.9";
+
     public static OptionSet parseArgs(String args[]) throws IOException {
         OptionParser optionParser = new OptionParser();
         optionParser.allowsUnrecognizedOptions();
         optionParser.acceptsAll(asList("h", "help"), "Print a short help message");
+        optionParser.accepts("version");
         OptionSet optionSet = optionParser.parse(args);
         optionParser.acceptsAll(asList("n", "nodes"), "Node list file").withRequiredArg().required();
         optionParser.acceptsAll(asList("e", "edges"), "Edge list file").withRequiredArg().required();
@@ -31,9 +34,13 @@ public class Main {
                 ofType(Integer.class).defaultsTo(500);
         optionParser.acceptsAll(asList("p", "penalty"), "Penalty for each additional edge")
                 .withRequiredArg().ofType(Double.class).defaultsTo(.0);
-        optionParser.acceptsAll(asList("i", "ignore-negatives"), "Don't consider negative signals");
+        optionParser.acceptsAll(asList("i", "ignore-negatives"), "Do not take into account negative signals");
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
+            System.exit(0);
+        }
+        if (optionSet.has("version")) {
+            System.out.println("sgmwcs-solver version " + VERSION);
             System.exit(0);
         }
         try {
