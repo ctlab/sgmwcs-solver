@@ -19,7 +19,7 @@ For example,
     
 After that you can build the project using maven:
 
-    mvn install
+    mvn install -DskipTests=true
     
 And jar file with name "signal.jar" will appear in "target" directory
     

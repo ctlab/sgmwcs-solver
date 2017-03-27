@@ -1,5 +1,7 @@
 package ru.ifmo.ctddev.gmwcs;
 
+import ilog.concert.IloException;
+import ilog.cplex.IloCplex;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import ru.ifmo.ctddev.gmwcs.graph.*;
@@ -15,7 +17,7 @@ import java.util.List;
 import static java.util.Arrays.asList;
 
 public class Main {
-    public static final String VERSION = "0.9-SNAPSHOT";
+    public static final String VERSION = "0.9.1-SNAPSHOT";
 
     public static OptionSet parseArgs(String args[]) throws IOException {
         OptionParser optionParser = new OptionParser();
@@ -106,5 +108,13 @@ public class Main {
         } catch (IOException e) {
             System.err.println("Error occurred while reading/writing input/output files");
         }
+    }
+
+    static {
+        try {
+            new IloCplex();
+        } catch (UnsatisfiedLinkError e) {
+            System.exit(1);
+        } catch (IloException e) {}
     }
 }
