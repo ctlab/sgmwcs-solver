@@ -12,7 +12,7 @@ import ru.ifmo.ctddev.gmwcs.graph.*;
 import java.util.*;
 
 public class RLTSolver implements RootedSolver {
-    public static final double EPS = 0.01;
+    private static final double EPS = 0.01;
     private IloCplex cplex;
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
@@ -115,8 +115,8 @@ public class RLTSolver implements RootedSolver {
         for (Edge e : graph.edgeSet()) {
             Node from = graph.getEdgeSource(e);
             Node to = graph.getEdgeTarget(e);
-            cplex.addLe(cplex.sum(d.get(from), w.get(e)), cplex.sum(n, d.get(to)));
-            cplex.addLe(cplex.sum(d.get(to), w.get(e)), cplex.sum(n, d.get(from)));
+            cplex.addLe(cplex.sum(d.get(from), cplex.prod(n - 1, w.get(e))), cplex.sum(n, d.get(to)));
+            cplex.addLe(cplex.sum(d.get(to), cplex.prod(n - 1, w.get(e))), cplex.sum(n, d.get(from)));
         }
     }
 

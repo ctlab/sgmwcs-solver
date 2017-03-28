@@ -19,7 +19,7 @@ import static java.util.Arrays.asList;
 public class Main {
     public static final String VERSION = "0.9.1-SNAPSHOT";
 
-    public static OptionSet parseArgs(String args[]) throws IOException {
+    private static OptionSet parseArgs(String args[]) throws IOException {
         OptionParser optionParser = new OptionParser();
         optionParser.allowsUnrecognizedOptions();
         optionParser.acceptsAll(asList("h", "help"), "Print a short help message");
@@ -31,12 +31,10 @@ public class Main {
             .withRequiredArg().ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
-        optionParser.acceptsAll(asList("s", "synonyms", "signals", "groups"), "Synonym list file").withRequiredArg();
         optionParser.accepts("c", "Threshold for CPE solver").withRequiredArg().
                 ofType(Integer.class).defaultsTo(500);
         optionParser.acceptsAll(asList("p", "penalty"), "Penalty for each additional edge")
                 .withRequiredArg().ofType(Double.class).defaultsTo(.0);
-        optionParser.acceptsAll(asList("i", "ignore-negatives"), "Do not take into account negative signals");
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -80,23 +78,12 @@ public class Main {
         solver.setTimeLimit(tl);
         solver.setEdgePenalty(edgePenalty);
         solver.setLogLevel(1);
-        SimpleIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
-                edgeFile, new File(edgeFile.toString() + ".out"), optionSet.has("i"));
-        LDSU<Unit> synonyms = new LDSU<>();
+        GraphIO graphIO = new GraphIO(nodeFile, new File(nodeFile + ".out"), edgeFile, new File(edgeFile + ".out"));
         try {
             Graph graph = graphIO.read();
-            if (optionSet.has("s")) {
-                synonyms = graphIO.getSynonyms(new File((String) optionSet.valueOf("s")));
-            } else {
-                for (Node node : graph.vertexSet()) {
-                    synonyms.add(node, node.getWeight());
-                }
-                for (Edge edge : graph.edgeSet()) {
-                    synonyms.add(edge, edge.getWeight());
-                }
-            }
-            List<Unit> units = solver.solve(graph, synonyms);
-            System.out.println("Final score: " + Utils.sum(units, synonyms));
+            LDSU<Unit> signals = graphIO.getSignals();
+            List<Unit> units = solver.solve(graph, signals);
+            System.out.println("Final score: " + Utils.sum(units, signals));
             if (solver.isSolvedToOptimality()) {
                 System.out.println("SOLVED TO OPTIMALITY");
             }
@@ -115,6 +102,6 @@ public class Main {
             new IloCplex();
         } catch (UnsatisfiedLinkError e) {
             System.exit(1);
-        } catch (IloException e) {}
+        } catch (IloException ignored) {}
     }
 }

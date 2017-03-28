@@ -36,8 +36,7 @@ public class GMWCSTest {
 
     public GMWCSTest() {
         random = new Random(SEED);
-        ComponentSolver solver = new ComponentSolver(3);
-        this.solver = solver;
+        this.solver = new ComponentSolver(3);
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
         makeConnectedGraphs();
