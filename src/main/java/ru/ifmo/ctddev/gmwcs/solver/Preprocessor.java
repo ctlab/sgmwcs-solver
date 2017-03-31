@@ -1,6 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import ru.ifmo.ctddev.gmwcs.LDSU;
+import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Preprocessor {
-    public static void preprocess(Graph graph, LDSU<Unit> synonyms) {
+    public static void preprocess(Graph graph, Signals synonyms) {
         Node primaryNode = null;
         for (Edge edge : new ArrayList<>(graph.edgeSet())) {
             if (!graph.containsEdge(edge)) {
@@ -80,7 +80,7 @@ public class Preprocessor {
         return safe;
     }
 
-    private static void merge(Graph graph, LDSU<Unit> ss, Unit... units) {
+    private static void merge(Graph graph, Signals ss, Unit... units) {
         Set<Node> nodes = new HashSet<>();
         Set<Edge> edges = new HashSet<>();
         for (Unit unit : units) {
@@ -100,7 +100,7 @@ public class Preprocessor {
         }
     }
 
-    private static void contract(Graph graph, LDSU<Unit> ss, Edge e) {
+    private static void contract(Graph graph, Signals ss, Edge e) {
         Node main = graph.getEdgeSource(e);
         Node aux = graph.getEdgeTarget(e);
         Set<Edge> auxEdges = new HashSet<>(graph.edgesOf(aux));
@@ -130,7 +130,7 @@ public class Preprocessor {
         absorb(ss, main, e);
     }
 
-    private static void absorb(LDSU<Unit> ss, Unit who, Unit whom) {
+    private static void absorb(Signals ss, Unit who, Unit whom) {
         who.absorb(whom);
         ss.join(whom, who);
     }

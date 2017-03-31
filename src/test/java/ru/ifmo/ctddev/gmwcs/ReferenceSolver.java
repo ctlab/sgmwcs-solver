@@ -10,7 +10,7 @@ import java.util.*;
 import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
 
 public class ReferenceSolver {
-    public List<Unit> solve(Graph graph, LDSU<Unit> synonyms, List<Node> roots) {
+    public List<Unit> solve(Graph graph, Signals signals, List<Node> roots) {
         for (Node root : roots) {
             if (!graph.containsVertex(root)) {
                 throw new IllegalArgumentException();
@@ -55,7 +55,9 @@ public class ReferenceSolver {
                         break;
                     }
                 }
-                double candidate = sum(res, synonyms) + sum(currEdges, synonyms);
+                Set<Unit> units = new HashSet<>(res);
+                units.addAll(currEdges);
+                double candidate = sum(units, signals);
                 if (containsRoots && candidate > max) {
                     max = candidate;
                     maxSet = new ArrayList<>();

@@ -1,6 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import ru.ifmo.ctddev.gmwcs.LDSU;
+import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.Collection;
@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 public class Utils {
-    public static double sum(Collection<? extends Unit> units, LDSU<Unit> synonyms) {
+    public static double sum(Collection<? extends Unit> units, Signals synonyms) {
         if (units == null) {
             return 0;
         }

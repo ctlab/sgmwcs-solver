@@ -4,8 +4,8 @@ import ilog.concert.IloException;
 import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
-import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
+import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.*;
 
@@ -74,7 +74,7 @@ public class RLTSolver implements RootedSolver {
     }
 
     @Override
-    public List<Unit> solve(Graph graph, LDSU<Unit> synonyms) throws SolverException {
+    public List<Unit> solve(Graph graph, Signals synonyms) throws SolverException {
         try {
             isSolvedToOptimality = false;
             if(!isLBShared){
@@ -134,7 +134,7 @@ public class RLTSolver implements RootedSolver {
         cplex.use(separator);
     }
 
-    private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks, Separator separator) throws IloException {
+    private void dfs(Node root, Set<Node> component, boolean fake, Blocks bs, Separator separator) throws IloException {
         separator.addComponent(graph.subgraph(component), root);
         if (!fake) {
             for (Node node : component) {
@@ -147,11 +147,11 @@ public class RLTSolver implements RootedSolver {
             }
             cplex.addEq(getX(e, root), 0);
         }
-        for (Node cp : blocks.cutpointsOf(component)) {
+        for (Node cp : bs.cutpointsOf(component)) {
             if (root != cp) {
-                for (Set<Node> comp : blocks.incidentBlocks(cp)) {
+                for (Set<Node> comp : bs.incidentBlocks(cp)) {
                     if (comp != component) {
-                        dfs(cp, comp, false, blocks, separator);
+                        dfs(cp, comp, false, bs, separator);
                     }
                 }
             }
@@ -238,7 +238,7 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
-    private void addObjective(LDSU<Unit> synonyms) throws IloException {
+    private void addObjective(Signals synonyms) throws IloException {
         List<Double> ks = new ArrayList<>();
         List<IloNumVar> vs = new ArrayList<>();
         for (int i = 0; i < synonyms.size(); i++) {

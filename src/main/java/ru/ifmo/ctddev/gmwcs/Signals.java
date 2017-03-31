@@ -1,29 +1,31 @@
 package ru.ifmo.ctddev.gmwcs;
 
+import ru.ifmo.ctddev.gmwcs.graph.Unit;
+
 import java.util.*;
 
-public class LDSU<T> {
-    private List<Set<T>> sets;
-    private Map<T, List<Integer>> unitsSets;
+public class Signals {
+    private List<Set<Unit>> sets;
+    private Map<Unit, List<Integer>> unitsSets;
     private List<Double> weights;
 
-    public LDSU() {
+    public Signals() {
         sets = new ArrayList<>();
         unitsSets = new HashMap<>();
         weights = new ArrayList<>();
     }
 
-    public LDSU(LDSU<T> ldsu, Set<T> subset) {
+    public Signals(Signals signals, Set<Unit> subset) {
         sets = new ArrayList<>();
         unitsSets = new HashMap<>();
         weights = new ArrayList<>();
-        for (T unit : subset) {
+        for (Unit unit : subset) {
             unitsSets.put(unit, new ArrayList<>());
         }
         int j = 0;
-        for (int i = 0; i < ldsu.size(); i++) {
-            Set<T> set = new HashSet<>();
-            for (T unit : ldsu.set(i)) {
+        for (int i = 0; i < signals.size(); i++) {
+            Set<Unit> set = new HashSet<>();
+            for (Unit unit : signals.set(i)) {
                 if (subset.contains(unit)) {
                     set.add(unit);
                     unitsSets.get(unit).add(j);
@@ -31,7 +33,7 @@ public class LDSU<T> {
             }
             if (!set.isEmpty()) {
                 sets.add(set);
-                weights.add(ldsu.weight(i));
+                weights.add(signals.weight(i));
                 j++;
             }
         }
@@ -45,7 +47,7 @@ public class LDSU<T> {
         return weights.get(num);
     }
 
-    public void join(T what, T with) {
+    public void join(Unit what, Unit with) {
         List<Integer> x = unitsSets.get(what);
         List<Integer> main = unitsSets.get(with);
         int i = 0, j = 0;
@@ -69,36 +71,34 @@ public class LDSU<T> {
         unitsSets.remove(what);
     }
 
-    public void joinSet(T what, T with) {
-        if (unitsSets.get(with).size() != 1 || unitsSets.get(what).size() != 1) {
-            throw new IllegalArgumentException();
-        }
-        int x = unitsSets.get(what).get(0);
-        int main = unitsSets.get(with).get(0);
-        if (x == main) {
-            return;
-        }
-        Set<T> mainSet = sets.get(main);
-        for (T unit : sets.get(x)) {
-            mainSet.add(unit);
-            unitsSets.get(unit).set(0, main);
-        }
-        sets.get(x).clear();
-    }
-
-    public List<T> set(int num) {
-        List<T> result = new ArrayList<>();
+    public List<Unit> set(int num) {
+        List<Unit> result = new ArrayList<>();
         result.addAll(sets.get(num));
         return result;
     }
 
-    public void add(T obj, double weight) {
-        Set<T> s = new HashSet<>();
-        s.add(obj);
+    public void add(Unit unit, int signal) {
+        sets.get(signal).add(unit);
+        ensureLink(unit, signal);
+    }
+
+    public int add(Unit unit) {
+        Set<Unit> s = new HashSet<>();
+        s.add(unit);
         sets.add(s);
-        weights.add(weight);
-        List<Integer> l = new ArrayList<>();
-        l.add(sets.size() - 1);
-        unitsSets.put(obj, l);
+        weights.add(unit.getWeight());
+        int num = sets.size() - 1;
+        ensureLink(unit, num);
+        return num;
+    }
+
+    private void ensureLink(Unit unit, int signal) {
+        if (unitsSets.containsKey(unit)) {
+            unitsSets.get(unit).add(signal);
+        } else {
+            List<Integer> l = new ArrayList<>();
+            unitsSets.put(unit, l);
+            l.add(signal);
+        }
     }
 }

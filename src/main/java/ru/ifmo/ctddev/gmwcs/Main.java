@@ -4,7 +4,9 @@ import ilog.concert.IloException;
 import ilog.cplex.IloCplex;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import ru.ifmo.ctddev.gmwcs.graph.*;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
+import ru.ifmo.ctddev.gmwcs.graph.GraphIO;
+import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 import ru.ifmo.ctddev.gmwcs.solver.Utils;
@@ -19,6 +21,15 @@ import static java.util.Arrays.asList;
 public class Main {
     public static final String VERSION = "0.9.1-SNAPSHOT";
 
+    static {
+        try {
+            new IloCplex();
+        } catch (UnsatisfiedLinkError e) {
+            System.exit(1);
+        } catch (IloException ignored) {
+        }
+    }
+
     private static OptionSet parseArgs(String args[]) throws IOException {
         OptionParser optionParser = new OptionParser();
         optionParser.allowsUnrecognizedOptions();
@@ -27,6 +38,7 @@ public class Main {
         OptionSet optionSet = optionParser.parse(args);
         optionParser.acceptsAll(asList("n", "nodes"), "Node list file").withRequiredArg().required();
         optionParser.acceptsAll(asList("e", "edges"), "Edge list file").withRequiredArg().required();
+        optionParser.acceptsAll(asList("o", "output"), "Output file").withRequiredArg().required();
         optionParser.acceptsAll(asList("m", "threads"), "Number of threads")
             .withRequiredArg().ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
@@ -68,6 +80,7 @@ public class Main {
         int threads = (Integer) optionSet.valueOf("m");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
+        File outputFile = new File((String) optionSet.valueOf("output"));
         double edgePenalty = (Double) optionSet.valueOf("p");
         if (edgePenalty < 0) {
             System.err.println("Edge penalty can't be negative");
@@ -78,16 +91,16 @@ public class Main {
         solver.setTimeLimit(tl);
         solver.setEdgePenalty(edgePenalty);
         solver.setLogLevel(1);
-        GraphIO graphIO = new GraphIO(nodeFile, new File(nodeFile + ".out"), edgeFile, new File(edgeFile + ".out"));
+        GraphIO graphIO = new GraphIO(nodeFile, edgeFile);
         try {
             Graph graph = graphIO.read();
-            LDSU<Unit> signals = graphIO.getSignals();
+            Signals signals = graphIO.getSignals();
             List<Unit> units = solver.solve(graph, signals);
             System.out.println("Final score: " + Utils.sum(units, signals));
             if (solver.isSolvedToOptimality()) {
                 System.out.println("SOLVED TO OPTIMALITY");
             }
-            graphIO.write(units);
+            graphIO.write(units, outputFile);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
         } catch (SolverException e) {
@@ -95,13 +108,5 @@ public class Main {
         } catch (IOException e) {
             System.err.println("Error occurred while reading/writing input/output files");
         }
-    }
-
-    static {
-        try {
-            new IloCplex();
-        } catch (UnsatisfiedLinkError e) {
-            System.exit(1);
-        } catch (IloException ignored) {}
     }
 }

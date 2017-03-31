@@ -1,6 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
-import ru.ifmo.ctddev.gmwcs.LDSU;
+import ru.ifmo.ctddev.gmwcs.Signals;
 
 import java.io.*;
 import java.text.ParseException;
@@ -11,13 +11,13 @@ public class GraphIO {
     private File edgeIn;
     private Map<String, Node> nodeNames;
     private Map<Unit, String> unitMap;
-    private LDSU<Unit> signals;
-    private Map<String, Unit> signalNames;
+    private Signals signals;
+    private Map<String, Integer> signalNames;
 
     public GraphIO(File nodeIn, File edgeIn) {
         this.nodeIn = nodeIn;
         this.edgeIn = edgeIn;
-        signals = new LDSU<>();
+        signals = new Signals();
         nodeNames = new LinkedHashMap<>();
         unitMap = new HashMap<>();
         signalNames = new HashMap<>();
@@ -57,7 +57,7 @@ public class GraphIO {
                 }
                 nodeNames.put(node, vertex);
                 graph.addVertex(vertex);
-                processSignals(vertex, tokenizer, weight);
+                processSignals(vertex, tokenizer);
                 unitMap.put(vertex, node + "\t" + weightStr);
             } catch (NumberFormatException e) {
                 throw new ParseException("Expected floating point value of weight at line", reader.getLineNumber());
@@ -94,27 +94,28 @@ public class GraphIO {
                 Node to = nodeNames.get(second);
                 graph.addEdge(from, to, edge);
                 unitMap.put(edge, first + "\t" + second + "\t" + weight);
-                processSignals(edge, tokenizer, weight);
+                processSignals(edge, tokenizer);
             } catch (NumberFormatException e) {
                 throw new ParseException("Expected floating point value of edge in line", reader.getLineNumber());
             }
         }
     }
 
-    private void processSignals(Unit unit, StringTokenizer tokenizer, double weight) {
+    private void processSignals(Unit unit, StringTokenizer tokenizer) {
         List<String> tokens = new ArrayList<>();
         while(tokenizer.hasMoreTokens()){
             tokens.add(tokenizer.nextToken());
         }
-        signals.add(unit, weight);
         if(!tokens.isEmpty()){
             for(String token : tokens){
                 if(signalNames.containsKey(token)){
-
+                    signals.add(unit, signalNames.get(token));
                 } else {
-                    signalNames.put(token, unit);
+                    signalNames.put(token, signals.add(unit));
                 }
             }
+        } else {
+            signals.add(unit);
         }
     }
 
@@ -131,7 +132,7 @@ public class GraphIO {
         }
     }
 
-    public LDSU<Unit> getSignals() {
+    public Signals getSignals() {
         return signals;
     }
 }

@@ -29,6 +29,16 @@ public class GMWCSTest {
     private static final int TESTS_PER_SIZE = 300;
     private static final int MAX_SIZE = 15;
     private static final int RANDOM_TESTS = 2200;
+
+    static {
+        try {
+            new IloCplex();
+        } catch (UnsatisfiedLinkError e) {
+            System.exit(1);
+        } catch (IloException ignored) {
+        }
+    }
+
     private List<TestCase> tests;
     private Solver solver;
     private ReferenceSolver referenceSolver;
@@ -47,7 +57,7 @@ public class GMWCSTest {
     public void test01_empty() throws SolverException {
         Graph graph = new Graph();
         solver.setLogLevel(0);
-        List<Unit> res = solver.solve(graph, new LDSU<>());
+        List<Unit> res = solver.solve(graph, new Signals());
         if (!(res == null || res.isEmpty())) {
             Assert.assertTrue("An empty graph can't contain non-empty subgraph", false);
         }
@@ -74,19 +84,19 @@ public class GMWCSTest {
     }
 
     private void check(TestCase test, int num) {
-        List<Unit> expected = referenceSolver.solve(test.graph(), test.synonyms(), Collections.emptyList());
+        List<Unit> expected = referenceSolver.solve(test.graph(), test.signals(), Collections.emptyList());
         List<Unit> actual = null;
         try {
             solver.setLogLevel(0);
-            actual = solver.solve(test.graph(), test.synonyms());
+            actual = solver.solve(test.graph(), test.signals());
         } catch (SolverException e) {
             System.out.println();
             Assert.assertTrue(num + "\n" + e.getMessage(), false);
         }
-        if (Math.abs(sum(expected, test.synonyms()) - sum(actual, test.synonyms())) > 0.1) {
+        if (Math.abs(sum(expected, test.signals()) - sum(actual, test.signals())) > 0.1) {
             System.err.println();
-            System.err.println("Expected: " + sum(expected, test.synonyms()) + ", but actual: "
-                    + sum(actual, test.synonyms()));
+            System.err.println("Expected: " + sum(expected, test.signals()) + ", but actual: "
+                    + sum(actual, test.signals()));
             reportError(test, expected, num);
             Assert.assertTrue("A test has failed. See *error files.", false);
             System.exit(1);
@@ -122,7 +132,7 @@ public class GMWCSTest {
     }
 
     private void reportSignals(TestCase test, PrintWriter signalWriter) {
-        LDSU<Unit> signals = test.synonyms();
+        Signals signals = test.signals();
         Graph g = test.graph();
         for (int i = 0; i < signals.size(); i++) {
             List<Unit> set = signals.set(i);
@@ -201,13 +211,5 @@ public class GMWCSTest {
             }
             graph.addEdge(nodes[u], nodes[v], new Edge(offset + j, random.nextInt(16) - 8));
         }
-    }
-
-    static {
-        try {
-            new IloCplex();
-        } catch (UnsatisfiedLinkError e) {
-            System.exit(1);
-        } catch (IloException ignored) {}
     }
 }
