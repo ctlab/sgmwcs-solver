@@ -1,6 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import ru.ifmo.ctddev.gmwcs.LDSU;
+import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
@@ -8,7 +8,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import java.util.List;
 
 public interface Solver {
-    List<Unit> solve(Graph graph, LDSU<Unit> synonyms) throws SolverException;
+    List<Unit> solve(Graph graph, Signals signals) throws SolverException;
 
     boolean isSolvedToOptimality();
 

@@ -1,5 +1,7 @@
 package ru.ifmo.ctddev.gmwcs;
 
+import ilog.concert.IloException;
+import ilog.cplex.IloCplex;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -27,7 +29,16 @@ public class GMWCSTest {
     private static final int TESTS_PER_SIZE = 300;
     private static final int MAX_SIZE = 15;
     private static final int RANDOM_TESTS = 2200;
-    private static final Integer DEBUG_TEST = null;
+
+    static {
+        try {
+            new IloCplex();
+        } catch (UnsatisfiedLinkError e) {
+            System.exit(1);
+        } catch (IloException ignored) {
+        }
+    }
+
     private List<TestCase> tests;
     private Solver solver;
     private ReferenceSolver referenceSolver;
@@ -35,8 +46,7 @@ public class GMWCSTest {
 
     public GMWCSTest() {
         random = new Random(SEED);
-        ComponentSolver solver = new ComponentSolver(3);
-        this.solver = solver;
+        this.solver = new ComponentSolver(3);
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
         makeConnectedGraphs();
@@ -45,12 +55,9 @@ public class GMWCSTest {
 
     @Test
     public void test01_empty() throws SolverException {
-        if (DEBUG_TEST != null) {
-            return;
-        }
         Graph graph = new Graph();
         solver.setLogLevel(0);
-        List<Unit> res = solver.solve(graph, new LDSU<>());
+        List<Unit> res = solver.solve(graph, new Signals());
         if (!(res == null || res.isEmpty())) {
             Assert.assertTrue("An empty graph can't contain non-empty subgraph", false);
         }
@@ -59,20 +66,9 @@ public class GMWCSTest {
     @Test
     public void test02_connected() {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
-        if (DEBUG_TEST != null) {
-            if (DEBUG_TEST < allTests) {
-                check(tests.get(DEBUG_TEST), DEBUG_TEST);
-            } else {
-                return;
-            }
-        } else {
-            for (int i = 0; i < allTests; i++) {
-                TestCase test = tests.get(i);
-                System.out.print("\rTest(connected) no. " + (i + 1) + "/" + tests.size());
-                System.out.print(": n = " + test.n() + ", m = " + test.m() + "       ");
-                System.out.flush();
-                check(test, i);
-            }
+        for (int i = 0; i < allTests; i++) {
+            TestCase test = tests.get(i);
+            check(test, i);
         }
         System.out.println();
     }
@@ -80,53 +76,37 @@ public class GMWCSTest {
     @Test
     public void test03_random() {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
-        if (DEBUG_TEST != null) {
-            if (DEBUG_TEST < allTests) {
-                return;
-            } else {
-                check(tests.get(DEBUG_TEST), DEBUG_TEST);
-            }
-        } else {
-            for (int i = allTests; i < tests.size(); i++) {
-                TestCase test = tests.get(i);
-                System.out.print("\rTest(random) no. " + (i) + "/" + tests.size());
-                System.out.print(": n = " + test.n() + ", m = " + test.m() + "       ");
-                System.out.flush();
-                check(test, i);
-            }
+        for (int i = allTests; i < tests.size(); i++) {
+            TestCase test = tests.get(i);
+            check(test, i);
         }
         System.out.println();
     }
 
     private void check(TestCase test, int num) {
-        List<Unit> expected = referenceSolver.solve(test.graph(), test.synonyms(), Collections.emptyList());
+        List<Unit> expected = referenceSolver.solve(test.graph(), test.signals(), Collections.emptyList());
         List<Unit> actual = null;
         try {
             solver.setLogLevel(0);
-            actual = solver.solve(test.graph(), test.synonyms());
+            actual = solver.solve(test.graph(), test.signals());
         } catch (SolverException e) {
             System.out.println();
             Assert.assertTrue(num + "\n" + e.getMessage(), false);
-        } catch (UnsatisfiedLinkError e) {
-            System.err.println();
-            System.err.println("java.library.path must point to the directory containing the CPLEX shared library\n" +
-                    "try invoking java with java -Djava.library.path=...");
-            System.exit(1);
         }
-        if (Math.abs(sum(expected, test.synonyms()) - sum(actual, test.synonyms())) > 0.1) {
+        if (Math.abs(sum(expected, test.signals()) - sum(actual, test.signals())) > 0.1) {
             System.err.println();
-            System.err.println("Expected: " + sum(expected, test.synonyms()) + ", but actual: "
-                    + sum(actual, test.synonyms()));
-            reportError(test, expected);
-            Assert.assertTrue("A test has failed. See nodes.error, edges.error, signal.error.", false);
+            System.err.println("Expected: " + sum(expected, test.signals()) + ", but actual: "
+                    + sum(actual, test.signals()));
+            reportError(test, expected, num);
+            Assert.assertTrue("A test has failed. See *error files.", false);
             System.exit(1);
         }
     }
 
-    private void reportError(TestCase test, List<Unit> expected) {
-        try (PrintWriter nodeWriter = new PrintWriter("nodes.error");
-             PrintWriter edgeWriter = new PrintWriter("edges.error");
-             PrintWriter signalWriter = new PrintWriter("signals.error")) {
+    private void reportError(TestCase test, List<Unit> expected, int testNum) {
+        try (PrintWriter nodeWriter = new PrintWriter("nodes_" + testNum + ".error");
+             PrintWriter edgeWriter = new PrintWriter("edges_" + testNum + ".error");
+             PrintWriter signalWriter = new PrintWriter("signals" + testNum + ".error")) {
             Graph g = test.graph();
             for (Node v : g.vertexSet()) {
                 nodeWriter.println(v.getNum() + "\t" + v.getWeight());
@@ -152,7 +132,7 @@ public class GMWCSTest {
     }
 
     private void reportSignals(TestCase test, PrintWriter signalWriter) {
-        LDSU<Unit> signals = test.synonyms();
+        Signals signals = test.signals();
         Graph g = test.graph();
         for (int i = 0; i < signals.size(); i++) {
             List<Unit> set = signals.set(i);

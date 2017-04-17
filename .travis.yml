@@ -8,12 +8,11 @@ before_install:
 
 install:
 - git clone https://github.com/ctlab/private-libraries.git lib
-- mvn install:install-file -Dfile=lib/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3
-  -Dpackaging=jar
+- mvn install:install-file -Dfile=lib/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
 
 script:
-- mvn -DskipTests=false -Djava.library.path=lib/lib cobertura:cobertura
-- mvn install
+- mvn -Djava.library.path=lib/lib cobertura:cobertura
+- mvn install -DskipTests=true
 
 after_success:
 - bash <(curl -s https://codecov.io/bash)

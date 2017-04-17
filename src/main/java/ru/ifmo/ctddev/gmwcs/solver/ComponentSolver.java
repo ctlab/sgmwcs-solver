@@ -1,6 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import ru.ifmo.ctddev.gmwcs.LDSU;
+import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Blocks;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
@@ -28,14 +28,14 @@ public class ComponentSolver implements Solver {
     }
 
     @Override
-    public List<Unit> solve(Graph graph, LDSU<Unit> synonyms) throws SolverException {
+    public List<Unit> solve(Graph graph, Signals signals) throws SolverException {
         isSolvedToOptimality = true;
         Graph g = graph.subgraph(graph.vertexSet());
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
-        synonyms = new LDSU<>(synonyms, units);
+        signals = new Signals(signals, units);
         if (edgePenalty == 0) {
-            Preprocessor.preprocess(g, synonyms);
+            Preprocessor.preprocess(g, signals);
             if (logLevel > 0) {
                 System.out.print("Preprocessing deleted " + (graph.vertexSet().size() - g.vertexSet().size()) + " nodes ");
                 System.out.println("and " + (graph.edgeSet().size() - g.edgeSet().size()) + " edges.");
@@ -45,10 +45,10 @@ public class ComponentSolver implements Solver {
         if (g.vertexSet().size() == 0) {
             return null;
         }
-        return afterPreprocessing(g, new LDSU<>(synonyms, units));
+        return afterPreprocessing(g, new Signals(signals, units));
     }
 
-    private List<Unit> afterPreprocessing(Graph graph, LDSU<Unit> synonyms) throws SolverException {
+    private List<Unit> afterPreprocessing(Graph graph, Signals signals) throws SolverException {
         long timeBefore = System.currentTimeMillis();
         AtomicDouble lb = new AtomicDouble(externLB);
         PriorityQueue<Set<Node>> components = getComponents(graph);
@@ -73,7 +73,7 @@ public class ComponentSolver implements Solver {
             solver.setLogLevel(logLevel);
             Set<Unit> subset = new HashSet<>(subgraph.vertexSet());
             subset.addAll(subgraph.edgeSet());
-            Worker worker = new Worker(subgraph, root, new LDSU<>(synonyms, subset), solver, timeBefore);
+            Worker worker = new Worker(subgraph, root, new Signals(signals, subset), solver, timeBefore);
             executor.execute(worker);
             memorized.add(worker);
         }
@@ -82,10 +82,10 @@ public class ComponentSolver implements Solver {
             executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         } catch (InterruptedException ignored) {
         }
-        return getResult(memorized, graph, synonyms);
+        return getResult(memorized, graph, signals);
     }
 
-    private List<Unit> getResult(List<Worker> memorized, Graph graph, LDSU<Unit> signals) {
+    private List<Unit> getResult(List<Worker> memorized, Graph graph, Signals signals) {
         List<Unit> best = null;
         double bestScore = -Double.MAX_VALUE;
         for (Worker worker : memorized) {
