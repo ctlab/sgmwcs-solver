@@ -123,12 +123,13 @@ public class GraphIO {
         if (units == null) {
             units = new ArrayList<>();
         }
-        PrintWriter writer = new PrintWriter(output);
-        for(Unit unit : units){
-            if(!unitMap.containsKey(unit)){
-                throw new IllegalStateException();
+        try(PrintWriter writer = new PrintWriter(output)) {
+            for (Unit unit : units) {
+                if (!unitMap.containsKey(unit)) {
+                    throw new IllegalStateException();
+                }
+                writer.println(unitMap.get(unit));
             }
-            writer.println(unitMap.get(unit));
         }
     }
 
