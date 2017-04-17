@@ -54,27 +54,40 @@ The goal is to find a connected subgraph with a maximal weight, considered nodes
 Format and example
 =========
 
-Node file(node_name  node_weight  [signal...]):
+Node file(node_name  [signal...]):
 
-    1   7.0 S1
-    2   40.0
-    3   15.0
-    4   8.0
-    5   7.0 S1
-    6   7.0 S1
+    1   S1  S11
+    2   S3
+    3   S4
+    4   S5
+    5   S1
+    6   S1
 
-Edge file(edge_from edge_to edge_weight  [signal...]):
+Edge file(edge_from  edge_to  [signal...]):
 
-    1   2   3.0
-    2   3   -20.0 S2
-    2   4   -7
-    3   4   -20.0 S2
-    4   6   -10.0
-    5   6   -2.0
-    1   5   -15.3
-
-You can not specify any signal for some nodes/edges, in this case a unique one will be created implicitly.
+    1   2   S6
+    2   3   S2
+    2   4   S7
+    3   4   S2
+    4   6   S8
+    5   6   S9
+    1   5   S10
     
+Signal file(singal  weight)
+
+    S1  7.0
+    S2  -20.0
+    S3  40.0
+    S4  15.0
+    S5  8.0
+    S6  3.0
+    S7  -7.0
+    S8  -10.0
+    S9  -2.0
+    S10 -15.3
+    S11 1.0
+
+
 Yellow vertices - vertex group S1, red edges - edge group S2.
 
 ![Example](/sample.png?raw=true "Sample")
