@@ -8,7 +8,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import java.util.List;
 
 public interface Solver {
-    List<Unit> solve(Graph graph, Signals synonyms) throws SolverException;
+    List<Unit> solve(Graph graph, Signals signals) throws SolverException;
 
     boolean isSolvedToOptimality();
 

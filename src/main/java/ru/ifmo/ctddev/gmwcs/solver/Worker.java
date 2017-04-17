@@ -9,7 +9,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import java.util.List;
 
 public class Worker implements Runnable {
-    private final Signals synonyms;
+    private final Signals signals;
     private final Graph graph;
     private final RootedSolver solver;
     private final Node root;
@@ -18,10 +18,10 @@ public class Worker implements Runnable {
     private boolean isOk;
     private long startTime;
 
-    public Worker(Graph graph, Node root, Signals synonyms, RootedSolver solver, long time) {
+    public Worker(Graph graph, Node root, Signals signals, RootedSolver solver, long time) {
         this.solver = solver;
         this.graph = graph;
-        this.synonyms = synonyms;
+        this.signals = signals;
         this.root = root;
         isSolvedToOptimality = true;
         isOk = true;
@@ -38,8 +38,8 @@ public class Worker implements Runnable {
         }
         solver.setTimeLimit(new TimeLimit(Math.max(tl, 0.0)));
         try {
-            List<Unit> sol = solver.solve(graph, synonyms);
-            if (Utils.sum(sol, synonyms) > Utils.sum(result, synonyms)) {
+            List<Unit> sol = solver.solve(graph, signals);
+            if (Utils.sum(sol, signals) > Utils.sum(result, signals)) {
                 result = sol;
             }
         } catch (SolverException e) {

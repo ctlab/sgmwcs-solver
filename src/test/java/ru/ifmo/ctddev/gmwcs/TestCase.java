@@ -14,10 +14,10 @@ public class TestCase {
         signals = new Signals();
         Set<Unit> units = new HashSet<>(graph.vertexSet());
         units.addAll(graph.edgeSet());
-        makeSynonyms(signals, random, units);
+        makesignals(signals, random, units);
     }
 
-    private static void makeSynonyms(Signals signals, Random random, Set<Unit> set) {
+    private static void makesignals(Signals signals, Random random, Set<Unit> set) {
         if (set.isEmpty()) {
             return;
         }

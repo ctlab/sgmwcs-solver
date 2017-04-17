@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Preprocessor {
-    public static void preprocess(Graph graph, Signals synonyms) {
+    public static void preprocess(Graph graph, Signals signals) {
         Node primaryNode = null;
         for (Edge edge : new ArrayList<>(graph.edgeSet())) {
             if (!graph.containsEdge(edge)) {
@@ -20,7 +20,7 @@ public class Preprocessor {
             Node from = graph.getEdgeSource(edge);
             Node to = graph.getEdgeTarget(edge);
             if (edge.getWeight() >= 0 && from.getWeight() >= 0 && to.getWeight() >= 0) {
-                merge(graph, synonyms, edge, from, to);
+                merge(graph, signals, edge, from, to);
             }
         }
         for (Node v : new ArrayList<>(graph.vertexSet())) {
@@ -38,8 +38,8 @@ public class Preprocessor {
                     graph.removeVertex(v);
                 } else {
                     graph.removeVertex(v);
-                    absorb(synonyms, edges[0], v);
-                    absorb(synonyms, edges[0], edges[1]);
+                    absorb(signals, edges[0], v);
+                    absorb(signals, edges[0], edges[1]);
                     graph.addEdge(left, right, edges[0]);
                 }
             }

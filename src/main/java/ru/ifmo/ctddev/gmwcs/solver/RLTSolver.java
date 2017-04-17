@@ -74,7 +74,7 @@ public class RLTSolver implements RootedSolver {
     }
 
     @Override
-    public List<Unit> solve(Graph graph, Signals synonyms) throws SolverException {
+    public List<Unit> solve(Graph graph, Signals signals) throws SolverException {
         try {
             isSolvedToOptimality = false;
             if(!isLBShared){
@@ -84,7 +84,7 @@ public class RLTSolver implements RootedSolver {
             this.graph = graph;
             initVariables();
             addConstraints();
-            addObjective(synonyms);
+            addObjective(signals);
             if (edgePenalty <= 0) {
                 maxSizeConstraints();
             }
@@ -238,16 +238,16 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
-    private void addObjective(Signals synonyms) throws IloException {
+    private void addObjective(Signals signals) throws IloException {
         List<Double> ks = new ArrayList<>();
         List<IloNumVar> vs = new ArrayList<>();
-        for (int i = 0; i < synonyms.size(); i++) {
-            double weight = synonyms.weight(i);
-            List<Unit> set = synonyms.set(i);
+        for (int i = 0; i < signals.size(); i++) {
+            double weight = signals.weight(i);
+            List<Unit> set = signals.set(i);
             if (set.size() == 0 || weight == 0.0) {
                 continue;
             }
-            ks.add(synonyms.weight(i));
+            ks.add(signals.weight(i));
             if (set.size() == 1) {
                 vs.add(getVar(set.get(0)));
                 continue;
