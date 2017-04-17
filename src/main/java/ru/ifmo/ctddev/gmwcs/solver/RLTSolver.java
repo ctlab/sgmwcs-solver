@@ -4,15 +4,15 @@ import ilog.concert.IloException;
 import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
-import ru.ifmo.ctddev.gmwcs.LDSU;
 import ru.ifmo.ctddev.gmwcs.Pair;
+import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 
 public class RLTSolver implements RootedSolver {
-    public static final double EPS = 0.01;
+    private static final double EPS = 0.01;
     private IloCplex cplex;
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
@@ -74,7 +74,7 @@ public class RLTSolver implements RootedSolver {
     }
 
     @Override
-    public List<Unit> solve(Graph graph, LDSU<Unit> synonyms) throws SolverException {
+    public List<Unit> solve(Graph graph, Signals synonyms) throws SolverException {
         try {
             isSolvedToOptimality = false;
             if(!isLBShared){
@@ -104,7 +104,7 @@ public class RLTSolver implements RootedSolver {
             }
             return Collections.emptyList();
         } catch (IloException e) {
-            throw new SolverException();
+            throw new SolverException(e.getMessage());
         } finally {
             cplex.end();
         }
@@ -115,8 +115,8 @@ public class RLTSolver implements RootedSolver {
         for (Edge e : graph.edgeSet()) {
             Node from = graph.getEdgeSource(e);
             Node to = graph.getEdgeTarget(e);
-            cplex.addLe(cplex.sum(d.get(from), w.get(e)), cplex.sum(n, d.get(to)));
-            cplex.addLe(cplex.sum(d.get(to), w.get(e)), cplex.sum(n, d.get(from)));
+            cplex.addLe(cplex.sum(d.get(from), cplex.prod(n - 1, w.get(e))), cplex.sum(n, d.get(to)));
+            cplex.addLe(cplex.sum(d.get(to), cplex.prod(n - 1, w.get(e))), cplex.sum(n, d.get(from)));
         }
     }
 
@@ -134,7 +134,7 @@ public class RLTSolver implements RootedSolver {
         cplex.use(separator);
     }
 
-    private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks, Separator separator) throws IloException {
+    private void dfs(Node root, Set<Node> component, boolean fake, Blocks bs, Separator separator) throws IloException {
         separator.addComponent(graph.subgraph(component), root);
         if (!fake) {
             for (Node node : component) {
@@ -147,11 +147,11 @@ public class RLTSolver implements RootedSolver {
             }
             cplex.addEq(getX(e, root), 0);
         }
-        for (Node cp : blocks.cutpointsOf(component)) {
+        for (Node cp : bs.cutpointsOf(component)) {
             if (root != cp) {
-                for (Set<Node> comp : blocks.incidentBlocks(cp)) {
+                for (Set<Node> comp : bs.incidentBlocks(cp)) {
                     if (comp != component) {
-                        dfs(cp, comp, false, blocks, separator);
+                        dfs(cp, comp, false, bs, separator);
                     }
                 }
             }
@@ -238,7 +238,7 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
-    private void addObjective(LDSU<Unit> synonyms) throws IloException {
+    private void addObjective(Signals synonyms) throws IloException {
         List<Double> ks = new ArrayList<>();
         List<IloNumVar> vs = new ArrayList<>();
         for (int i = 0; i < synonyms.size(); i++) {

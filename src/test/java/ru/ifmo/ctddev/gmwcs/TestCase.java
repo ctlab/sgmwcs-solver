@@ -7,49 +7,41 @@ import java.util.*;
 
 public class TestCase {
     private Graph graph;
-    private LDSU<Unit> synonyms;
+    private Signals signals;
 
     public TestCase(Graph graph, Random random) {
         this.graph = graph;
-        synonyms = new LDSU<>();
-        makeSynonyms(synonyms, random, graph.vertexSet());
-        makeSynonyms(synonyms, random, graph.edgeSet());
+        signals = new Signals();
+        Set<Unit> units = new HashSet<>(graph.vertexSet());
+        units.addAll(graph.edgeSet());
+        makeSynonyms(signals, random, units);
     }
 
-    private static void makeSynonyms(LDSU<Unit> synonyms, Random random, Set<? extends Unit> set) {
+    private static void makeSynonyms(Signals signals, Random random, Set<Unit> set) {
         if (set.isEmpty()) {
             return;
         }
-        List<Unit> units = new ArrayList<>();
-        units.addAll(set);
+        List<Unit> units = new ArrayList<>(set);
         Collections.shuffle(units, random);
         Unit last = units.get(0);
-        synonyms.add(last, last.getWeight());
+        int signal = signals.add(last);
         for (int i = 1; i < units.size(); i++) {
             Unit current = units.get(i);
-            synonyms.add(current, current.getWeight());
             if (random.nextBoolean()) {
-                synonyms.joinSet(current, last);
+                signals.add(current, signal);
                 current.setWeight(last.getWeight());
             } else {
+                signal = signals.add(current);
                 last = current;
             }
         }
     }
 
-    public LDSU<Unit> synonyms() {
-        return synonyms;
+    public Signals signals() {
+        return signals;
     }
 
     public Graph graph() {
         return graph;
-    }
-
-    public int n() {
-        return graph.vertexSet().size();
-    }
-
-    public int m() {
-        return graph.edgeSet().size();
     }
 }

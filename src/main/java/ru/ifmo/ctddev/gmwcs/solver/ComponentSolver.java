@@ -1,6 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import ru.ifmo.ctddev.gmwcs.LDSU;
+import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.Blocks;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
@@ -28,12 +28,12 @@ public class ComponentSolver implements Solver {
     }
 
     @Override
-    public List<Unit> solve(Graph graph, LDSU<Unit> synonyms) throws SolverException {
+    public List<Unit> solve(Graph graph, Signals synonyms) throws SolverException {
         isSolvedToOptimality = true;
         Graph g = graph.subgraph(graph.vertexSet());
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
-        synonyms = new LDSU<>(synonyms, units);
+        synonyms = new Signals(synonyms, units);
         if (edgePenalty == 0) {
             Preprocessor.preprocess(g, synonyms);
             if (logLevel > 0) {
@@ -45,10 +45,10 @@ public class ComponentSolver implements Solver {
         if (g.vertexSet().size() == 0) {
             return null;
         }
-        return afterPreprocessing(g, new LDSU<>(synonyms, units));
+        return afterPreprocessing(g, new Signals(synonyms, units));
     }
 
-    private List<Unit> afterPreprocessing(Graph graph, LDSU<Unit> synonyms) throws SolverException {
+    private List<Unit> afterPreprocessing(Graph graph, Signals synonyms) throws SolverException {
         long timeBefore = System.currentTimeMillis();
         AtomicDouble lb = new AtomicDouble(externLB);
         PriorityQueue<Set<Node>> components = getComponents(graph);
@@ -73,7 +73,7 @@ public class ComponentSolver implements Solver {
             solver.setLogLevel(logLevel);
             Set<Unit> subset = new HashSet<>(subgraph.vertexSet());
             subset.addAll(subgraph.edgeSet());
-            Worker worker = new Worker(subgraph, root, new LDSU<>(synonyms, subset), solver, timeBefore);
+            Worker worker = new Worker(subgraph, root, new Signals(synonyms, subset), solver, timeBefore);
             executor.execute(worker);
             memorized.add(worker);
         }
@@ -85,7 +85,7 @@ public class ComponentSolver implements Solver {
         return getResult(memorized, graph, synonyms);
     }
 
-    private List<Unit> getResult(List<Worker> memorized, Graph graph, LDSU<Unit> signals) {
+    private List<Unit> getResult(List<Worker> memorized, Graph graph, Signals signals) {
         List<Unit> best = null;
         double bestScore = -Double.MAX_VALUE;
         for (Worker worker : memorized) {
