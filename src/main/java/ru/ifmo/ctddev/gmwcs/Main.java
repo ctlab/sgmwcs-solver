@@ -39,7 +39,7 @@ public class Main {
         OptionSet optionSet = optionParser.parse(args);
         optionParser.acceptsAll(asList("n", "nodes"), "Node list file").withRequiredArg().required();
         optionParser.acceptsAll(asList("e", "edges"), "Edge list file").withRequiredArg().required();
-        optionParser.acceptsAll(asList("o", "output"), "Output file").withRequiredArg().required();
+        optionParser.acceptsAll(asList("s", "signals"), "Signals file").withRequiredArg().required();
         optionParser.acceptsAll(asList("m", "threads"), "Number of threads")
             .withRequiredArg().ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
@@ -81,7 +81,7 @@ public class Main {
         int threads = (Integer) optionSet.valueOf("m");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
-        File outputFile = new File((String) optionSet.valueOf("output"));
+        File signalFile = new File((String) optionSet.valueOf("signals"));
         double edgePenalty = (Double) optionSet.valueOf("p");
         if (edgePenalty < 0) {
             System.err.println("Edge penalty can't be negative");
@@ -92,7 +92,7 @@ public class Main {
         solver.setTimeLimit(tl);
         solver.setEdgePenalty(edgePenalty);
         solver.setLogLevel(1);
-        GraphIO graphIO = new GraphIO(nodeFile, edgeFile);
+        GraphIO graphIO = new GraphIO(nodeFile, edgeFile, signalFile);
         try {
             Graph graph = graphIO.read();
             Signals signals = graphIO.getSignals();
@@ -101,7 +101,7 @@ public class Main {
             if (solver.isSolvedToOptimality()) {
                 System.out.println("SOLVED TO OPTIMALITY");
             }
-            graphIO.write(units, outputFile);
+            graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
         } catch (SolverException e) {

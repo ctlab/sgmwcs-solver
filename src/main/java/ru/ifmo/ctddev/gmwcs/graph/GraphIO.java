@@ -9,14 +9,16 @@ import java.util.*;
 public class GraphIO {
     private File nodeIn;
     private File edgeIn;
+    private File signalIn;
     private Map<String, Node> nodeNames;
     private Map<Unit, String> unitMap;
     private Signals signals;
     private Map<String, Integer> signalNames;
 
-    public GraphIO(File nodeIn, File edgeIn) {
+    public GraphIO(File nodeIn, File edgeIn, File signalIn) {
         this.nodeIn = nodeIn;
         this.edgeIn = edgeIn;
+        this.signalIn = signalIn;
         signals = new Signals();
         nodeNames = new LinkedHashMap<>();
         unitMap = new HashMap<>();
@@ -25,10 +27,12 @@ public class GraphIO {
 
     public Graph read() throws IOException, ParseException {
         try (LineNumberReader nodes = new LineNumberReader(new FileReader(nodeIn));
-             LineNumberReader edges = new LineNumberReader(new FileReader(edgeIn))) {
+             LineNumberReader edges = new LineNumberReader(new FileReader(edgeIn));
+             LineNumberReader signalsReader = new LineNumberReader(new FileReader(signalIn))) {
             Graph graph = new Graph();
             parseNodes(nodes, graph);
             parseEdges(edges, graph);
+            parseSignals(signalsReader);
             return graph;
         }
     }
@@ -48,19 +52,15 @@ public class GraphIO {
             if (!tokenizer.hasMoreTokens()) {
                 throw new ParseException("Expected weight of node at line", reader.getLineNumber());
             }
-            String weightStr = tokenizer.nextToken();
             try {
-                double weight = Double.parseDouble(weightStr);
-                Node vertex = new Node(cnt++, weight);
+                Node vertex = new Node(cnt++, 0);
                 if (nodeNames.containsKey(node)) {
                     throw new ParseException("Duplicate node " + node, 0);
                 }
                 nodeNames.put(node, vertex);
                 graph.addVertex(vertex);
                 processSignals(vertex, tokenizer);
-                unitMap.put(vertex, node + "\t" + weightStr);
-            } catch (NumberFormatException e) {
-                throw new ParseException("Expected floating point value of weight at line", reader.getLineNumber());
+                unitMap.put(vertex, node);
             } catch (ParseException e){
                 throw new ParseException(e.getMessage() + "node file, line", reader.getLineNumber());
             }
@@ -87,18 +87,15 @@ public class GraphIO {
                 throw new ParseException("Expected weight of edge at line", reader.getLineNumber());
             }
             try {
-                double weight = Double.parseDouble(tokenizer.nextToken());
                 if (!nodeNames.containsKey(first) || !nodeNames.containsKey(second)) {
                     throw new ParseException("There's no such vertex in edge list at line", reader.getLineNumber());
                 }
-                Edge edge = new Edge(cnt++, weight);
+                Edge edge = new Edge(cnt++, 0);
                 Node from = nodeNames.get(first);
                 Node to = nodeNames.get(second);
                 graph.addEdge(from, to, edge);
-                unitMap.put(edge, first + "\t" + second + "\t" + weight);
+                unitMap.put(edge, first + "\t" + second);
                 processSignals(edge, tokenizer);
-            } catch (NumberFormatException e) {
-                throw new ParseException("Expected floating point value of edge in line", reader.getLineNumber());
             } catch (ParseException e){
                 throw new ParseException(e.getMessage() + "edge file, line", reader.getLineNumber());
             }
@@ -115,30 +112,62 @@ public class GraphIO {
                 if(signalNames.containsKey(token)){
                     int signal = signalNames.get(token);
                     signals.add(unit, signal);
-                    if(unit.getWeight() != signals.weight(signal)){
-                        throw new ParseException("All units with the same signal must have the same weight. " +
-                                "Weight " + signals.weight(signal) + " has met already for the signal " + token +
-                                ". Error at the ", 0);
-                    }
                 } else {
                     signalNames.put(token, signals.add(unit));
                 }
             }
         } else {
-            signals.add(unit);
+            throw new ParseException("Expected signal name: ", 0);
         }
     }
 
-    public void write(List<Unit> units, File output) throws IOException {
+
+    private void parseSignals(LineNumberReader reader) throws IOException, ParseException {
+        String line;
+        try {
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("#")) {
+                    continue;
+                }
+                StringTokenizer tokenizer = new StringTokenizer(line);
+                if (!tokenizer.hasMoreTokens()) {
+                    continue;
+                }
+                String signal = tokenizer.nextToken();
+                if (!tokenizer.hasMoreTokens()) {
+                    throw new ParseException("Expected weight of signal at line", reader.getLineNumber());
+                }
+                double weight = Double.parseDouble(tokenizer.nextToken());
+                if(!signalNames.containsKey(signal)){
+                    throw new ParseException("Signal " + signal +
+                            "doesn't appear in node/edge files", reader.getLineNumber());
+                }
+                int set = signalNames.get(signal);
+                signals.setWeight(set, weight);
+                for(Unit u : signals.set(set)){
+                    u.setWeight(u.getWeight() + weight);
+                }
+            }
+        } catch (NumberFormatException e){
+            throw new ParseException("Wrong format of weight of signal at line", reader.getLineNumber());
+        }
+    }
+
+    public void write(List<Unit> units) throws IOException {
         if (units == null) {
             units = new ArrayList<>();
         }
-        try(PrintWriter writer = new PrintWriter(output)) {
+        try(PrintWriter nodeWriter = new PrintWriter(nodeIn + ".out");
+            PrintWriter edgeWriter = new PrintWriter(edgeIn + ".out")){
             for (Unit unit : units) {
                 if (!unitMap.containsKey(unit)) {
                     throw new IllegalStateException();
                 }
-                writer.println(unitMap.get(unit));
+                if(unit instanceof Node){
+                    nodeWriter.println(unitMap.get(unit));
+                } else {
+                    edgeWriter.println(unitMap.get(unit));
+                }
             }
         }
     }
