@@ -104,7 +104,7 @@ public class RLTSolver implements RootedSolver {
             }
             return Collections.emptyList();
         } catch (IloException e) {
-            throw new SolverException();
+            throw new SolverException(e.getMessage());
         } finally {
             cplex.end();
         }
