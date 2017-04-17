@@ -92,6 +92,10 @@ public class Signals {
         return num;
     }
 
+    public void setWeight(int set, double weight){
+        weights.set(set, weight);
+    }
+
     private void ensureLink(Unit unit, int signal) {
         if (unitsSets.containsKey(unit)) {
             unitsSets.get(unit).add(signal);
