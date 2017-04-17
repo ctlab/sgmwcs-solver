@@ -61,6 +61,8 @@ public class GraphIO {
                 unitMap.put(vertex, node + "\t" + weightStr);
             } catch (NumberFormatException e) {
                 throw new ParseException("Expected floating point value of weight at line", reader.getLineNumber());
+            } catch (ParseException e){
+                throw new ParseException(e.getMessage() + "node file, line", reader.getLineNumber());
             }
         }
     }
@@ -97,11 +99,13 @@ public class GraphIO {
                 processSignals(edge, tokenizer);
             } catch (NumberFormatException e) {
                 throw new ParseException("Expected floating point value of edge in line", reader.getLineNumber());
+            } catch (ParseException e){
+                throw new ParseException(e.getMessage() + "edge file, line", reader.getLineNumber());
             }
         }
     }
 
-    private void processSignals(Unit unit, StringTokenizer tokenizer) {
+    private void processSignals(Unit unit, StringTokenizer tokenizer) throws ParseException {
         List<String> tokens = new ArrayList<>();
         while(tokenizer.hasMoreTokens()){
             tokens.add(tokenizer.nextToken());
@@ -109,7 +113,13 @@ public class GraphIO {
         if(!tokens.isEmpty()){
             for(String token : tokens){
                 if(signalNames.containsKey(token)){
-                    signals.add(unit, signalNames.get(token));
+                    int signal = signalNames.get(token);
+                    signals.add(unit, signal);
+                    if(unit.getWeight() != signals.weight(signal)){
+                        throw new ParseException("All units with the same signal must have the same weight. " +
+                                "Weight " + signals.weight(signal) + " has met already for the signal " + token +
+                                ". Error at the ", 0);
+                    }
                 } else {
                     signalNames.put(token, signals.add(unit));
                 }

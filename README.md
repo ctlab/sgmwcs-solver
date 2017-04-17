@@ -77,11 +77,11 @@ You can not specify any signal for some nodes/edges, in this case a unique one w
     
 Yellow vertices - vertex group S1, red edges - edge group S2.
 
-![Sample](/sample.png?raw=true "Sample")
+![Example](/sample.png?raw=true "Sample")
 
 Red units in graph below - solution.
 
-![Sample](/sample_solved.png?raw=true "Solution")
+![Example](/sample_solved.png?raw=true "Solution")
 
 Running th example
 ==============
