@@ -96,7 +96,7 @@ Red units in graph below - solution.
 
 ![Example](/sample_solved.png?raw=true "Solution")
 
-Running th example
+Running the example
 ==============
 
-    java -Djava.library.path=PATH_TO_CPLEX -jar signal.jar -n nodes -e edges -s signals -o output
+    java -Djava.library.path=PATH_TO_CPLEX -jar signal.jar -n nodes -e edges -s signals
