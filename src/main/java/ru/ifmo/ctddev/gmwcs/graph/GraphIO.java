@@ -49,9 +49,6 @@ public class GraphIO {
                 continue;
             }
             String node = tokenizer.nextToken();
-            if (!tokenizer.hasMoreTokens()) {
-                throw new ParseException("Expected weight of node at line", reader.getLineNumber());
-            }
             try {
                 Node vertex = new Node(cnt++, 0);
                 if (nodeNames.containsKey(node)) {
@@ -83,9 +80,6 @@ public class GraphIO {
                 throw new ParseException("Wrong edge format at line", reader.getLineNumber());
             }
             String second = tokenizer.nextToken();
-            if (!tokenizer.hasMoreTokens()) {
-                throw new ParseException("Expected weight of edge at line", reader.getLineNumber());
-            }
             try {
                 if (!nodeNames.containsKey(first) || !nodeNames.containsKey(second)) {
                     throw new ParseException("There's no such vertex in edge list at line", reader.getLineNumber());
