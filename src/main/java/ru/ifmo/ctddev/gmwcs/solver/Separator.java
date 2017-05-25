@@ -79,7 +79,7 @@ public class Separator extends IloCplex.UserCutCallback {
         double currLb = lb.get();
         if(currLb > last){
             last = currLb;
-            add(cplex.ge(sum, currLb));
+            add(cplex.ge(sum, currLb), IloCplex.CutManagement.UseCutPurge);
         }
         if (!isCutsAllowed()) {
             return;
@@ -96,7 +96,7 @@ public class Separator extends IloCplex.UserCutCallback {
                 minCut.addAll(cut);
                 synchronized (cplex) {
                     IloNumVar[] evars = minCut.stream().map(x -> w.get(x)).toArray(IloNumVar[]::new);
-                    add(cplex.le(cplex.diff(y.get(node), cplex.sum(evars)), 0));
+                    add(cplex.le(cplex.diff(y.get(node), cplex.sum(evars)), 0), IloCplex.CutManagement.UseCutPurge);
                 }
                 added++;
             }
