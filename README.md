@@ -21,7 +21,7 @@ Then you should install concert library of CPLEX.
 It's located in "cplex/lib" directory from CPLEX STUDIO root path.
 For example, 
 
-    mvn install:install-file -Dfile=/opt/ibm/ILOG/CPLEX_Studio1251/cplex/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
+    mvn install:install-file -Dfile=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
     
 After that you can build the project using maven:
 
