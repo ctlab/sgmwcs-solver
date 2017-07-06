@@ -8,7 +8,7 @@ before_install:
 
 install:
 - git clone https://github.com/ctlab/private-libraries.git lib
-- mvn install:install-file -Dfile=lib/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
+- mvn install:install-file -Dfile=lib/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.7.1 -Dpackaging=jar
 
 script:
 - mvn -Djava.library.path=lib/lib cobertura:cobertura
