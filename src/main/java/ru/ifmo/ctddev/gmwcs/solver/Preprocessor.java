@@ -48,6 +48,9 @@ public class Preprocessor {
             Set<Node> toRemove = new HashSet<>();
             negR(graph, primaryNode, primaryNode, new HashSet<>(), toRemove);
             toRemove.forEach(graph::removeVertex);
+            toRemove = new HashSet<>();
+            discard(graph, primaryNode, toRemove);
+            toRemove.forEach(graph::removeVertex);
         }
     }
 
@@ -128,6 +131,23 @@ public class Preprocessor {
         graph.removeVertex(aux);
         absorb(ss, main, aux);
         absorb(ss, main, e);
+    }
+
+
+    private static void discard(Graph graph, Node primary, Set<Node> toRemove) {
+        for (Node node : graph.vertexSet()) {
+            if (graph.degreeOf(node) != 1 || node.equals(primary)
+                    || node.getWeight() > primary.getWeight()) continue;
+            Edge edge = graph.edgesOf(node).stream().findAny().orElse(null);
+            assert edge != null;
+            if (node.getWeight() <= 0) {
+                toRemove.add(node);
+            }
+           //   else if (toRemove.add(node)) {
+           //     Node opposite = graph.getOppositeVertex(node, edge);
+           //     opposite.setWeight(opposite.getWeight() + node.getWeight());
+           // }
+        }
     }
 
     private static void absorb(Signals ss, Unit who, Unit whom) {
