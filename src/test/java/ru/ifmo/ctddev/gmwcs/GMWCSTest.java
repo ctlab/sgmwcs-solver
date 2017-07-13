@@ -14,13 +14,12 @@ import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.Solver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
+import static ru.ifmo.ctddev.gmwcs.solver.Utils.copy;
 import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -51,6 +50,47 @@ public class GMWCSTest {
         referenceSolver = new ReferenceSolver();
         makeConnectedGraphs();
         makeUnconnectedGraphs();
+    }
+
+    @Test
+    public void test_copy() {
+        int allTests = MAX_SIZE * TESTS_PER_SIZE;
+        for (int i = 0; i < allTests; i++) {
+            TestCase test = tests.get(i);
+            Graph graph = new Graph();
+            Signals signals = new Signals();
+            copy(test.graph(), test.signals(), graph, signals);
+            int[] nodesPrev = test.graph().vertexSet().stream()
+                                     .map(Node::getWeight).sorted()
+                                     .mapToInt(Double::intValue).toArray();
+            int[] nodesNew = graph.vertexSet().stream()
+                    .map(Node::getWeight).sorted()
+                    .mapToInt(Double::intValue).toArray();
+            Assert.assertArrayEquals("Node weights must be equal", nodesPrev, nodesNew);
+
+            int[] edgesPrev = test.graph().edgeSet().stream()
+                    .map(Edge::getWeight).sorted()
+                    .mapToInt(Double::intValue).toArray();
+            int[] edgesNew = graph.edgeSet().stream()
+                    .map(Edge::getWeight).sorted()
+                    .mapToInt(Double::intValue).toArray();
+            Assert.assertArrayEquals("Edge weights must be equal", edgesPrev, edgesNew);
+
+            Assert.assertEquals(test.signals().size(), signals.size());
+            for (int j = 0; j < signals.size(); ++j) {
+                List<Unit> newUnits = signals.set(j);
+                newUnits.sort(Comparator.comparingInt(Unit::getNum));
+                List<Unit> oldUnits = test.signals().set(j);
+                oldUnits.sort(Comparator.comparingInt(Unit::getNum));
+                for (int num = 0; num < newUnits.size(); ++num) {
+                    Unit nu = newUnits.get(num)
+                       , ou = oldUnits.get(num);
+                    Assert.assertNotSame(nu, ou);
+                    Assert.assertEquals(nu.getNum(), ou.getNum());
+                    Assert.assertTrue(nu.getWeight() - ou.getWeight() < 0.01);
+                }
+            }
+        }
     }
 
     @Test

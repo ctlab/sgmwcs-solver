@@ -2,6 +2,7 @@ package ru.ifmo.ctddev.gmwcs;
 
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
+import java.io.*;
 import java.util.*;
 
 public class Signals {
@@ -16,9 +17,7 @@ public class Signals {
     }
 
     public Signals(Signals signals, Set<Unit> subset) {
-        sets = new ArrayList<>();
-        unitsSets = new HashMap<>();
-        weights = new ArrayList<>();
+        this();
         for (Unit unit : subset) {
             unitsSets.put(unit, new ArrayList<>());
         }
@@ -92,7 +91,7 @@ public class Signals {
         return num;
     }
 
-    public void setWeight(int set, double weight){
+    public void setWeight(int set, double weight) {
         weights.set(set, weight);
     }
 

@@ -1,5 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +13,10 @@ public abstract class Unit implements Comparable<Unit> {
         this.num = num;
         this.weight = weight;
         absorbed = new ArrayList<>();
+    }
+
+    public Unit(Unit that) {
+        this(that.num, that.weight);
     }
 
     public void absorb(Unit unit) {

@@ -6,13 +6,23 @@ import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class Preprocessor {
     public static void preprocess(Graph graph, Signals signals) {
         Node primaryNode = null;
+        for (Node v : new ArrayList<>(graph.vertexSet())) {
+            if (v.getWeight() > 0 && (primaryNode == null || v.getWeight() > primaryNode.getWeight())) {
+                primaryNode = v;
+            }
+        }
+        if (primaryNode != null) {
+            Set<Node> toRemove = new HashSet<>();
+            discard(graph, primaryNode, signals, toRemove);
+            toRemove.forEach(graph::removeVertex);
+        }
+
+        primaryNode = null;
         for (Edge edge : new ArrayList<>(graph.edgeSet())) {
             if (!graph.containsEdge(edge)) {
                 continue;
@@ -28,7 +38,7 @@ public class Preprocessor {
                 primaryNode = v;
             }
             if (v.getWeight() <= 0 && graph.degreeOf(v) == 2) {
-                Edge[] edges = graph.edgesOf(v).stream().toArray(Edge[]::new);
+                Edge[] edges = graph.edgesOf(v).toArray(new Edge[0]);
                 if (edges[1].getWeight() > 0 || edges[0].getWeight() > 0) {
                     continue;
                 }
@@ -48,10 +58,9 @@ public class Preprocessor {
             Set<Node> toRemove = new HashSet<>();
             negR(graph, primaryNode, primaryNode, new HashSet<>(), toRemove);
             toRemove.forEach(graph::removeVertex);
-            toRemove = new HashSet<>();
-            discard(graph, primaryNode, toRemove);
-            toRemove.forEach(graph::removeVertex);
         }
+
+
     }
 
     private static boolean negR(Graph g, Node v, Node r, Set<Node> vis, Set<Node> toRemove) {
@@ -134,21 +143,48 @@ public class Preprocessor {
     }
 
 
-    private static void discard(Graph graph, Node primary, Set<Node> toRemove) {
-        for (Node node : graph.vertexSet()) {
-            if (graph.degreeOf(node) != 1 || node.equals(primary)
-                    || node.getWeight() > primary.getWeight()) continue;
-            Edge edge = graph.edgesOf(node).stream().findAny().orElse(null);
-            assert edge != null;
-            if (node.getWeight() <= 0) {
-                toRemove.add(node);
+    private static Map<Unit, List<Integer>> unitsToSignals(Signals ss) {
+        Map<Unit, List<Integer>> res = new HashMap<>();
+        for (int i = 0; i < ss.size(); ++i) {
+            for (Unit unit : ss.set(i)) {
+                res.putIfAbsent(unit, new ArrayList<>());
+                res.get(unit).add(i);
             }
-           //   else if (toRemove.add(node)) {
-           //     Node opposite = graph.getOppositeVertex(node, edge);
-           //     opposite.setWeight(opposite.getWeight() + node.getWeight());
-           // }
+        }
+        return res;
+    }
+
+    private static void discard(Graph graph, Node primary, Signals signals, Set<Node> toRemove) {
+        Map<Node, List<Unit>> toAbsorb = new HashMap<>();
+        Map<Unit, List<Integer>> uToS = unitsToSignals(signals);
+        for (Node node : graph.vertexSet()) {
+            if (graph.degreeOf(node) != 1 || node.equals(primary)) continue;
+            Edge edge = graph.edgesOf(node).stream().findAny().orElse(null);
+            List<Integer> edgeS = uToS.get(edge), nodeS = uToS.get(node);
+            if (edgeS.stream().anyMatch(s -> signals.set(s).size() > 1) ||
+                    nodeS.stream().anyMatch(s -> signals.set(s).size() > 1)) {
+                continue;
+            }
+            double sum = node.getWeight() + edge.getWeight();
+            if (sum <= 0) {
+                toRemove.add(node);
+            } else {
+                Node opposite = graph.getOppositeVertex(node, edge);
+                toAbsorb.putIfAbsent(opposite, new ArrayList<>());
+                toAbsorb.get(opposite).add(node);
+                toAbsorb.get(opposite).add(edge);
+            }
+        }
+        for (Map.Entry<Node, List<Unit>> kvp : toAbsorb.entrySet()) {
+            List<Unit> willAbsorb = kvp.getValue();
+            willAbsorb.forEach(val -> {
+                absorb(signals, kvp.getKey(), val);
+                if (val instanceof Node)
+                    graph.removeVertex((Node) val);
+            });
         }
     }
+
 
     private static void absorb(Signals ss, Unit who, Unit whom) {
         who.absorb(whom);

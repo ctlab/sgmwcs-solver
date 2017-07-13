@@ -14,10 +14,10 @@ public class TestCase {
         signals = new Signals();
         Set<Unit> units = new HashSet<>(graph.vertexSet());
         units.addAll(graph.edgeSet());
-        makesignals(signals, random, units);
+        makeSignals(signals, random, units);
     }
 
-    private static void makesignals(Signals signals, Random random, Set<Unit> set) {
+    private static void makeSignals(Signals signals, Random random, Set<Unit> set) {
         if (set.isEmpty()) {
             return;
         }
