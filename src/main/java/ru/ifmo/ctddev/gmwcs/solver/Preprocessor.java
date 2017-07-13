@@ -170,6 +170,7 @@ public class Preprocessor {
                 toRemove.add(node);
             } else {
                 Node opposite = graph.getOppositeVertex(node, edge);
+                if (graph.degreeOf(opposite) == 1) continue;
                 toAbsorb.putIfAbsent(opposite, new ArrayList<>());
                 toAbsorb.get(opposite).add(node);
                 toAbsorb.get(opposite).add(edge);
