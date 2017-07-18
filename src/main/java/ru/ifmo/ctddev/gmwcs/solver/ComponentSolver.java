@@ -2,10 +2,7 @@ package ru.ifmo.ctddev.gmwcs.solver;
 
 import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
-import ru.ifmo.ctddev.gmwcs.graph.Blocks;
-import ru.ifmo.ctddev.gmwcs.graph.Graph;
-import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -41,8 +38,12 @@ public class ComponentSolver implements Solver {
         units.addAll(g.edgeSet());
         signals = new Signals(signals, units);
         if (edgePenalty == 0) {
+            if (logLevel > 0 ) {
+                new GraphPrinter(g, signals).printGraph("beforePrep.dot");
+            }
             Preprocessor.preprocess(g, signals);
             if (logLevel > 0) {
+                new GraphPrinter(g, signals).printGraph("afterPrep.dot");
                 System.out.print("Preprocessing deleted " + (vertexBefore - graph.vertexSet().size()) + " nodes ");
                 System.out.println("and " + (edgesBefore - graph.edgeSet().size()) + " edges.");
             }

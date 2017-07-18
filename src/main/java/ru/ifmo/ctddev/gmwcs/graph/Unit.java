@@ -1,5 +1,7 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
+import ru.ifmo.ctddev.gmwcs.Signals;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +49,12 @@ public abstract class Unit implements Comparable<Unit> {
 
     public int getNum() {
         return num;
+    }
+
+    public void setWeight(Signals signals) {
+        weight = signals.getUnitsSets().get(this)
+                .stream().mapToDouble(signals::weight)
+                .sum();
     }
 
     public double getWeight() {

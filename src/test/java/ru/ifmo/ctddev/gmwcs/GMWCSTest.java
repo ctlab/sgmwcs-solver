@@ -148,13 +148,14 @@ public class GMWCSTest {
              PrintWriter edgeWriter = new PrintWriter("edges_" + testNum + ".error");
              PrintWriter signalWriter = new PrintWriter("signals" + testNum + ".error")) {
             Graph g = test.graph();
+            Signals s = test.signals();
             for (Node v : g.vertexSet()) {
-                nodeWriter.println(v.getNum() + "\t" + v.getWeight());
+                nodeWriter.println(v.getNum() + "\tS" + (s.getUnitsSets().get(v).get(0) + 1));
             }
             for (Edge e : g.edgeSet()) {
                 Node from = g.getEdgeSource(e);
                 Node to = g.getEdgeTarget(e);
-                edgeWriter.println(from.getNum() + "\t" + to.getNum() + "\t" + e.getWeight());
+                edgeWriter.println(from.getNum() + "\t" + to.getNum() + "\tS" + (s.getUnitsSets().get(e).get(0) + 1));
             }
             reportSignals(test, signalWriter);
             System.err.println("Correct solution(one of): ");
@@ -173,20 +174,8 @@ public class GMWCSTest {
 
     private void reportSignals(TestCase test, PrintWriter signalWriter) {
         Signals signals = test.signals();
-        Graph g = test.graph();
         for (int i = 0; i < signals.size(); i++) {
-            List<Unit> set = signals.set(i);
-            for (Unit u : set) {
-                if (u instanceof Edge) {
-                    Edge e = (Edge) u;
-                    signalWriter.print(g.getEdgeSource(e).getNum() + " -- " + g.getEdgeTarget(e).getNum() + "\t");
-                } else {
-                    signalWriter.print(u.getNum() + "\t");
-                }
-            }
-            if (!set.isEmpty()) {
-                signalWriter.println();
-            }
+            signalWriter.println("S" + (i + 1) + "\t" + signals.weight(i));
         }
     }
 

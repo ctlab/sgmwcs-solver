@@ -68,6 +68,15 @@ public class Signals {
         }
         unitsSets.put(with, result);
         unitsSets.remove(what);
+        with.setWeight(this);
+    }
+
+    public Map<Unit, List<Integer>> getUnitsSets() {
+        Map<Unit, List<Integer>> result = new HashMap<>();
+        for (Unit unit : unitsSets.keySet()) {
+            result.put(unit, unitsSets.get(unit));
+        }
+        return result;
     }
 
     public List<Unit> set(int num) {
