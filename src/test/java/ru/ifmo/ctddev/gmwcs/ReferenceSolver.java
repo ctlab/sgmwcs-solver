@@ -23,8 +23,8 @@ public class ReferenceSolver {
         double max = roots.isEmpty() ? 0 : -Double.MAX_VALUE;
         // Isolated vertices
         for (Node node : graph.vertexSet()) {
-            if ((roots.isEmpty() || (roots.size() == 1 && roots.get(0) == node)) && node.getWeight() > max) {
-                max = node.getWeight();
+            if ((roots.isEmpty() || (roots.size() == 1 && roots.get(0) == node)) && signals.weight(node) > max) {
+                max = signals.weight(node);
                 maxSet = new ArrayList<>();
                 maxSet.add(node);
             }

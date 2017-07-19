@@ -8,7 +8,7 @@ import java.util.*;
 public class Signals {
     private List<Set<Unit>> sets;
     private Map<Unit, List<Integer>> unitsSets;
-    private List<Double> weights;
+    private List<OptionalDouble> weights;
 
     public Signals() {
         sets = new ArrayList<>();
@@ -32,7 +32,7 @@ public class Signals {
             }
             if (!set.isEmpty()) {
                 sets.add(set);
-                weights.add(signals.weight(i));
+                weights.add(OptionalDouble.of(signals.weight(i)));
                 j++;
             }
         }
@@ -43,7 +43,12 @@ public class Signals {
     }
 
     public double weight(int num) {
-        return weights.get(num);
+        assert weights.get(num).isPresent();
+        return weights.get(num).getAsDouble();
+    }
+
+    public double weight(Unit unit) {
+        return unitsSets.get(unit).stream().mapToDouble(this::weight).sum();
     }
 
     public void join(Unit what, Unit with) {
@@ -68,7 +73,6 @@ public class Signals {
         }
         unitsSets.put(with, result);
         unitsSets.remove(what);
-        with.setWeight(this);
     }
 
     public Map<Unit, List<Integer>> getUnitsSets() {
@@ -85,23 +89,29 @@ public class Signals {
         return result;
     }
 
-    public void add(Unit unit, int signal) {
-        sets.get(signal).add(unit);
-        ensureLink(unit, signal);
+    public void add(Unit unit, int signalTo) {
+        sets.get(signalTo).add(unit);
+        ensureLink(unit, signalTo);
     }
 
-    public int add(Unit unit) {
+    private int add(Unit unit) {
         Set<Unit> s = new HashSet<>();
         s.add(unit);
         sets.add(s);
-        weights.add(unit.getWeight());
+        weights.add(OptionalDouble.empty());
         int num = sets.size() - 1;
         ensureLink(unit, num);
         return num;
     }
 
+    public int addAndSetWeight(Unit unit, Double weight) {
+        int num = add(unit);
+        setWeight(num, weight);
+        return num;
+    }
+
     public void setWeight(int set, double weight) {
-        weights.set(set, weight);
+        weights.set(set, OptionalDouble.of(weight));
     }
 
     private void ensureLink(Unit unit, int signal) {

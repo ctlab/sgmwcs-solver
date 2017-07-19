@@ -48,7 +48,7 @@ public class Utils {
             oldUnits.forEach(u -> {
                 Unit nu = oldToNew.get(u);
                 if (outS.size() < sz + 1) {
-                    outS.add(nu);
+                    outS.addAndSetWeight(nu, inS.weight(nu));
                 } else {
                     outS.add(nu, sz);
                 }

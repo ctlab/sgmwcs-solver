@@ -8,33 +8,26 @@ import java.util.List;
 
 public abstract class Unit implements Comparable<Unit> {
     protected int num;
-    protected double weight;
+  //  protected double weight;
     protected List<Unit> absorbed;
 
-    public Unit(int num, double weight) {
+    public Unit(int num) {
         this.num = num;
-        this.weight = weight;
+        //this.weight = weight;
         absorbed = new ArrayList<>();
     }
 
     public Unit(Unit that) {
-        this(that.num, that.weight);
+        this(that.num);
     }
 
     public void absorb(Unit unit) {
-        for (Unit u : unit.getAbsorbed()) {
-            absorbed.add(u);
-            weight += u.weight;
-        }
+        absorbed.addAll(unit.getAbsorbed());
         unit.clear();
         absorbed.add(unit);
-        weight += unit.weight;
     }
 
     public void clear() {
-        for (Unit unit : absorbed) {
-            weight -= unit.getWeight();
-        }
         absorbed.clear();
     }
 
@@ -51,19 +44,19 @@ public abstract class Unit implements Comparable<Unit> {
         return num;
     }
 
-    public void setWeight(Signals signals) {
-        weight = signals.getUnitsSets().get(this)
-                .stream().mapToDouble(signals::weight)
-                .sum();
-    }
+  //  public void setWeight(Signals signals) {
+ //       weight = signals.getUnitsSets().get(this)
+ //               .stream().mapToDouble(signals::weight)
+//                .sum();
+ //   }
 
-    public double getWeight() {
-        return weight;
-    }
+    //public double getWeight() {
+ //       return weight;
+   // }
 
-    public void setWeight(double weight) {
-        this.weight = weight;
-    }
+   // public void setWeight(double weight) {
+  //      this.weight = weight;
+  //  }
 
     @Override
     public boolean equals(Object o) {
@@ -72,9 +65,9 @@ public abstract class Unit implements Comparable<Unit> {
 
     @Override
     public int compareTo(Unit u) {
-        if (u.weight != weight) {
-            return Double.compare(u.weight, weight);
-        }
+        //if (u.weight != weight) {
+       //     return Double.compare(u.weight, weight);
+      //  }
         return Integer.compare(u.getNum(), num);
     }
 }

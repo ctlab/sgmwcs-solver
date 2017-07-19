@@ -6,32 +6,34 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import java.util.*;
 
 public class TestCase {
+    private final Map<Unit, Double> weights;
     private Graph graph;
     private Signals signals;
 
-    public TestCase(Graph graph, Random random) {
+    public TestCase(Graph graph, Map<Unit, Double> weights, Random random) {
         this.graph = graph;
-        signals = new Signals();
+        this.weights = weights;
         Set<Unit> units = new HashSet<>(graph.vertexSet());
         units.addAll(graph.edgeSet());
-        makeSignals(signals, random, units);
+        makeSignals(random, units);
     }
 
-    private static void makeSignals(Signals signals, Random random, Set<Unit> set) {
+    private void makeSignals(Random random, Set<Unit> set) {
+        signals = new Signals();
         if (set.isEmpty()) {
             return;
         }
         List<Unit> units = new ArrayList<>(set);
         Collections.shuffle(units, random);
         Unit last = units.get(0);
-        int signal = signals.add(last);
+        int signal = signals.addAndSetWeight(last, weights.get(last));
         for (int i = 1; i < units.size(); i++) {
             Unit current = units.get(i);
             if (random.nextBoolean()) {
                 signals.add(current, signal);
-                current.setWeight(last.getWeight());
+                signals.setWeight(signal, signals.weight(last));
             } else {
-                signal = signals.add(current);
+                signal = signals.addAndSetWeight(current, weights.get(current));
                 last = current;
             }
         }

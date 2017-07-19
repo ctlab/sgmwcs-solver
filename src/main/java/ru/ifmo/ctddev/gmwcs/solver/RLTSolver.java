@@ -23,6 +23,7 @@ public class RLTSolver implements RootedSolver {
     private int threads;
     private int logLevel;
     private Graph graph;
+    private Signals signals;
     private Node root;
     private boolean isSolvedToOptimality;
     private int maxToAddCuts;
@@ -82,6 +83,7 @@ public class RLTSolver implements RootedSolver {
             }
             cplex = new IloCplex();
             this.graph = graph;
+            this.signals = signals;
             initVariables();
             addConstraints();
             addObjective(signals);
@@ -321,9 +323,9 @@ public class RLTSolver implements RootedSolver {
     private void maxSizeConstraints() throws IloException {
         for (Node v : graph.vertexSet()) {
             for (Node u : graph.neighborListOf(v)) {
-                if (u.getWeight() >= 0) {
+                if (signals.weight(u) >= 0) {
                     Edge e = graph.getEdge(v, u);
-                    if (e != null && e.getWeight() >= 0) {
+                    if (e != null && signals.weight(e) >= 0) {
                         cplex.addLe(y.get(v), w.get(e));
                     }
                 }

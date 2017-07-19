@@ -6,12 +6,12 @@ public class Node extends Unit {
         super(that);
     }
 
-    public Node(int num, double weight) {
-        super(num, weight);
+    public Node(int num) {
+        super(num);
     }
 
     @Override
     public String toString() {
-        return "N(" + String.valueOf(num) + ", " + String.valueOf(weight) + ")";
+        return "N(" + String.valueOf(num) + ")";
     }
 }

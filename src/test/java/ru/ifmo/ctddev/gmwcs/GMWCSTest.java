@@ -61,18 +61,18 @@ public class GMWCSTest {
             Signals signals = new Signals();
             copy(test.graph(), test.signals(), graph, signals);
             int[] nodesPrev = test.graph().vertexSet().stream()
-                                     .map(Node::getWeight).sorted()
-                                     .mapToInt(Double::intValue).toArray();
+                    .map(signals::weight).sorted()
+                    .mapToInt(Double::intValue).toArray();
             int[] nodesNew = graph.vertexSet().stream()
-                    .map(Node::getWeight).sorted()
+                    .map(signals::weight).sorted()
                     .mapToInt(Double::intValue).toArray();
             Assert.assertArrayEquals("Node weights must be equal", nodesPrev, nodesNew);
 
             int[] edgesPrev = test.graph().edgeSet().stream()
-                    .map(Edge::getWeight).sorted()
+                    .map(signals::weight).sorted()
                     .mapToInt(Double::intValue).toArray();
             int[] edgesNew = graph.edgeSet().stream()
-                    .map(Edge::getWeight).sorted()
+                    .map(signals::weight).sorted()
                     .mapToInt(Double::intValue).toArray();
             Assert.assertArrayEquals("Edge weights must be equal", edgesPrev, edgesNew);
 
@@ -83,11 +83,10 @@ public class GMWCSTest {
                 List<Unit> oldUnits = test.signals().set(j);
                 oldUnits.sort(Comparator.comparingInt(Unit::getNum));
                 for (int num = 0; num < newUnits.size(); ++num) {
-                    Unit nu = newUnits.get(num)
-                       , ou = oldUnits.get(num);
+                    Unit nu = newUnits.get(num), ou = oldUnits.get(num);
                     Assert.assertNotSame(nu, ou);
                     Assert.assertEquals(nu.getNum(), ou.getNum());
-                    Assert.assertTrue(nu.getWeight() - ou.getWeight() < 0.01);
+                    Assert.assertTrue(signals.weight(nu) - signals.weight(ou) < 0.01);
                 }
             }
         }
@@ -194,17 +193,26 @@ public class GMWCSTest {
             Collections.sort(edgesCount);
             for (int count : edgesCount) {
                 Graph graph = new Graph();
-                Node[] nodes = fillNodes(graph, size);
+                Map<Node, Double> nodes = fillNodes(graph, size);
                 List<Integer> seq = new ArrayList<>();
                 for (int j = 0; j < size; j++) {
                     seq.add(j);
                 }
                 Collections.shuffle(seq, random);
+                Node[] nodesArray = nodes.keySet().toArray(new Node[0]);
+                Arrays.sort(nodesArray);
+                Map<Edge, Double> edges = new HashMap<>();
                 for (int j = 0; j < size - 1; j++) {
-                    graph.addEdge(nodes[seq.get(j)], nodes[seq.get(j + 1)], new Edge(j + 1, random.nextInt(16) - 8));
+                    double weight = random.nextInt(16) - 8;
+                    Edge edge = new Edge(j + 1);
+                    graph.addEdge(nodesArray[seq.get(j)], nodesArray[seq.get(j + 1)], edge);
+                    edges.put(edge, weight);
                 }
-                fillEdgesRandomly(graph, count, nodes, size);
-                tests.add(new TestCase(graph, random));
+                fillEdgesRandomly(graph, count, nodesArray, edges, size);
+                Map<Unit, Double> weights = new HashMap<>();
+                nodes.forEach(weights::put);
+                edges.forEach(weights::put);
+                tests.add(new TestCase(graph, weights, random));
             }
         }
     }
@@ -214,22 +222,30 @@ public class GMWCSTest {
             int n = random.nextInt(MAX_SIZE) + 1;
             int m = Math.min((n * (n - 1)) / 2, random.nextInt(MAX_SIZE));
             Graph graph = new Graph();
-            Node[] nodes = fillNodes(graph, n);
-            fillEdgesRandomly(graph, m, nodes, 1);
-            tests.add(new TestCase(graph, random));
+            Map<Node, Double> nodes = fillNodes(graph, n);
+            Map<Edge, Double> edges = new HashMap<>();
+            Node[] nodesArray = nodes.keySet().toArray(new Node[0]);
+            Arrays.sort(nodesArray);
+            fillEdgesRandomly(graph, m, nodesArray, edges, 1);
+            Map<Unit, Double> weights = new HashMap<>();
+            nodes.forEach(weights::put);
+            edges.forEach(weights::put);
+            tests.add(new TestCase(graph, weights, random));
         }
     }
 
-    private Node[] fillNodes(Graph graph, int size) {
-        Node[] nodes = new Node[size];
+    private Map<Node, Double> fillNodes(Graph graph, int size) {
+
+        Map<Node, Double> nodes = new HashMap<>();
         for (int j = 0; j < size; j++) {
-            nodes[j] = new Node(j + 1, random.nextInt(16) - 8);
-            graph.addVertex(nodes[j]);
+            Node node = new Node(j + 1);
+            nodes.put(node, random.nextInt(16) - 8.0);
+            graph.addVertex(node);
         }
         return nodes;
     }
 
-    private void fillEdgesRandomly(Graph graph, int count, Node[] nodes, int offset) {
+    private void fillEdgesRandomly(Graph graph, int count, Node[] nodes, Map<Edge, Double> edges, int offset) {
         int size = graph.vertexSet().size();
         for (int j = 0; j < count; j++) {
             int u = random.nextInt(size);
@@ -238,7 +254,10 @@ public class GMWCSTest {
                 j--;
                 continue;
             }
-            graph.addEdge(nodes[u], nodes[v], new Edge(offset + j, random.nextInt(16) - 8));
+            double weight = random.nextInt(16) - 8;
+            Edge edge = new Edge(offset + j);
+            graph.addEdge(nodes[u], nodes[v], edge);
+            edges.put(edge, weight);
         }
     }
 }

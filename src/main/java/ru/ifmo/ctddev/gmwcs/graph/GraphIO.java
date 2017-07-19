@@ -50,7 +50,7 @@ public class GraphIO {
             }
             String node = tokenizer.nextToken();
             try {
-                Node vertex = new Node(cnt++, 0);
+                Node vertex = new Node(cnt++);
                 if (nodeNames.containsKey(node)) {
                     throw new ParseException("Duplicate node " + node, 0);
                 }
@@ -138,9 +138,9 @@ public class GraphIO {
                 }
                 int set = signalNames.get(signal);
                 signals.setWeight(set, weight);
-                for (Unit u : signals.set(set)) {
-                    u.setWeight(u.getWeight() + weight);
-                }
+//                for (Unit u : signals.set(set)) {
+ //                   u.setWeight(u.getWeight() + weight);
+  //              }
             }
         } catch (NumberFormatException e) {
             throw new ParseException("Wrong format of weight of signal at line", reader.getLineNumber());
