@@ -4,6 +4,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Signals {
     private List<Set<Unit>> sets;
@@ -71,6 +72,8 @@ public class Signals {
                 result.add(set);
             }
         }
+        unitsSets.put(with, result);
+        result = new ArrayList<>(new HashSet<>(unitsSets.get(with)));
         unitsSets.put(with, result);
         unitsSets.remove(what);
     }

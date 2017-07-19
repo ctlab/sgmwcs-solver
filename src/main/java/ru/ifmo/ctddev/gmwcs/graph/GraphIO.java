@@ -84,7 +84,7 @@ public class GraphIO {
                 if (!nodeNames.containsKey(first) || !nodeNames.containsKey(second)) {
                     throw new ParseException("There's no such vertex in edge list at line", reader.getLineNumber());
                 }
-                Edge edge = new Edge(cnt++, 0);
+                Edge edge = new Edge(cnt++);
                 Node from = nodeNames.get(first);
                 Node to = nodeNames.get(second);
                 graph.addEdge(from, to, edge);
@@ -107,7 +107,7 @@ public class GraphIO {
                     int signal = signalNames.get(token);
                     signals.add(unit, signal);
                 } else {
-                    signalNames.put(token, signals.add(unit));
+                    signalNames.put(token, signals.addAndSetWeight(unit, 0.0));
                 }
             }
         } else {
@@ -138,9 +138,6 @@ public class GraphIO {
                 }
                 int set = signalNames.get(signal);
                 signals.setWeight(set, weight);
-//                for (Unit u : signals.set(set)) {
- //                   u.setWeight(u.getWeight() + weight);
-  //              }
             }
         } catch (NumberFormatException e) {
             throw new ParseException("Wrong format of weight of signal at line", reader.getLineNumber());
