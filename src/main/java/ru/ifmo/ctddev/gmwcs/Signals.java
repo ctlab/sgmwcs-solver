@@ -82,6 +82,10 @@ public class Signals {
         ensureLink(unit, signal);
     }
 
+    public List<Integer> unitsSets(Unit unit){
+        return Collections.unmodifiableList(unitsSets.get(unit));
+    }
+
     public int add(Unit unit) {
         Set<Unit> s = new HashSet<>();
         s.add(unit);
