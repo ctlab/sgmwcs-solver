@@ -88,7 +88,7 @@ public class RLTSolver implements RootedSolver {
             addConstraints();
             addObjective(signals);
             if (edgePenalty <= 0) {
-                maxSizeConstraints();
+                maxSizeConstraints(signals);
             }
             if (root == null) {
                 breakRootSymmetry();
@@ -320,7 +320,7 @@ public class RLTSolver implements RootedSolver {
         cplex.addLe(cplex.sum(d.get(to), cplex.prod(n - 1, z)), cplex.sum(d.get(from), n));
     }
 
-    private void maxSizeConstraints() throws IloException {
+    private void maxSizeConstraints(Signals signals) throws IloException {
         for (Node v : graph.vertexSet()) {
             for (Node u : graph.neighborListOf(v)) {
                 if (signals.weight(u) >= 0) {
