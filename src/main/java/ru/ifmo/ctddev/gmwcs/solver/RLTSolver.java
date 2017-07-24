@@ -78,7 +78,7 @@ public class RLTSolver implements RootedSolver {
     public List<Unit> solve(Graph graph, Signals signals) throws SolverException {
         try {
             isSolvedToOptimality = false;
-            if(!isLBShared){
+            if (!isLBShared) {
                 lb = new AtomicDouble(externLB);
             }
             cplex = new IloCplex();
@@ -267,7 +267,7 @@ public class RLTSolver implements RootedSolver {
         if (edgePenalty > 0) {
             IloNumVar numEdges = cplex.numVar(0, Double.MAX_VALUE);
 
-            IloNumExpr edgesSum = cplex.sum(w.values().toArray(new IloNumVar[0])); 
+            IloNumExpr edgesSum = cplex.sum(w.values().toArray(new IloNumVar[0]));
 
             ks.add(-edgePenalty);
             vs.add(numEdges);
@@ -277,7 +277,7 @@ public class RLTSolver implements RootedSolver {
 
         IloNumExpr sum = cplex.scalProd(ks.stream().mapToDouble(d -> d).toArray(),
                 vs.toArray(new IloNumVar[vs.size()]));
-        
+
         this.sum = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE);
 
         cplex.addGe(sum, lb.get());
@@ -323,7 +323,7 @@ public class RLTSolver implements RootedSolver {
     private void maxSizeConstraints(Signals signals) throws IloException {
         for (Node v : graph.vertexSet()) {
             for (Node u : graph.neighborListOf(v)) {
-                if (signals.weight(u) >= 0) {
+                if (signals.unitSets(u).stream().allMatch(x -> signals.weight(x) >= 0)) {
                     Edge e = graph.getEdge(v, u);
                     if (e != null && signals.weight(e) >= 0) {
                         cplex.addLe(y.get(v), w.get(e));
@@ -376,7 +376,7 @@ public class RLTSolver implements RootedSolver {
         this.externLB = lb;
     }
 
-    public void setSharedLB(AtomicDouble lb){
+    public void setSharedLB(AtomicDouble lb) {
         isLBShared = true;
         this.lb = lb;
     }
@@ -391,9 +391,9 @@ public class RLTSolver implements RootedSolver {
         @Override
         protected void main() throws IloException {
 
-            while(true){
+            while (true) {
                 double currLB = lb.get();
-                if(currLB >= getObjValue()){
+                if (currLB >= getObjValue()) {
                     break;
                 }
                 if (lb.compareAndSet(currLB, getObjValue()) && !silence) {

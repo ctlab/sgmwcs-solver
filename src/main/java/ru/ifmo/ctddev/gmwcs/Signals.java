@@ -4,6 +4,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class Signals {
@@ -48,6 +49,32 @@ public class Signals {
         return weights.get(num).getAsDouble();
     }
 
+
+    public double minSum(List<? extends Unit> units) {
+        return minSum(units.toArray(new Unit[0]));
+    }
+
+    public double maxSum(List<? extends Unit> units) {
+        return maxSum(units.toArray(new Unit[0]));
+    }
+
+    public double maxSum(Unit... units) {
+        return sumByPredicate(units, w -> w >= 0);
+    }
+
+    public double minSum(Unit... units) {
+        return sumByPredicate(units, w -> w <= 0);
+    }
+
+    private double sumByPredicate(Unit[] units, Predicate<Double> pred) {
+        return Arrays.stream(units)
+                .map(this::unitSets)
+                .flatMap(Collection::stream)
+                .distinct().mapToDouble(this::weight)
+                .filter(pred::test).sum();
+    }
+
+
     public double weight(Unit unit) {
         return unitsSets.get(unit).stream().mapToDouble(this::weight).sum();
     }
@@ -84,6 +111,10 @@ public class Signals {
             result.put(unit, unitsSets.get(unit));
         }
         return result;
+    }
+
+    public List<Integer> unitSets(Unit unit) {
+        return Collections.unmodifiableList(unitsSets.get(unit));
     }
 
     public List<Unit> set(int num) {
