@@ -234,8 +234,8 @@ public class Preprocessor {
         cUnits.add(candidate);
         double cMinSum = signals.minSum(cUnits);
         return //(signals.negativeUnitSets(units).containsAll(signals.positiveUnitSets(cUnits))
-               // && signals.positiveUnitSets(cUnits).containsAll(signals.positiveUnitSets(units)))
-                 cMinSum >= minSum && maxSum == 0;
+                // && signals.positiveUnitSets(cUnits).containsAll(signals.positiveUnitSets(units)))
+                cMinSum >= minSum && maxSum == 0;
     }
 
     private List<Node> candidates(Node node) {
@@ -247,13 +247,14 @@ public class Preprocessor {
 
     private void uselessEdges() {
         Set<Edge> toRemove = new HashSet<>();
-        Set<Edge> edgeSet = new HashSet<>(); edgeSet.addAll(graph.edgeSet());
+        Set<Edge> edgeSet = new HashSet<>();
+        edgeSet.addAll(graph.edgeSet());
         for (Node u : graph.vertexSet()) {
             for (Node v : neighbors(u)) {
                 if (u.getNum() < v.getNum()) {
                     List<Edge> edges = graph.getAllEdges(u, v);
                     for (Edge edge : edges) {
-                        if (!negative(edge) || toRemove.contains(edge)) continue;
+                        if (!negative(edge) || toRemove.contains(edge) || !bijection(edge)) continue;
                         edgeSet.remove(edge);
                         Graph gNew = graph.subgraph(graph.vertexSet(), edgeSet);
                         if (new Dijkstra(gNew, signals).solve(u, v, signals.weight(edge))) {
