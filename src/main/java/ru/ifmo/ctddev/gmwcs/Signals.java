@@ -6,6 +6,7 @@ import java.io.*;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Signals {
     private List<Set<Unit>> sets;
@@ -50,27 +51,25 @@ public class Signals {
     }
 
 
-    public double minSum(List<? extends Unit> units) {
+    public double minSum(Collection<? extends Unit> units) {
         return minSum(units.toArray(new Unit[0]));
     }
 
-    public double maxSum(List<? extends Unit> units) {
+    public double maxSum(Collection<? extends Unit> units) {
         return maxSum(units.toArray(new Unit[0]));
     }
 
     public double maxSum(Unit... units) {
-        return sumByPredicate(units, w -> w >= 0);
+        return sumByPredicate(units, w -> w > 0);
     }
 
     public double minSum(Unit... units) {
-        return sumByPredicate(units, w -> w <= 0);
+        return sumByPredicate(units, w -> w < 0);
     }
 
     private double sumByPredicate(Unit[] units, Predicate<Double> pred) {
-        return Arrays.stream(units)
-                .map(this::unitSets)
-                .flatMap(Collection::stream)
-                .distinct().mapToDouble(this::weight)
+        return unitSets(Arrays.stream(units))
+                .mapToDouble(this::weight)
                 .filter(pred::test).sum();
     }
 
@@ -111,6 +110,25 @@ public class Signals {
             result.put(unit, unitsSets.get(unit));
         }
         return result;
+    }
+
+    public List<Integer> unitSets(List<Unit> units) {
+        return unitSets(units.stream()).collect(Collectors.toList());
+    }
+
+
+    public List<Integer> positiveUnitSets(List<Unit> units) {
+        return unitSets(units.stream()).filter(u -> weight(u) > 0).collect(Collectors.toList());
+    }
+
+    public List<Integer> negativeUnitSets(List<Unit> units) {
+        return unitSets(units.stream()).filter(u -> weight(u) < 0).collect(Collectors.toList());
+    }
+
+    private Stream<Integer> unitSets(Stream<Unit> units) {
+        return units.map(this::unitSets)
+                .flatMap(Collection::stream)
+                .distinct();
     }
 
     public List<Integer> unitSets(Unit unit) {

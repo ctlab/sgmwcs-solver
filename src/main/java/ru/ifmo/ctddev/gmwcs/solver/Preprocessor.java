@@ -8,6 +8,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class Preprocessor {
 
@@ -19,8 +20,13 @@ public class Preprocessor {
         this.signals = signals;
     }
 
+
     private double weight(Unit unit) {
         return signals.weight(unit);
+    }
+
+    private List<Node> neighbors(Node node) {
+        return graph.neighborListOf(node);
     }
 
     private boolean positive(Unit unit) {
@@ -28,7 +34,7 @@ public class Preprocessor {
     }
 
     private boolean negative(Unit unit) {
-        return signals.unitSets(unit).stream().allMatch(s -> signals.weight(s) <= 0);
+        return signals.unitSets(unit).stream().allMatch(s -> signals.weight(s) < 0);
     }
 
     private boolean bijection(Unit unit) {
@@ -37,30 +43,19 @@ public class Preprocessor {
     }
 
     public void preprocess() {
-        uselessEdges();
         Node primaryNode = null;
-        int size = 1;
-        while (size > 0) {
-            size = 0;
-            for (Node v : new ArrayList<>(graph.vertexSet())) {
-                if (positive(v) && (primaryNode == null || weight(v) > weight(primaryNode))) {
-                    primaryNode = v;
-                }
-            }
-            if (primaryNode != null) {
-                Set<Node> toRemove = new HashSet<>();
-                discard(primaryNode, toRemove);
-                size = toRemove.size();
-                toRemove.forEach(graph::removeVertex);
+        for (Node v : new ArrayList<>(graph.vertexSet())) {
+            if (positive(v) && (primaryNode == null || weight(v) > weight(primaryNode))) {
+                primaryNode = v;
             }
         }
         if (primaryNode != null) {
             adjacent(primaryNode);
             Set<Node> toRemove = new HashSet<>();
             negR(primaryNode, primaryNode, new HashSet<>(), toRemove);
+            discard(primaryNode, toRemove);
             toRemove.forEach(graph::removeVertex);
         }
-
         for (Edge edge : new ArrayList<>(graph.edgeSet())) {
             if (!graph.containsEdge(edge)) {
                 continue;
@@ -89,6 +84,7 @@ public class Preprocessor {
                 }
             }
         }
+        uselessEdges();
     }
 
     private boolean negR(Node v, Node r, Set<Node> vis, Set<Node> toRemove) {
@@ -209,11 +205,11 @@ public class Preprocessor {
         Set<Node> toRemove = new HashSet<>();
         for (Node node : graph.vertexSet()) {
             if (node == primary) continue;
-            for (Node candidate : graph.vertexSet()) {
+            for (Node candidate : candidates(node)) {
                 if (candidate == node || toRemove.contains(candidate)) continue;
-                List<Node> cNeighbors = graph.neighborListOf(candidate);
-                if (cNeighbors.containsAll(graph.neighborListOf(node))) {
-                    if (testSums(candidate, node, graph.neighborListOf(node))) {
+                List<Node> cNeighbors = neighbors(candidate);
+                if (cNeighbors.containsAll(neighbors(node))) {
+                    if (testSums(candidate, node, neighbors(node))) {
                         toRemove.add(node);
                         break;
                     }
@@ -226,43 +222,50 @@ public class Preprocessor {
     }
 
     private boolean testSums(Node candidate, Node node, List<Node> neighbors) {
-        List<Unit> units = new ArrayList<>(neighbors);
+        List<Unit> units = new ArrayList<>();
         units.addAll(graph.edgesOf(node));
         units.add(node);
         double minSum = signals.minSum(units);
         double maxSum = signals.maxSum(units);
-        List<Unit> cUnits = new ArrayList<>(neighbors);
+        List<Unit> cUnits = new ArrayList<>();
         for (Node neighbor : neighbors) {
             cUnits.add(graph.getEdge(neighbor, candidate));
         }
         cUnits.add(candidate);
         double cMinSum = signals.minSum(cUnits);
-        double cMaxSum = signals.maxSum(cUnits);
-        return signals.minSum(neighbors) >= minSum
-                && signals.maxSum(neighbors) >= maxSum
-                && cMinSum >= signals.minSum(neighbors)
-                && cMaxSum > maxSum;
+        return //(signals.negativeUnitSets(units).containsAll(signals.positiveUnitSets(cUnits))
+               // && signals.positiveUnitSets(cUnits).containsAll(signals.positiveUnitSets(units)))
+                 cMinSum >= minSum && maxSum == 0;
     }
+
+    private List<Node> candidates(Node node) {
+        return neighbors(node).stream()
+                .flatMap(n -> neighbors(n).stream())
+                .collect(Collectors.toList());
+    }
+
 
     private void uselessEdges() {
         Set<Edge> toRemove = new HashSet<>();
+        Set<Edge> edgeSet = new HashSet<>(); edgeSet.addAll(graph.edgeSet());
         for (Node u : graph.vertexSet()) {
-            for (Node v : graph.neighborListOf(u)) {
-                if (u != v) {
+            for (Node v : neighbors(u)) {
+                if (u.getNum() < v.getNum()) {
                     List<Edge> edges = graph.getAllEdges(u, v);
-                    if (edges.size() <= 1) continue;
-                    edges.sort((e1, e2) -> Boolean.compare(positive(e1), positive(e2)));
-                    if (negative(edges.get(edges.size() - 1))) continue;
-                    for (Edge edge : edges.subList(0, edges.size() - 1)) {
-                        if (negative(edge) && !toRemove.contains(edge)) {
+                    for (Edge edge : edges) {
+                        if (!negative(edge) || toRemove.contains(edge)) continue;
+                        edgeSet.remove(edge);
+                        Graph gNew = graph.subgraph(graph.vertexSet(), edgeSet);
+                        if (new Dijkstra(gNew, signals).solve(u, v, signals.weight(edge))) {
                             toRemove.add(edge);
+                        } else {
+                            edgeSet.add(edge);
                         }
                     }
                 }
             }
         }
         toRemove.forEach(graph::removeEdge);
-
     }
 
     private void absorb(Unit who, Unit whom) {
