@@ -7,10 +7,14 @@ import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class Preprocessor {
+    private final int numThreads = 4;
 
     private Graph graph;
     private Signals signals;
@@ -246,25 +250,25 @@ public class Preprocessor {
 
 
     private void uselessEdges() {
-        Set<Edge> toRemove = new HashSet<>();
-        Set<Edge> edgeSet = new HashSet<>();
-        edgeSet.addAll(graph.edgeSet());
+        Set<Edge> toRemove = new ConcurrentSkipListSet<>();
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         for (Node u : graph.vertexSet()) {
-            for (Node v : neighbors(u)) {
-                if (u.getNum() < v.getNum()) {
-                    List<Edge> edges = graph.getAllEdges(u, v);
-                    for (Edge edge : edges) {
-                        if (!negative(edge) || toRemove.contains(edge) || !bijection(edge)) continue;
-                        edgeSet.remove(edge);
-                        Graph gNew = graph.subgraph(graph.vertexSet(), edgeSet);
-                        if (new Dijkstra(gNew, signals).solve(u, v, signals.weight(edge))) {
-                            toRemove.add(edge);
-                        } else {
-                            edgeSet.add(edge);
+            executor.execute(() -> {
+                        Dijkstra dijkstra = new Dijkstra(graph, signals);
+                        List<Node> neighbors = graph.neighborListOf(u);
+                        Set<Edge> res = dijkstra.solve(u, neighbors);
+                        for (Edge edge : res) {
+                            if (negative(edge) && !toRemove.contains(edge) && bijection(edge)) {
+                                toRemove.add(edge);
+                            }
                         }
                     }
-                }
-            }
+            );
+        }
+        executor.shutdown();
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException ignored) {
         }
         toRemove.forEach(graph::removeEdge);
     }
