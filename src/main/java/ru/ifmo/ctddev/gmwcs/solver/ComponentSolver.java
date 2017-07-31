@@ -40,7 +40,7 @@ public class ComponentSolver implements Solver {
             if (logLevel > 0 ) {
                 new GraphPrinter(g, signals).printGraph("beforePrep.dot");
             }
-            new Preprocessor(g, signals).preprocess();
+            new Preprocessor(g, signals, threads).preprocess();
             if (logLevel > 0) {
                 new GraphPrinter(g, signals).printGraph("afterPrep.dot");
                 System.out.print("Preprocessing deleted " + (vertexBefore - graph.vertexSet().size()) + " nodes ");

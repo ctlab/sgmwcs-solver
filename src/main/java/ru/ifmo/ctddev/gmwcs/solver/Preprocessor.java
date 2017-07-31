@@ -14,14 +14,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class Preprocessor {
-    private final int numThreads = 4;
+    private int numThreads;
 
     private Graph graph;
     private Signals signals;
 
+    public Preprocessor(Graph graph, Signals signals, int numThreads) {
+        this(graph, signals);
+        this.numThreads = numThreads - 1;
+    }
+
     public Preprocessor(Graph graph, Signals signals) {
         this.graph = graph;
         this.signals = signals;
+        this.numThreads = 0;
     }
 
 
@@ -88,7 +94,11 @@ public class Preprocessor {
                 }
             }
         }
-        uselessEdges();
+        if (numThreads == 0) {
+            uselessEdges();
+        } else {
+            parallelUselessEdges();
+        }
     }
 
     private boolean negR(Node v, Node r, Set<Node> vis, Set<Node> toRemove) {
@@ -250,18 +260,21 @@ public class Preprocessor {
 
 
     private void uselessEdges() {
+        Set<Edge> toRemove = new HashSet<>();
+        Dijkstra dijkstra = new Dijkstra(graph, signals);
+        for (Node u : graph.vertexSet()) {
+            dijkstraIteration(dijkstra, u, toRemove);
+        }
+        toRemove.forEach(graph::removeEdge);
+    }
+
+    private void parallelUselessEdges() {
         Set<Edge> toRemove = new ConcurrentSkipListSet<>();
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         for (Node u : graph.vertexSet()) {
             executor.execute(() -> {
                         Dijkstra dijkstra = new Dijkstra(graph, signals);
-                        List<Node> neighbors = graph.neighborListOf(u);
-                        Set<Edge> res = dijkstra.solve(u, neighbors);
-                        for (Edge edge : res) {
-                            if (negative(edge) && !toRemove.contains(edge) && bijection(edge)) {
-                                toRemove.add(edge);
-                            }
-                        }
+                        dijkstraIteration(dijkstra, u, toRemove);
                     }
             );
         }
@@ -272,6 +285,17 @@ public class Preprocessor {
         }
         toRemove.forEach(graph::removeEdge);
     }
+
+    private void dijkstraIteration(Dijkstra dijkstra, Node u, Set<Edge> toRemove) {
+        List<Node> neighbors = graph.neighborListOf(u);
+        Set<Edge> res = dijkstra.solve(u, neighbors);
+        for (Edge edge : res) {
+            if (negative(edge) && bijection(edge)) {
+                toRemove.add(edge);
+            }
+        }
+    }
+
 
     private void absorb(Unit who, Unit whom) {
         who.absorb(whom);

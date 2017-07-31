@@ -43,19 +43,21 @@ class Dijkstra {
         while ((cur = q.poll()) != null) {
             currentUnits = p.getOrDefault(cur, new HashSet<>());
             for (Node node : graph.neighborListOf(cur)) {
-                Edge edge = graph.getEdge(node, cur);
-                boolean added1 = currentUnits.add(node);
-                boolean added2 = currentUnits.add(edge);
-                double cw = currentWeight();
-                if (cw < weight(node)) {
-                    q.remove(node);
-                    d.put(node, cw);
-                    p.put(node, new HashSet<>());
-                    p.get(node).addAll(currentUnits);
-                    q.add(node);
+                List<Edge> edges = graph.getAllEdges(node, cur);
+                for (Edge edge: edges) {
+                    boolean added1 = currentUnits.add(node);
+                    boolean added2 = currentUnits.add(edge);
+                    double cw = currentWeight();
+                    if (cw < weight(node)) {
+                        q.remove(node);
+                        d.put(node, cw);
+                        p.put(node, new HashSet<>());
+                        p.get(node).addAll(currentUnits);
+                        q.add(node);
+                    }
+                    if (added1) currentUnits.remove(node);
+                    if (added2) currentUnits.remove(edge);
                 }
-                if (added1) currentUnits.remove(node);
-                if (added2) currentUnits.remove(edge);
             }
         }
         Set<Edge> res = new HashSet<>();
