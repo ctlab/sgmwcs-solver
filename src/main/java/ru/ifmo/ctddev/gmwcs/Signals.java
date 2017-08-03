@@ -2,7 +2,6 @@ package ru.ifmo.ctddev.gmwcs;
 
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
-import java.io.*;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -116,16 +115,23 @@ public class Signals {
         return unitSets(units.stream()).collect(Collectors.toList());
     }
 
+    public double weightSum(Set<Integer> signals) {
+        return signals.stream().mapToDouble(this::weight).sum();
+    }
 
-    public List<Integer> positiveUnitSets(List<Unit> units) {
+    public List<Integer> positiveUnitSets(Collection<? extends Unit> units) {
         return unitSets(units.stream()).filter(u -> weight(u) > 0).collect(Collectors.toList());
     }
 
-    public List<Integer> negativeUnitSets(List<Unit> units) {
+    public List<Integer> negativeUnitSets(Collection<? extends Unit> units) {
         return unitSets(units.stream()).filter(u -> weight(u) < 0).collect(Collectors.toList());
     }
 
-    private Stream<Integer> unitSets(Stream<Unit> units) {
+    public List<Integer> negativeUnitSets(Unit unit) {
+        return negativeUnitSets(Collections.singletonList(unit));
+    }
+
+    private Stream<Integer> unitSets(Stream<? extends Unit> units) {
         return units.map(this::unitSets)
                 .flatMap(Collection::stream)
                 .distinct();

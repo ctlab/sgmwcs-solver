@@ -94,6 +94,7 @@ public class Preprocessor {
                 }
             }
         }
+        graph = graph.subgraph(graph.vertexSet(), graph.edgeSet());
         if (numThreads == 0) {
             uselessEdges();
         } else {
@@ -287,7 +288,11 @@ public class Preprocessor {
     }
 
     private void dijkstraIteration(Dijkstra dijkstra, Node u, Set<Edge> toRemove) {
-        List<Node> neighbors = graph.neighborListOf(u);
+        List<Node> neighbors = graph.neighborListOf(u).stream()
+                .filter(n -> graph.getAllEdges(n, u)
+                        .stream().anyMatch(e -> negative(e) && bijection(e)))
+                .collect(Collectors.toList());
+        if (neighbors.isEmpty()) return;
         Set<Edge> res = dijkstra.solve(u, neighbors);
         for (Edge edge : res) {
             if (negative(edge) && bijection(edge)) {
