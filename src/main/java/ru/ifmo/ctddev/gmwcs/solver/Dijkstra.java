@@ -13,12 +13,18 @@ class Dijkstra {
     private Signals signals;
     private PriorityQueue<Node> q;
     private Map<Node, Double> d;
-    private Map<Unit, Set<Unit>> p;
+    private Map<Unit, Set<Integer>> p;
+    private Map<Set<Integer>, Double> hash;
+    private Map<Unit, List<Integer>> unitSetHash;
 
-    private Set<Unit> currentUnits;
+    private Set<Integer> currentSignals;
 
     private double currentWeight() {
-        return -signals.minSum(currentUnits);
+        return hash.computeIfAbsent(currentSignals, s -> -signals.weightSum(s));
+    }
+
+    private List<Integer> negativeUnitSets(Unit unit) {
+        return unitSetHash.computeIfAbsent(unit, u -> signals.negativeUnitSets(u));
     }
 
     private double weight(Unit unit) {
@@ -30,41 +36,62 @@ class Dijkstra {
         this.signals = signals;
     }
 
-
     Set<Edge> solve(Node u, List<Node> neighbors) {
         d = new HashMap<>();
         p = new HashMap<>();
         q = new PriorityQueue<>(Comparator.comparingDouble(this::weight));
-        currentUnits = new HashSet<>();
+        hash = new HashMap<>();
+        currentSignals = new HashSet<>();
+        unitSetHash = new HashMap<>();
         q.add(u);
         d.put(u, 0.0);
         p.put(u, new HashSet<>());
         Node cur;
+        List<Integer> negE, negN, addedE = new ArrayList<>(), addedN = new ArrayList<>();
         while ((cur = q.poll()) != null) {
-            currentUnits = p.getOrDefault(cur, new HashSet<>());
+            currentSignals = p.getOrDefault(cur, new HashSet<>());
+            double cw = currentWeight();
             for (Node node : graph.neighborListOf(cur)) {
-                List<Edge> edges = graph.getAllEdges(node, cur);
-                for (Edge edge: edges) {
-                    boolean added1 = currentUnits.add(node);
-                    boolean added2 = currentUnits.add(edge);
-                    double cw = currentWeight();
+                negN = negativeUnitSets(node);
+                double sumN = 0;
+                for (int i : negN) {
+                    if (currentSignals.add(i)) {
+                        addedN.add(i);
+                        cw -= signals.weight(i);
+                        sumN -= signals.weight(i);
+                    }
+                }
+                for (Edge edge : graph.getAllEdges(node, cur)) {
+                    negE = negativeUnitSets(edge);
+                    double sumE = 0;
+                    for (int i : negE) {
+                        if (currentSignals.add(i)) {
+                            addedE.add(i);
+                            cw -= signals.weight(i);
+                            sumE -= signals.weight(i);
+                        }
+                    }
                     if (cw < weight(node)) {
                         q.remove(node);
                         d.put(node, cw);
                         p.put(node, new HashSet<>());
-                        p.get(node).addAll(currentUnits);
+                        p.get(node).addAll(currentSignals);
                         q.add(node);
                     }
-                    if (added1) currentUnits.remove(node);
-                    if (added2) currentUnits.remove(edge);
+                    currentSignals.removeAll(addedE);
+                    addedE.clear();
+                    cw -= sumE;
                 }
+                currentSignals.removeAll(addedN);
+                addedN.clear();
+                cw -= sumN;
             }
         }
         Set<Edge> res = new HashSet<>();
         neighbors.forEach(n -> {
             List<Edge> edges = graph.getAllEdges(n, u);
             for (Edge e : edges)
-                if (!p.get(n).contains(e))
+                if (signals.minSum(e) <= 0 && !p.get(n).containsAll(signals.unitSets(e)))
                     res.add(e);
         });
         return res;

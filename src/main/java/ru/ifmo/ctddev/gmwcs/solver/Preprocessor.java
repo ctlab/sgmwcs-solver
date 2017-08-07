@@ -94,7 +94,8 @@ public class Preprocessor {
                 }
             }
         }
-        graph = graph.subgraph(graph.vertexSet(), graph.edgeSet());
+        graph.subgraph(graph.vertexSet(), graph.edgeSet());
+//        cns();
         if (numThreads == 0) {
             uselessEdges();
         } else {
@@ -236,6 +237,35 @@ public class Preprocessor {
         }
     }
 
+    private List<Node> candidates(Node node) {
+        return neighbors(node).stream()
+                .flatMap(n -> neighbors(n).stream())
+                .collect(Collectors.toList());
+    }
+
+    private void cns() {
+        Set<Node> candidates = graph.vertexSet();
+        Set<Node> w;
+        Set<Node> toRemove = new HashSet<>();
+        for (Node v : candidates) {
+            w = graph.neighborListOf(v).stream()
+                    .filter(n -> positive(n) && graph.getAllEdges(v, n)
+                            .stream()
+                            .anyMatch(this::positive))
+                    .collect(Collectors.toSet());
+            w.add(v);
+            for (Node n: w) {
+                List<Node> neighbors = graph.neighborListOf(n);
+                for (Node r: neighbors) {
+                    if (!w.contains(r) && signals.minSum(r) <= signals.minSum(v)
+                                       && negative(r))
+                        toRemove.add(r);
+                }
+            }
+        }
+        toRemove.forEach(graph::removeVertex);
+    }
+
     private boolean testSums(Node candidate, Node node, List<Node> neighbors) {
         List<Unit> units = new ArrayList<>();
         units.addAll(graph.edgesOf(node));
@@ -251,12 +281,6 @@ public class Preprocessor {
         return //(signals.negativeUnitSets(units).containsAll(signals.positiveUnitSets(cUnits))
                 // && signals.positiveUnitSets(cUnits).containsAll(signals.positiveUnitSets(units)))
                 cMinSum >= minSum && maxSum == 0;
-    }
-
-    private List<Node> candidates(Node node) {
-        return neighbors(node).stream()
-                .flatMap(n -> neighbors(n).stream())
-                .collect(Collectors.toList());
     }
 
 
@@ -300,7 +324,6 @@ public class Preprocessor {
             }
         }
     }
-
 
     private void absorb(Unit who, Unit whom) {
         who.absorb(whom);
