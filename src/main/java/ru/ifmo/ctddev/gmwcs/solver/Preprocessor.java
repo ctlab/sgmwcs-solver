@@ -94,8 +94,8 @@ public class Preprocessor {
                 }
             }
         }
+        cns();
         graph.subgraph(graph.vertexSet(), graph.edgeSet());
-//        cns();
         if (numThreads == 0) {
             uselessEdges();
         } else {
@@ -244,10 +244,10 @@ public class Preprocessor {
     }
 
     private void cns() {
-        Set<Node> candidates = graph.vertexSet();
+        Set<Node> vertexSet = graph.vertexSet();
         Set<Node> w;
         Set<Node> toRemove = new HashSet<>();
-        for (Node v : candidates) {
+        for (Node v : vertexSet) {
             w = graph.neighborListOf(v).stream()
                     .filter(n -> positive(n) && graph.getAllEdges(v, n)
                             .stream()
@@ -258,6 +258,8 @@ public class Preprocessor {
                 List<Node> neighbors = graph.neighborListOf(n);
                 for (Node r: neighbors) {
                     if (!w.contains(r) && signals.minSum(r) <= signals.minSum(v)
+                                       && signals.maxSum(graph.edgesOf(r)) == 0
+                                       && w.containsAll(graph.neighborListOf(r))
                                        && negative(r))
                         toRemove.add(r);
                 }
