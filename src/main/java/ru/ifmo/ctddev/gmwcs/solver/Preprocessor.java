@@ -101,6 +101,7 @@ public class Preprocessor {
         } else {
             parallelUselessEdges();
         }
+        npv2();
     }
 
     private boolean negR(Node v, Node r, Set<Node> vis, Set<Node> toRemove) {
@@ -237,6 +238,23 @@ public class Preprocessor {
         }
     }
 
+    private boolean testSums(Node candidate, Node node, List<Node> neighbors) {
+        List<Unit> units = new ArrayList<>();
+        units.addAll(graph.edgesOf(node));
+        units.add(node);
+        double minSum = signals.minSum(units);
+        double maxSum = signals.maxSum(units);
+        List<Unit> cUnits = new ArrayList<>();
+        for (Node neighbor : neighbors) {
+            cUnits.add(graph.getEdge(neighbor, candidate));
+        }
+        cUnits.add(candidate);
+        double cMinSum = signals.minSum(cUnits);
+        return //(signals.negativeUnitSets(units).containsAll(signals.positiveUnitSets(cUnits))
+                // && signals.positiveUnitSets(cUnits).containsAll(signals.positiveUnitSets(units)))
+                cMinSum >= minSum && maxSum == 0;
+    }
+
     private List<Node> candidates(Node node) {
         return neighbors(node).stream()
                 .flatMap(n -> neighbors(n).stream())
@@ -254,35 +272,18 @@ public class Preprocessor {
                             .anyMatch(this::positive))
                     .collect(Collectors.toSet());
             w.add(v);
-            for (Node n: w) {
+            for (Node n : w) {
                 List<Node> neighbors = graph.neighborListOf(n);
-                for (Node r: neighbors) {
+                for (Node r : neighbors) {
                     if (!w.contains(r) && signals.minSum(r) <= signals.minSum(v)
-                                       && signals.maxSum(graph.edgesOf(r)) == 0
-                                       && w.containsAll(graph.neighborListOf(r))
-                                       && negative(r))
+                            && signals.maxSum(graph.edgesOf(r)) == 0
+                            && w.containsAll(graph.neighborListOf(r))
+                            && negative(r))
                         toRemove.add(r);
                 }
             }
         }
         toRemove.forEach(graph::removeVertex);
-    }
-
-    private boolean testSums(Node candidate, Node node, List<Node> neighbors) {
-        List<Unit> units = new ArrayList<>();
-        units.addAll(graph.edgesOf(node));
-        units.add(node);
-        double minSum = signals.minSum(units);
-        double maxSum = signals.maxSum(units);
-        List<Unit> cUnits = new ArrayList<>();
-        for (Node neighbor : neighbors) {
-            cUnits.add(graph.getEdge(neighbor, candidate));
-        }
-        cUnits.add(candidate);
-        double cMinSum = signals.minSum(cUnits);
-        return //(signals.negativeUnitSets(units).containsAll(signals.positiveUnitSets(cUnits))
-                // && signals.positiveUnitSets(cUnits).containsAll(signals.positiveUnitSets(units)))
-                cMinSum >= minSum && maxSum == 0;
     }
 
 
@@ -319,12 +320,26 @@ public class Preprocessor {
                         .stream().anyMatch(e -> negative(e) && bijection(e)))
                 .collect(Collectors.toList());
         if (neighbors.isEmpty()) return;
-        Set<Edge> res = dijkstra.solve(u, neighbors);
+        Set<Edge> res = dijkstra.solveNE(u, neighbors);
         for (Edge edge : res) {
             if (negative(edge) && bijection(edge)) {
                 toRemove.add(edge);
             }
         }
+    }
+
+    private void npv2() {
+        Dijkstra dijkstra = new Dijkstra(graph, signals);
+        List<Node> toRemove = new ArrayList<>();
+        graph.vertexSet().stream()
+           .filter(n -> checkNeg(n) && dijkstra.solveNP(n))
+           .forEach(toRemove::add);
+        toRemove.forEach(graph::removeVertex);
+    }
+
+    private boolean checkNeg(Node n) {
+        return graph.degreeOf(n) == 2 &&
+                signals.maxSum(n) + signals.maxSum(graph.edgesOf(n)) == 0;
     }
 
     private void absorb(Unit who, Unit whom) {

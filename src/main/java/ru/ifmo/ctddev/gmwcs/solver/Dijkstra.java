@@ -36,7 +36,7 @@ class Dijkstra {
         this.signals = signals;
     }
 
-    Set<Edge> solve(Node u, List<Node> neighbors) {
+    private void solve(Node u) {
         d = new HashMap<>();
         p = new HashMap<>();
         q = new PriorityQueue<>(Comparator.comparingDouble(this::weight));
@@ -87,6 +87,20 @@ class Dijkstra {
                 cw -= sumN;
             }
         }
+    }
+
+    boolean solveNP(Node u) {
+        assert graph.degreeOf(u) == 2;
+        List<Node> nbors = graph.neighborListOf(u);
+        Node v_1 = nbors.get(0), v_2 = nbors.get(1);
+        solve(v_1);
+        Set<Integer> unitSets = new HashSet<>(signals.negativeUnitSets(u));
+        unitSets.addAll(signals.negativeUnitSets(graph.edgesOf(u)));
+        return !p.get(v_2).containsAll(unitSets);
+    }
+
+    Set<Edge> solveNE(Node u, List<Node> neighbors) {
+        solve(u);
         Set<Edge> res = new HashSet<>();
         neighbors.forEach(n -> {
             List<Edge> edges = graph.getAllEdges(n, u);
