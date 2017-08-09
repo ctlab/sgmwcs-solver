@@ -92,6 +92,7 @@ class Dijkstra {
     boolean solveNP(Node u) {
         assert graph.degreeOf(u) == 2;
         List<Node> nbors = graph.neighborListOf(u);
+        if (nbors.size() != 2) return false;
         Node v_1 = nbors.get(0), v_2 = nbors.get(1);
         solve(v_1);
         Set<Integer> unitSets = new HashSet<>(signals.negativeUnitSets(u));

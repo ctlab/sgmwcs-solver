@@ -115,7 +115,7 @@ public class Signals {
         return unitSets(units.stream()).collect(Collectors.toList());
     }
 
-    public double weightSum(Set<Integer> signals) {
+    public double weightSum(Collection<Integer> signals) {
         return signals.stream().mapToDouble(this::weight).sum();
     }
 
