@@ -11,7 +11,6 @@ import java.util.*;
 class Dijkstra {
     private Graph graph;
     private Signals signals;
-    private PriorityQueue<Node> q;
     private Map<Node, Double> d;
     private Map<Unit, Set<Integer>> p;
     private Map<Set<Integer>, Double> hash;
@@ -39,7 +38,7 @@ class Dijkstra {
     private void solve(Node u) {
         d = new HashMap<>();
         p = new HashMap<>();
-        q = new PriorityQueue<>(Comparator.comparingDouble(this::weight));
+        PriorityQueue<Node> q = new PriorityQueue<>(Comparator.comparingDouble(this::weight));
         hash = new HashMap<>();
         currentSignals = new HashSet<>();
         unitSetHash = new HashMap<>();
@@ -57,20 +56,20 @@ class Dijkstra {
                 for (int i : negN) {
                     if (currentSignals.add(i)) {
                         addedN.add(i);
-                        cw -= signals.weight(i);
                         sumN -= signals.weight(i);
                     }
                 }
+                cw += sumN;
                 for (Edge edge : graph.getAllEdges(node, cur)) {
                     negE = negativeUnitSets(edge);
                     double sumE = 0;
                     for (int i : negE) {
                         if (currentSignals.add(i)) {
                             addedE.add(i);
-                            cw -= signals.weight(i);
                             sumE -= signals.weight(i);
                         }
                     }
+                    cw += sumE;
                     if (cw < weight(node)) {
                         q.remove(node);
                         d.put(node, cw);
@@ -110,5 +109,27 @@ class Dijkstra {
                     res.add(e);
         });
         return res;
+    }
+
+    boolean solveClique(Node u, Set<Node> k) {
+        assert !graph.containsVertex(u);
+        Map<Node, Map<Node, Double>> distances = new HashMap<>();
+        for (Node v : k) {
+            solve(v);
+            distances.putIfAbsent(v, new HashMap<>());
+            Map<Node, Double> cd = distances.get(v);
+            double w;
+            for (Node n: k) {
+                if (n == v) continue;
+                w = d.get(n);
+                if (w == Double.MAX_VALUE) return false;
+                cd.put(n, w);
+            }
+        }
+        Set<Set<Unit>> subsets = Utils.subsets(k);
+
+
+
+
     }
 }

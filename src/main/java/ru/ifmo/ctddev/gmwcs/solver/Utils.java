@@ -55,4 +55,24 @@ public class Utils {
             });
         }
     }
+
+    public static Set<Set<Unit>> subsets(Set<? extends Unit> set) {
+        Set<Set<Unit>> result = new HashSet<>();
+        if (set.isEmpty()) {
+            result.add(new HashSet<>());
+            return result;
+        }
+        List<Unit> units = new ArrayList<>(set);
+        Unit head = units.get(0);
+        units.remove(0);
+        Set<Set<Unit>> ss = subsets(new HashSet<>(units));
+        for (Set<Unit> s: ss) {
+            Set<Unit> ns = new HashSet<>(s);
+            result.add(s);
+            ns.add(head);
+            result.add(ns);
+        }
+        return result;
+    }
+
 }

@@ -298,6 +298,20 @@ public class Preprocessor {
         toRemove.forEach(graph::removeVertex);
     }
 
+    private void npvClique(int maxK) {
+        for (Node v: graph.vertexSet()) {
+            if (!negative(v)) continue;
+            List<Node> delta = graph.neighborListOf(v);
+            if (delta.size() <= maxK && delta.size() > 0) {
+
+
+            }
+
+        }
+
+
+    }
+
     private boolean checkNeg(Node n) {
         return graph.degreeOf(n) == 2 &&
                 signals.maxSum(n) + signals.maxSum(graph.edgesOf(n)) == 0;
