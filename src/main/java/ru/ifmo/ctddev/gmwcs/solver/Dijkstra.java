@@ -111,8 +111,8 @@ class Dijkstra {
         return res;
     }
 
-    boolean solveClique(Node u, Set<Node> k) {
-        assert !graph.containsVertex(u);
+    boolean solveClique(double p, Set<Node> k) {
+        if (k.size() < 2) return false;
         Map<Node, Map<Node, Double>> distances = new HashMap<>();
         for (Node v : k) {
             solve(v);
@@ -121,15 +121,19 @@ class Dijkstra {
             double w;
             for (Node n: k) {
                 if (n == v) continue;
-                w = d.get(n);
+                w = weight(n);
                 if (w == Double.MAX_VALUE) return false;
+                w -= signals.minSum(v); //TODO: merge unitSets instead
                 cd.put(n, w);
             }
         }
-        Set<Set<Unit>> subsets = Utils.subsets(k);
-
-
-
-
+        Set<Set<Node>> subsets = Utils.subsets(k);
+        for (Set<Node> subset: subsets) {
+            if (subset.size() < 2) continue;
+            if (new MST(subset, distances).result() + p > 0) {
+                return false;
+            }
+        }
+        return true;
     }
 }

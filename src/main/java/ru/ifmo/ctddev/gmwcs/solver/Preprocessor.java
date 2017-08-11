@@ -40,11 +40,11 @@ public class Preprocessor {
     }
 
     private boolean positive(Unit unit) {
-        return signals.unitSets(unit).stream().allMatch(s -> signals.weight(s) >= 0);
+        return signals.minSum(unit) == 0;
     }
 
     private boolean negative(Unit unit) {
-        return signals.unitSets(unit).stream().allMatch(s -> signals.weight(s) < 0);
+        return signals.maxSum(unit) == 0;
     }
 
     private boolean bijection(Unit unit) {
@@ -53,7 +53,7 @@ public class Preprocessor {
     }
 
     public void preprocess() {
-        Node primaryNode = null;
+   /*     Node primaryNode = null;
         for (Node v : new ArrayList<>(graph.vertexSet())) {
             if (positive(v) && (primaryNode == null || weight(v) > weight(primaryNode))) {
                 primaryNode = v;
@@ -101,7 +101,8 @@ public class Preprocessor {
         } else {
             parallelUselessEdges();
         }
-        npv2();
+        npv2();*/
+        npvClique(3);
     }
 
     private boolean negR(Node v, Node r, Set<Node> vis, Set<Node> toRemove) {
@@ -261,7 +262,8 @@ public class Preprocessor {
         Set<Edge> toRemove = new ConcurrentSkipListSet<>();
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         for (Node u : graph.vertexSet()) {
-            executor.execute(() -> {
+            executor.execute(
+                    () -> {
                         Dijkstra dijkstra = new Dijkstra(graph, signals);
                         dijkstraIteration(dijkstra, u, toRemove);
                     }
@@ -299,22 +301,31 @@ public class Preprocessor {
     }
 
     private void npvClique(int maxK) {
-        for (Node v: graph.vertexSet()) {
-            if (!negative(v)) continue;
+        Set<Node> nodes = new HashSet<>(graph.vertexSet());
+        Set<Node> toRemove = new HashSet<>();
+        for (Node v : graph.vertexSet()) {
+            if (!negWithEdges(v)) continue;
             List<Node> delta = graph.neighborListOf(v);
-            if (delta.size() <= maxK && delta.size() > 0) {
-
-
+            if (delta.size() <= maxK && delta.size() >= 2) {
+                nodes.remove(v);
+                boolean res = new Dijkstra(
+                        graph.subgraph(nodes), signals)
+                        .solveClique(signals.minSum(v), new HashSet<>(delta));
+                if (res)
+                    toRemove.add(v);
+                nodes.add(v);
             }
-
         }
-
-
+        toRemove.forEach(graph::removeVertex);
     }
 
     private boolean checkNeg(Node n) {
-        return graph.degreeOf(n) == 2 &&
-                signals.maxSum(n) + signals.maxSum(graph.edgesOf(n)) == 0;
+        return graph.degreeOf(n) == 2 && negWithEdges(n);
+    }
+
+    private boolean negWithEdges(Node n) {
+        double edgeSum = signals.maxSum(graph.edgesOf(n));
+        return signals.maxSum(n) + edgeSum == 0;
     }
 
     private void absorb(Unit who, Unit whom) {

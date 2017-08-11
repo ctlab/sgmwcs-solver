@@ -56,18 +56,18 @@ public class Utils {
         }
     }
 
-    public static Set<Set<Unit>> subsets(Set<? extends Unit> set) {
-        Set<Set<Unit>> result = new HashSet<>();
+    public static <T extends Unit> Set<Set<T>> subsets(Set<T> set) {
+        Set<Set<T>> result = new HashSet<>();
         if (set.isEmpty()) {
             result.add(new HashSet<>());
             return result;
         }
-        List<Unit> units = new ArrayList<>(set);
-        Unit head = units.get(0);
+        List<T> units = new ArrayList<>(set);
+        T head = units.get(0);
         units.remove(0);
-        Set<Set<Unit>> ss = subsets(new HashSet<>(units));
-        for (Set<Unit> s: ss) {
-            Set<Unit> ns = new HashSet<>(s);
+        Set<Set<T>> ss = subsets(new HashSet<>(units));
+        for (Set<T> s: ss) {
+            Set<T> ns = new HashSet<>(s);
             result.add(s);
             ns.add(head);
             result.add(ns);

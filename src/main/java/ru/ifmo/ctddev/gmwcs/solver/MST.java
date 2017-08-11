@@ -37,10 +37,10 @@ public class MST {
                         next = node;
                     }
                 }
-                res += cw;
-                t.add(next);
-                queue.remove(next);
             }
+            res += cw;
+            t.add(next);
+            queue.remove(next);
         }
     }
 
