@@ -32,7 +32,7 @@ public class MST {
                 for (Map.Entry<Node, Double> cand : neighbors.entrySet()) {
                     Node node = cand.getKey();
                     double w = cand.getValue();
-                    if (!t.contains(node) && w < cw) {
+                    if (nodes.contains(node) && !t.contains(node) && w < cw) {
                         cw = w;
                         next = node;
                     }

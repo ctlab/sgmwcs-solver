@@ -44,7 +44,7 @@ public class Preprocessor {
     }
 
     private boolean negative(Unit unit) {
-        return signals.maxSum(unit) == 0;
+        return signals.positiveUnitSets(unit).isEmpty();
     }
 
     private boolean bijection(Unit unit) {
@@ -53,7 +53,7 @@ public class Preprocessor {
     }
 
     public void preprocess() {
-   /*     Node primaryNode = null;
+        Node primaryNode = null;
         for (Node v : new ArrayList<>(graph.vertexSet())) {
             if (positive(v) && (primaryNode == null || weight(v) > weight(primaryNode))) {
                 primaryNode = v;
@@ -94,15 +94,15 @@ public class Preprocessor {
                 }
             }
         }
-        cns();
+   //     cns();*/
         graph.subgraph(graph.vertexSet(), graph.edgeSet());
         if (numThreads == 0) {
             uselessEdges();
         } else {
             parallelUselessEdges();
         }
-        npv2();*/
-        npvClique(3);
+    //    npv2();
+    //    npvClique(4);
     }
 
     private boolean negR(Node v, Node r, Set<Node> vis, Set<Node> toRemove) {

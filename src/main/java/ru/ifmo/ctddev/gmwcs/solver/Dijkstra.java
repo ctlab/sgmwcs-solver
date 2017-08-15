@@ -13,13 +13,14 @@ class Dijkstra {
     private Signals signals;
     private Map<Node, Double> d;
     private Map<Unit, Set<Integer>> p;
-    private Map<Set<Integer>, Double> hash;
+    private Map<Set<Integer>, Double> cache;
     private Map<Unit, List<Integer>> unitSetHash;
 
     private Set<Integer> currentSignals;
 
     private double currentWeight() {
-        return hash.computeIfAbsent(currentSignals, s -> -signals.weightSum(s));
+        return -signals.weightSum(currentSignals);
+        //return cache.computeIfAbsent(currentSignals, s -> -signals.weightSum(s));
     }
 
     private List<Integer> negativeUnitSets(Unit unit) {
@@ -35,11 +36,12 @@ class Dijkstra {
         this.signals = signals;
     }
 
-    private void solve(Node u) {
+    private void solve(Node u, Collection<Node> dest) {
+        dest = new HashSet<>(dest);
         d = new HashMap<>();
         p = new HashMap<>();
         PriorityQueue<Node> q = new PriorityQueue<>(Comparator.comparingDouble(this::weight));
-        hash = new HashMap<>();
+        cache = new HashMap<>();
         currentSignals = new HashSet<>();
         unitSetHash = new HashMap<>();
         q.add(u);
@@ -47,7 +49,7 @@ class Dijkstra {
         p.put(u, new HashSet<>());
         Node cur;
         List<Integer> negE, negN, addedE = new ArrayList<>(), addedN = new ArrayList<>();
-        while ((cur = q.poll()) != null) {
+        while (!dest.isEmpty() && (cur = q.poll()) != null) {
             currentSignals = p.getOrDefault(cur, new HashSet<>());
             double cw = currentWeight();
             for (Node node : graph.neighborListOf(cur)) {
@@ -84,6 +86,7 @@ class Dijkstra {
                 currentSignals.removeAll(addedN);
                 addedN.clear();
                 cw -= sumN;
+                dest.remove(node);
             }
         }
     }
@@ -93,19 +96,19 @@ class Dijkstra {
         List<Node> nbors = graph.neighborListOf(u);
         if (nbors.size() != 2) return false;
         Node v_1 = nbors.get(0), v_2 = nbors.get(1);
-        solve(v_1);
+        solve(v_1, Collections.singletonList(v_2));
         Set<Integer> unitSets = new HashSet<>(signals.negativeUnitSets(u));
         unitSets.addAll(signals.negativeUnitSets(graph.edgesOf(u)));
         return !p.get(v_2).containsAll(unitSets);
     }
 
     Set<Edge> solveNE(Node u, List<Node> neighbors) {
-        solve(u);
+        solve(u, neighbors);
         Set<Edge> res = new HashSet<>();
         neighbors.forEach(n -> {
             List<Edge> edges = graph.getAllEdges(n, u);
             for (Edge e : edges)
-                if (signals.minSum(e) <= 0 && !p.get(n).containsAll(signals.unitSets(e)))
+                if (!p.get(n).containsAll(signals.unitSets(e)))
                     res.add(e);
         });
         return res;
@@ -115,16 +118,15 @@ class Dijkstra {
         if (k.size() < 2) return false;
         Map<Node, Map<Node, Double>> distances = new HashMap<>();
         for (Node v : k) {
-            solve(v);
+            solve(v, k);
             distances.putIfAbsent(v, new HashMap<>());
             Map<Node, Double> cd = distances.get(v);
-            double w;
             for (Node n: k) {
                 if (n == v) continue;
-                w = weight(n);
-                if (w == Double.MAX_VALUE) return false;
-                w -= signals.minSum(v); //TODO: merge unitSets instead
-                cd.put(n, w);
+                Set<Integer> path = this.p.get(n);
+                if (path == null) return false;
+                path.addAll(signals.negativeUnitSets(v));
+                cd.put(n, -signals.weightSum(path));
             }
         }
         Set<Set<Node>> subsets = Utils.subsets(k);

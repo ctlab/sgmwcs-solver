@@ -11,6 +11,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
+import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
 import ru.ifmo.ctddev.gmwcs.solver.Solver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 
@@ -28,6 +29,7 @@ public class GMWCSTest {
     private static final int TESTS_PER_SIZE = 300;
     private static final int MAX_SIZE = 15;
     private static final int RANDOM_TESTS = 2200;
+    private static final int RLT_MAX_SIZE = 100;
 
     static {
         try {
@@ -41,6 +43,7 @@ public class GMWCSTest {
     private List<TestCase> tests;
     private Solver solver;
     private ReferenceSolver referenceSolver;
+    private RLTSolver rltSolver;
     private Random random;
 
     public GMWCSTest() {
@@ -48,7 +51,8 @@ public class GMWCSTest {
         this.solver = new ComponentSolver(3);
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
-        makeConnectedGraphs();
+        rltSolver = new RLTSolver();
+        makeConnectedGraphs(1, MAX_SIZE);
         makeUnconnectedGraphs();
     }
 
@@ -107,7 +111,7 @@ public class GMWCSTest {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
         for (int i = 0; i < allTests; i++) {
             TestCase test = tests.get(i);
-            check(test, i);
+            check(test, i, referenceSolver);
         }
         System.out.println();
     }
@@ -117,15 +121,26 @@ public class GMWCSTest {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
         for (int i = allTests; i < tests.size(); i++) {
             TestCase test = tests.get(i);
-            check(test, i);
+            check(test, i, referenceSolver);
         }
         System.out.println();
     }
 
-    private void check(TestCase test, int num) {
-        List<Unit> expected = referenceSolver.solve(test.graph(), test.signals(), Collections.emptyList());
+    @Test
+    public void test04_big() {
+        tests.clear();
+        makeConnectedGraphs(RLT_MAX_SIZE, RLT_MAX_SIZE);
+        for (int i = 0; i < tests.size(); i++) {
+            TestCase test = tests.get(i);
+            check(test, i, rltSolver);
+        }
+    }
+
+    private void check(TestCase test, int num, Solver refSolver) {
+        List<Unit> expected = null;
         List<Unit> actual = null;
         try {
+            expected = refSolver.solve(test.graph(), test.signals());
             solver.setLogLevel(0);
             actual = solver.solve(test.graph(), test.signals());
         } catch (SolverException e) {
@@ -178,14 +193,14 @@ public class GMWCSTest {
         }
     }
 
-    private void makeConnectedGraphs() {
-        for (int size = 1; size <= MAX_SIZE; size++) {
+    private void makeConnectedGraphs(int minSize, int maxSize) {
+        for (int size = minSize; size <= maxSize; size++) {
             List<Integer> edgesCount = new ArrayList<>();
             for (int i = 0; i < TESTS_PER_SIZE; i++) {
                 if (size == 1) {
                     edgesCount.add(0);
                 } else {
-                    int upper = Math.min((size * (size - 1)) / 2 + 1, MAX_SIZE);
+                    int upper = Math.min((size * (size - 1)) / 2 + 1, maxSize);
                     upper -= size - 1;
                     edgesCount.add(random.nextInt(upper));
                 }

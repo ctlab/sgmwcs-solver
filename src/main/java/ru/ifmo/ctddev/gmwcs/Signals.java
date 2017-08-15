@@ -111,7 +111,7 @@ public class Signals {
         return result;
     }
 
-    public List<Integer> unitSets(List<Unit> units) {
+    public List<Integer> unitSets(Collection<? extends Unit> units) {
         return unitSets(units.stream()).collect(Collectors.toList());
     }
 
@@ -120,8 +120,9 @@ public class Signals {
     }
 
     public List<Integer> positiveUnitSets(Collection<? extends Unit> units) {
-        return unitSets(units.stream()).filter(u -> weight(u) > 0).collect(Collectors.toList());
+        return unitSets(units.stream()).filter(u -> weight(u) >= 0).collect(Collectors.toList());
     }
+
 
     public List<Integer> negativeUnitSets(Collection<? extends Unit> units) {
         return unitSets(units.stream()).filter(u -> weight(u) < 0).collect(Collectors.toList());
@@ -129,6 +130,10 @@ public class Signals {
 
     public List<Integer> negativeUnitSets(Unit unit) {
         return negativeUnitSets(Collections.singletonList(unit));
+    }
+
+    public List<Integer> positiveUnitSets(Unit unit) {
+        return positiveUnitSets(Collections.singletonList(unit));
     }
 
     private Stream<Integer> unitSets(Stream<? extends Unit> units) {
