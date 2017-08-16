@@ -18,6 +18,20 @@ public class Signals {
         weights = new ArrayList<>();
     }
 
+    public Signals negativeSignals() {
+        Signals s = new Signals();
+        s.sets = sets;
+        s.weights = weights;
+        for (Map.Entry<Unit, List<Integer>> kvp : unitsSets.entrySet()) {
+            Unit unit = kvp.getKey();
+            List<Integer> unitSet = kvp.getValue().stream()
+                    .filter(v -> weight(v) < 0).collect(Collectors.toList());
+            s.unitsSets.put(unit, unitSet);
+        }
+        return s;
+    }
+
+
     public Signals(Signals signals, Set<Unit> subset) {
         this();
         for (Unit unit : subset) {

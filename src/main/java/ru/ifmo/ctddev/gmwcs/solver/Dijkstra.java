@@ -19,8 +19,7 @@ class Dijkstra {
     private Set<Integer> currentSignals;
 
     private double currentWeight() {
-        return -signals.weightSum(currentSignals);
-        //return cache.computeIfAbsent(currentSignals, s -> -signals.weightSum(s));
+        return cache.computeIfAbsent(currentSignals, s -> -signals.weightSum(s));
     }
 
     private List<Integer> negativeUnitSets(Unit unit) {
@@ -36,8 +35,7 @@ class Dijkstra {
         this.signals = signals;
     }
 
-    private void solve(Node u, Collection<Node> dest) {
-        dest = new HashSet<>(dest);
+    private void solve(Node u) {
         d = new HashMap<>();
         p = new HashMap<>();
         PriorityQueue<Node> q = new PriorityQueue<>(Comparator.comparingDouble(this::weight));
@@ -49,7 +47,7 @@ class Dijkstra {
         p.put(u, new HashSet<>());
         Node cur;
         List<Integer> negE, negN, addedE = new ArrayList<>(), addedN = new ArrayList<>();
-        while (!dest.isEmpty() && (cur = q.poll()) != null) {
+        while ((cur = q.poll()) != null) {
             currentSignals = p.getOrDefault(cur, new HashSet<>());
             double cw = currentWeight();
             for (Node node : graph.neighborListOf(cur)) {
@@ -86,7 +84,6 @@ class Dijkstra {
                 currentSignals.removeAll(addedN);
                 addedN.clear();
                 cw -= sumN;
-                dest.remove(node);
             }
         }
     }
@@ -96,14 +93,14 @@ class Dijkstra {
         List<Node> nbors = graph.neighborListOf(u);
         if (nbors.size() != 2) return false;
         Node v_1 = nbors.get(0), v_2 = nbors.get(1);
-        solve(v_1, Collections.singletonList(v_2));
+        solve(v_1);
         Set<Integer> unitSets = new HashSet<>(signals.negativeUnitSets(u));
         unitSets.addAll(signals.negativeUnitSets(graph.edgesOf(u)));
         return !p.get(v_2).containsAll(unitSets);
     }
 
     Set<Edge> solveNE(Node u, List<Node> neighbors) {
-        solve(u, neighbors);
+        solve(u);
         Set<Edge> res = new HashSet<>();
         neighbors.forEach(n -> {
             List<Edge> edges = graph.getAllEdges(n, u);
@@ -118,7 +115,7 @@ class Dijkstra {
         if (k.size() < 2) return false;
         Map<Node, Map<Node, Double>> distances = new HashMap<>();
         for (Node v : k) {
-            solve(v, k);
+            solve(v);
             distances.putIfAbsent(v, new HashMap<>());
             Map<Node, Double> cd = distances.get(v);
             for (Node n: k) {

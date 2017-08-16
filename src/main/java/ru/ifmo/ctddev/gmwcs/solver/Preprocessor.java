@@ -44,7 +44,7 @@ public class Preprocessor {
     }
 
     private boolean negative(Unit unit) {
-        return signals.positiveUnitSets(unit).isEmpty();
+        return signals.maxSum(unit) == 0;
     }
 
     private boolean bijection(Unit unit) {
@@ -94,15 +94,14 @@ public class Preprocessor {
                 }
             }
         }
-   //     cns();*/
+        cns();
         graph.subgraph(graph.vertexSet(), graph.edgeSet());
         if (numThreads == 0) {
             uselessEdges();
         } else {
             parallelUselessEdges();
         }
-    //    npv2();
-    //    npvClique(4);
+        npv2();
     }
 
     private boolean negR(Node v, Node r, Set<Node> vis, Set<Node> toRemove) {
@@ -251,7 +250,7 @@ public class Preprocessor {
 
     private void uselessEdges() {
         Set<Edge> toRemove = new HashSet<>();
-        Dijkstra dijkstra = new Dijkstra(graph, signals);
+        Dijkstra dijkstra = new Dijkstra(graph, signals.negativeSignals());
         for (Node u : graph.vertexSet()) {
             dijkstraIteration(dijkstra, u, toRemove);
         }
@@ -261,10 +260,11 @@ public class Preprocessor {
     private void parallelUselessEdges() {
         Set<Edge> toRemove = new ConcurrentSkipListSet<>();
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        Signals negSig = signals.negativeSignals();
         for (Node u : graph.vertexSet()) {
             executor.execute(
                     () -> {
-                        Dijkstra dijkstra = new Dijkstra(graph, signals);
+                        Dijkstra dijkstra = new Dijkstra(graph, negSig);
                         dijkstraIteration(dijkstra, u, toRemove);
                     }
             );
@@ -292,7 +292,7 @@ public class Preprocessor {
     }
 
     private void npv2() {
-        Dijkstra dijkstra = new Dijkstra(graph, signals);
+        Dijkstra dijkstra = new Dijkstra(graph, signals.negativeSignals());
         List<Node> toRemove = new ArrayList<>();
         graph.vertexSet().stream()
                 .filter(n -> checkNeg(n) && dijkstra.solveNP(n))
