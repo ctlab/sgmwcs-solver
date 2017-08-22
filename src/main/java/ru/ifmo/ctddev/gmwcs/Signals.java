@@ -130,7 +130,7 @@ public class Signals {
     }
 
     public double weightSum(Collection<Integer> signals) {
-        return signals.stream().mapToDouble(this::weight).sum();
+        return signals.stream().distinct().mapToDouble(this::weight).sum();
     }
 
     public List<Integer> positiveUnitSets(Collection<? extends Unit> units) {

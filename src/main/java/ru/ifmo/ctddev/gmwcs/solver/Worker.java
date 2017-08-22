@@ -31,6 +31,9 @@ public class Worker implements Runnable {
     @Override
     public void run() {
         solver.setRoot(root);
+        if (root != null) {
+            new BlockPreprocessing(graph, signals, root).result().forEach(graph::removeVertex);
+        }
         double tl = solver.getTimeLimit().getRemainingTime() - (System.currentTimeMillis() - startTime) / 1000.0;
         if (tl <= 0) {
             isSolvedToOptimality = false;

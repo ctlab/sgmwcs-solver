@@ -1,10 +1,7 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
 import ru.ifmo.ctddev.gmwcs.Signals;
-import ru.ifmo.ctddev.gmwcs.graph.Edge;
-import ru.ifmo.ctddev.gmwcs.graph.Graph;
-import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 
@@ -35,7 +32,7 @@ class Dijkstra {
         this.signals = signals;
     }
 
-    private void solve(Node u) {
+    public void solve(Node u) {
         d = new HashMap<>();
         p = new HashMap<>();
         PriorityQueue<Node> q = new PriorityQueue<>(Comparator.comparingDouble(this::weight));
@@ -118,7 +115,7 @@ class Dijkstra {
             solve(v);
             distances.putIfAbsent(v, new HashMap<>());
             Map<Node, Double> cd = distances.get(v);
-            for (Node n: k) {
+            for (Node n : k) {
                 if (n == v) continue;
                 Set<Integer> path = this.p.get(n);
                 if (path == null) return false;
@@ -127,12 +124,16 @@ class Dijkstra {
             }
         }
         Set<Set<Node>> subsets = Utils.subsets(k);
-        for (Set<Node> subset: subsets) {
+        for (Set<Node> subset : subsets) {
             if (subset.size() < 2) continue;
             if (new MST(subset, distances).result() + p > 0) {
                 return false;
             }
         }
         return true;
+    }
+
+    public Map<Node, Double> distances() {
+        return d;
     }
 }
