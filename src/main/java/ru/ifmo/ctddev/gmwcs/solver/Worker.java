@@ -53,15 +53,15 @@ public class Worker implements Runnable {
         }
     }
 
-    public List<Unit> getResult(){
+    public List<Unit> getResult() {
         return result;
     }
 
-    public boolean isSolvedToOptimality(){
+    public boolean isSolvedToOptimality() {
         return isSolvedToOptimality;
     }
 
-    public boolean isOk(){
+    public boolean isOk() {
         return isOk;
     }
 }

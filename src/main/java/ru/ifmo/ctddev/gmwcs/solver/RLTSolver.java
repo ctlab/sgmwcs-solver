@@ -125,7 +125,8 @@ public class RLTSolver implements RootedSolver {
     private void tighten() throws IloException {
         Blocks blocks = new Blocks(graph);
         if (!blocks.cutpoints().contains(root)) {
-            throw new IllegalArgumentException();
+            return;
+//            throw new IllegalArgumentException();
         }
         Separator separator = new Separator(y, w, cplex, graph, sum, lb);
         separator.setMaxToAdd(maxToAddCuts);
@@ -246,17 +247,19 @@ public class RLTSolver implements RootedSolver {
         for (int i = 0; i < signals.size(); i++) {
             double weight = signals.weight(i);
             List<Unit> set = signals.set(i);
-            if (set.size() == 0 || weight == 0.0) {
+            IloNumVar[] vars = set.stream()
+                    .map(this::getVar).filter(Objects::nonNull)
+                    .toArray(IloNumVar[]::new);
+            if (vars.length == 0 || weight == 0.0) {
                 continue;
             }
             ks.add(signals.weight(i));
-            if (set.size() == 1) {
-                vs.add(getVar(set.get(0)));
+            if (vars.length == 1) {
+                vs.add(vars[0]);
                 continue;
             }
             IloNumVar x = cplex.boolVar("s" + i);
             vs.add(x);
-            IloNumExpr[] vars = set.stream().map(this::getVar).toArray(IloNumExpr[]::new);
             if (weight > 0) {
                 cplex.addLe(x, cplex.sum(vars));
             } else {
