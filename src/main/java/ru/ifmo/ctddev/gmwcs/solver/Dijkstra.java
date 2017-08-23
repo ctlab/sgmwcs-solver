@@ -27,11 +27,23 @@ class Dijkstra {
         return d.getOrDefault(unit, Double.MAX_VALUE);
     }
 
+    /**
+     * Constructs Dijkstra algorithm instance provided {@link Graph} and
+     * {@link Signals}. The distance between two nodes <code>u</code>
+     * and <code>v</code> is a modulus of sum of negative signals on a way
+     * u -> v.
+     */
     Dijkstra(Graph graph, Signals signals) {
         this.graph = graph;
         this.signals = signals;
     }
 
+    /**
+     * Calculates distances from {@link Node} <code>u</code> to nodes in {@link Graph}
+     * w.r.t. {@link Signals} instance passed to {@link #Dijkstra(Graph, Signals)}
+     *
+     * @param u The start node. Distance of u -> u is considered as 0.
+     */
     public void solve(Node u) {
         d = new HashMap<>();
         p = new HashMap<>();
@@ -85,8 +97,15 @@ class Dijkstra {
         }
     }
 
+    /**
+     * Tests NP2 reduction condition which holds if the degree of {@linkplain Node} <code>u</code>
+     * is 2, the shortest distance between it's neighbours is less than the sum of negative signals
+     * of <code>u</code> and its adjacent edges none of them contains positive signals.
+     *
+     * @param u Candidate {@linkplain Node} for removal
+     * @return <code>true</code> if <code>u</code> can be removed from {@link Graph}
+     */
     boolean solveNP(Node u) {
-        assert graph.degreeOf(u) == 2;
         List<Node> nbors = graph.neighborListOf(u);
         if (nbors.size() != 2) return false;
         Node v_1 = nbors.get(0), v_2 = nbors.get(1);
@@ -108,6 +127,14 @@ class Dijkstra {
         return res;
     }
 
+    /**
+     * Tests NPk reduction condition which holds if the {@link MST} solutions for
+     * all subsets of <code>k</code> have less value than <code>p</code>.
+     *
+     * @param p The weight of {@linkplain Node}.
+     * @param k Adjacent nodes.
+     * @return <code>true</code> if condition holds.
+     */
     boolean solveClique(double p, Set<Node> k) {
         if (k.size() < 2) return false;
         Map<Node, Map<Node, Double>> distances = new HashMap<>();
@@ -133,7 +160,12 @@ class Dijkstra {
         return true;
     }
 
-    public Map<Node, Double> distances() {
+
+    /**
+     *
+     * @return distances calculated by {@link #solve(Node)}.
+     */
+    Map<Node, Double> distances() {
         return d;
     }
 }

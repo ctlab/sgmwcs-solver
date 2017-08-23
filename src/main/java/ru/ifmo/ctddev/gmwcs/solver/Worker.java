@@ -7,6 +7,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.List;
+import java.util.Set;
 
 public class Worker implements Runnable {
     private final Signals signals;
