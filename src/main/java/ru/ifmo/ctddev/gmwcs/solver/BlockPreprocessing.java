@@ -11,11 +11,17 @@ public class BlockPreprocessing {
     private Blocks blocks;
     private Set<Node> toRemove = new HashSet<>();
 
+    /**
+     *
+     * @param root
+     */
     public BlockPreprocessing(Graph graph, Signals signals, Node root) {
         this.graph = graph;
         this.signals = signals;
         blocks = new Blocks(graph);
-        preprocess(root);
+        if (graph.vertexSet().size() > 5) {
+            preprocess(root);
+        }
     }
 
     public Set<Node> result() {
@@ -50,12 +56,12 @@ public class BlockPreprocessing {
         List<Integer> posSignals = signals.positiveUnitSets(units);
         Collections.sort(posSignals);
         double sum = signals.weightSum(posSignals);
-        Dijkstra dk = new Dijkstra(graph.subgraph(nodes), signals);
+        Dijkstra dk = new Dijkstra(subgraph, signals);
         dk.solve(parent);
         List<Map.Entry<Node, Double>> distances = new ArrayList<>(dk.distances().entrySet());
         distances.sort(Comparator.comparingDouble(Map.Entry::getValue));
         for (int i = distances.size() - 1;
-             distances.get(i).getValue() > sum && i >= 0;
+             i >= 0 &&distances.get(i).getValue() > sum;
              --i) {
             Node node = distances.get(i).getKey();
             Set<Edge> edges = subgraph.edgesOf(node);

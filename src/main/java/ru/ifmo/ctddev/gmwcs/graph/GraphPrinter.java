@@ -26,7 +26,7 @@ public class GraphPrinter {
     }
 
     private String printSignals(Unit unit) {
-        List<Integer> ss = signals.getUnitsSets().get(unit);
+        List<Integer> ss = signals.unitSets(unit);
         String u = formatSignal(ss.get(0));
         return ss.subList(1, ss.size()).stream()
                 .map(this::formatSignal)

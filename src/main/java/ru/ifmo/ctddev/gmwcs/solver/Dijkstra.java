@@ -98,9 +98,9 @@ class Dijkstra {
     }
 
     /**
-     * Tests NP2 reduction condition which holds if the degree of {@linkplain Node} <code>u</code>
+     * Tests NP2 reduction rule which holds if the degree of {@linkplain Node} <code>u</code>
      * is 2, the shortest distance between it's neighbours is less than the sum of negative signals
-     * of <code>u</code> and its adjacent edges none of them contains positive signals.
+     * of <code>u</code> and its adjacent edges and none of them contains positive signals.
      *
      * @param u Candidate {@linkplain Node} for removal
      * @return <code>true</code> if <code>u</code> can be removed from {@link Graph}
@@ -115,13 +115,23 @@ class Dijkstra {
         return !p.get(v_2).containsAll(unitSets);
     }
 
+    /**
+     *  Tests NPE reduction condition which holds if there exists a path between
+     *  {@linkplain Node} <code>u</code> and <code>v</code> with weight less than
+     *  weight of {@linkplain Edge} <code>u - v </code>.
+     *
+     * @param u Node with edges to consider
+     * @param neighbors neighbors of node u which contain negative edges
+     * @return {@linkplain Set} of edges which can be removed.
+     */
+
     Set<Edge> solveNE(Node u, List<Node> neighbors) {
         solve(u);
         Set<Edge> res = new HashSet<>();
         neighbors.forEach(n -> {
             List<Edge> edges = graph.getAllEdges(n, u);
             for (Edge e : edges)
-                if (!p.get(n).containsAll(signals.unitSets(e)))
+                if (!p.get(n).containsAll(signals.negativeUnitSets(e)))
                     res.add(e);
         });
         return res;

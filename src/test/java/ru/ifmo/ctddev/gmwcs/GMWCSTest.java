@@ -164,12 +164,12 @@ public class GMWCSTest {
             Graph g = test.graph();
             Signals s = test.signals();
             for (Node v : g.vertexSet()) {
-                nodeWriter.println(v.getNum() + "\tS" + (s.getUnitsSets().get(v).get(0) + 1));
+                nodeWriter.println(v.getNum() + "\tS" + (s.unitSets(v).get(0) + 1));
             }
             for (Edge e : g.edgeSet()) {
                 Node from = g.getEdgeSource(e);
                 Node to = g.getEdgeTarget(e);
-                edgeWriter.println(from.getNum() + "\t" + to.getNum() + "\tS" + (s.getUnitsSets().get(e).get(0) + 1));
+                edgeWriter.println(from.getNum() + "\t" + to.getNum() + "\tS" + (s.unitSets(e).get(0) + 1));
             }
             reportSignals(test, signalWriter);
             System.err.println("Correct solution(one of): ");

@@ -20,8 +20,8 @@ public class Signals {
 
     public Signals negativeSignals() {
         Signals s = new Signals();
-        s.sets = sets;
-        s.weights = weights;
+        s.sets = new ArrayList<>(sets);
+        s.weights = new ArrayList<>(weights);
         for (Map.Entry<Unit, List<Integer>> kvp : unitsSets.entrySet()) {
             Unit unit = kvp.getKey();
             List<Integer> unitSet = kvp.getValue().stream()
@@ -117,7 +117,7 @@ public class Signals {
         unitsSets.remove(what);
     }
 
-    public Map<Unit, List<Integer>> getUnitsSets() {
+    public Map<Unit, List<Integer>> unitSets() {
         Map<Unit, List<Integer>> result = new HashMap<>();
         for (Unit unit : unitsSets.keySet()) {
             result.put(unit, unitsSets.get(unit));
