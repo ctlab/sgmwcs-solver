@@ -118,10 +118,8 @@ public class Preprocessor {
         }
         posC();
         negC();
-        // NPE and chains can be called only once?
+        // NPE can be called only once
         if (num == 0) {
-        //    posC();
-         //   negC();
             npe.apply(toRemove);
         }
         res += npv2.apply(toRemove);
@@ -261,7 +259,9 @@ public class Preprocessor {
             Edge edge = edges.stream().findAny().orElse(null);
             Node oppos = graph.getOppositeVertex(node, edge);
             double minSum = signals.minSum(edge, node, oppos);
-            if (minSum == signals.minSum(oppos)
+            if (minSum == signals.minSum(edge)
+                    && minSum == signals.minSum(node)
+                    && minSum == signals.minSum(oppos)
                     && graph.degreeOf(oppos) > 1) {
                 toAbsorb.putIfAbsent(oppos, new ArrayList<>());
                 toAbsorb.get(oppos).add(node);
@@ -314,7 +314,7 @@ public class Preprocessor {
             parallelUselessEdges(toRemove);
         } else {
             toRemove = new HashSet<>();
-            Dijkstra dijkstra = new Dijkstra(graph, signals.negativeSignals());
+            Dijkstra dijkstra = new Dijkstra(graph, signals);
             for (Node u : graph.vertexSet()) {
                 dijkstraIteration(dijkstra, u, toRemove);
             }
@@ -327,7 +327,7 @@ public class Preprocessor {
 
     private void parallelUselessEdges(Set<Edge> toRemove) {
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        Signals neg = signals.negativeSignals();
+        Signals neg = signals;
         for (Node u : graph.vertexSet()) {
             executor.execute(
                     () -> {
