@@ -32,26 +32,24 @@ public class ComponentSolver implements Solver {
         Signals s = new Signals();
         int vertexBefore = graph.vertexSet().size(), edgesBefore = graph.edgeSet().size();
         Utils.copy(graph, signals, g, s);
-        graph = g;
-        signals = s;
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
         if (edgePenalty == 0) {
             if (logLevel > 0 ) {
-                new GraphPrinter(g, signals).printGraph("beforePrep.dot");
+                new GraphPrinter(g, s).printGraph("beforePrep.dot");
             }
-            new Preprocessor(g, signals, threads).preprocess();
+            new Preprocessor(g, s, threads, logLevel).preprocess();
             if (logLevel > 0) {
-                new GraphPrinter(g, signals).printGraph("afterPrep.dot");
-                System.out.print("Preprocessing deleted " + (vertexBefore - graph.vertexSet().size()) + " nodes ");
-                System.out.println("and " + (edgesBefore - graph.edgeSet().size()) + " edges.");
+                new GraphPrinter(g, s).printGraph("afterPrep.dot");
+                System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
+                System.out.println("and " + (edgesBefore - g.edgeSet().size()) + " edges.");
             }
         }
         isSolvedToOptimality = true;
         if (g.vertexSet().size() == 0) {
             return null;
         }
-        return afterPreprocessing(g, new Signals(signals, units));
+        return afterPreprocessing(g, new Signals(s, units));
     }
 
     private List<Unit> afterPreprocessing(Graph graph, Signals signals) throws SolverException {

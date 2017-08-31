@@ -12,16 +12,14 @@ public class BlockPreprocessing {
     private Set<Node> toRemove = new HashSet<>();
 
     /**
-     *
      * @param root
      */
     public BlockPreprocessing(Graph graph, Signals signals, Node root) {
         this.graph = graph;
         this.signals = signals;
         blocks = new Blocks(graph);
-        if (graph.vertexSet().size() > 5) {
-            preprocess(root);
-        }
+            doPreprocessing(graph.vertexSet(), root);
+            //preprocess(root);
     }
 
     public Set<Node> result() {
@@ -53,7 +51,7 @@ public class BlockPreprocessing {
         Graph subgraph = graph.subgraph(nodes);
         Set<Unit> units = new HashSet<>(subgraph.edgeSet());
         units.addAll(nodes);
-        List<Integer> posSignals = signals.positiveUnitSets(units);
+        List<Integer> posSignals = signals.positiveUnitSets(units, false);
         Collections.sort(posSignals);
         double sum = signals.weightSum(posSignals);
         Dijkstra dk = new Dijkstra(subgraph, signals);
@@ -61,23 +59,24 @@ public class BlockPreprocessing {
         List<Map.Entry<Node, Double>> distances = new ArrayList<>(dk.distances().entrySet());
         distances.sort(Comparator.comparingDouble(Map.Entry::getValue));
         for (int i = distances.size() - 1;
-             i >= 0 &&distances.get(i).getValue() > sum;
+             i >= 0 && distances.get(i).getValue() > sum;
              --i) {
             Node node = distances.get(i).getKey();
-            Set<Edge> edges = subgraph.edgesOf(node);
+            /*Set<Edge> edges = subgraph.edgesOf(node);
             List<Integer> nodePos = signals.positiveUnitSets(node);
             nodePos.addAll(signals.positiveUnitSets(edges));
             for (int sig : nodePos) {
                 int pos = Collections.binarySearch(posSignals, sig);
                 if (pos >= 0) {
                     posSignals.remove(pos);
-                    if (pos < posSignals.size() && posSignals.get(pos) == pos
-                            || pos > 0 && posSignals.get(pos - 1) == pos) {
+                    //Don't decrease sum if more than 1 unit contains this signal
+                    if (pos < posSignals.size() && posSignals.get(pos) == sig
+                            || pos > 0 && posSignals.get(pos - 1) == sig) {
                         continue;
                     }
-                    sum -= signals.weight(pos);
+                    sum -= signals.weight(sig);
                 }
-            }
+            }*/
             nodes.remove(node);
             toRemove.add(node);
         }

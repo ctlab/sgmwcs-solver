@@ -133,6 +133,18 @@ public class Signals {
         return signals.stream().distinct().mapToDouble(this::weight).sum();
     }
 
+    public List<Integer> positiveUnitSets(Collection<? extends Unit> units, boolean distinct) {
+        if (distinct) {
+            return positiveUnitSets(units);
+        } else {
+            return units.stream()
+                    .map(this::unitSets)
+                    .flatMap(Collection::stream).filter(u -> weight(u) >= 0)
+                    .collect(Collectors.toList());
+        }
+
+    }
+
     public List<Integer> positiveUnitSets(Collection<? extends Unit> units) {
         return unitSets(units.stream()).filter(u -> weight(u) >= 0).collect(Collectors.toList());
     }

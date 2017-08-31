@@ -39,7 +39,7 @@ public class GraphIO {
 
     private void parseNodes(LineNumberReader reader, Graph graph) throws ParseException, IOException {
         String line;
-        int cnt = 0;
+        int cnt = 1;
         while ((line = reader.readLine()) != null) {
             if (line.startsWith("#")) {
                 continue;
@@ -65,7 +65,7 @@ public class GraphIO {
     }
 
     private void parseEdges(LineNumberReader reader, Graph graph) throws ParseException, IOException {
-        int cnt = 0;
+        int cnt = 1;
         String line;
         while ((line = reader.readLine()) != null) {
             if (line.startsWith("#")) {

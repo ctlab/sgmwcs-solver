@@ -51,9 +51,10 @@ public class Preprocessor {
 
     private Node primaryNode;
 
-    public Preprocessor(Graph graph, Signals signals, int numThreads) {
+    public Preprocessor(Graph graph, Signals signals, int numThreads, int logLevel) {
         this(graph, signals);
         this.numThreads = numThreads - 1;
+        this.logLevel = logLevel;
     }
 
     public Preprocessor(Graph graph, Signals signals) {
