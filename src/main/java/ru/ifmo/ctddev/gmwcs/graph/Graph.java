@@ -1,5 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
+import java.io.Serializable;
 import java.util.*;
 
 public class Graph {
@@ -13,6 +14,22 @@ public class Graph {
         adj = new LinkedHashMap<>();
         connected = new HashMap<>();
         degree = new HashMap<>();
+    }
+
+    public Graph(Graph that) {
+        this();
+        Map<Node, Node> oldToNew = new HashMap<>();
+        that.vertexSet().forEach(v -> {
+            Node newV = new Node(v);
+            addVertex(newV);
+            oldToNew.put(v, newV);
+        });
+        that.edgeSet()
+                .forEach(e -> addEdge(
+                        oldToNew.get(that.getEdgeSource(e)),
+                        oldToNew.get(that.getEdgeTarget(e)),
+                        new Edge(e))
+                );
     }
 
     public void addVertex(Node v) {
@@ -247,6 +264,7 @@ public class Graph {
             return res;
         }
     }
+
 
     private static class Link {
         public Edge e;

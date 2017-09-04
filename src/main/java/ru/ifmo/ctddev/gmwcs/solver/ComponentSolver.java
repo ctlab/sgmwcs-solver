@@ -2,13 +2,11 @@ package ru.ifmo.ctddev.gmwcs.solver;
 
 import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
-import ru.ifmo.ctddev.gmwcs.graph.Blocks;
-import ru.ifmo.ctddev.gmwcs.graph.Graph;
-import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public class ComponentSolver implements Solver {
     public final int threshold;
@@ -30,22 +28,28 @@ public class ComponentSolver implements Solver {
     @Override
     public List<Unit> solve(Graph graph, Signals signals) throws SolverException {
         isSolvedToOptimality = true;
-        Graph g = graph.subgraph(graph.vertexSet());
+        Graph g = new Graph();
+        Signals s = new Signals();
+        int vertexBefore = graph.vertexSet().size(), edgesBefore = graph.edgeSet().size();
+        Utils.copy(graph, signals, g, s);
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
-        signals = new Signals(signals, units);
         if (edgePenalty == 0) {
-            Preprocessor.preprocess(g, signals);
+            if (logLevel > 0 ) {
+                new GraphPrinter(g, s).printGraph("beforePrep.dot");
+            }
+            new Preprocessor(g, s, threads, logLevel).preprocess();
             if (logLevel > 0) {
-                System.out.print("Preprocessing deleted " + (graph.vertexSet().size() - g.vertexSet().size()) + " nodes ");
-                System.out.println("and " + (graph.edgeSet().size() - g.edgeSet().size()) + " edges.");
+                new GraphPrinter(g, s).printGraph("afterPrep.dot");
+                System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
+                System.out.println("and " + (edgesBefore - g.edgeSet().size()) + " edges.");
             }
         }
         isSolvedToOptimality = true;
         if (g.vertexSet().size() == 0) {
             return null;
         }
-        return afterPreprocessing(g, new Signals(signals, units));
+        return afterPreprocessing(g, new Signals(s, units));
     }
 
     private List<Unit> afterPreprocessing(Graph graph, Signals signals) throws SolverException {
@@ -55,14 +59,14 @@ public class ComponentSolver implements Solver {
         List<Worker> memorized = new ArrayList<>();
         BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
         ExecutorService executor = new ThreadPoolExecutor(threads, threads, Long.MAX_VALUE, TimeUnit.NANOSECONDS, queue);
-        while(!components.isEmpty()){
+        while (!components.isEmpty()) {
             Set<Node> component = components.poll();
             Graph subgraph = graph.subgraph(component);
             Node root = null;
             double timeRemains = tl.getRemainingTime() - (System.currentTimeMillis() - timeBefore) / 1000.0;
             if (component.size() >= threshold && timeRemains > 0) {
                 root = getRoot(subgraph, new Blocks(subgraph));
-                if(root != null){
+                if (root != null) {
                     addComponents(subgraph, root, components);
                 }
             }

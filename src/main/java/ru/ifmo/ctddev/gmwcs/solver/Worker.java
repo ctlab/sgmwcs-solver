@@ -7,6 +7,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.List;
+import java.util.Set;
 
 public class Worker implements Runnable {
     private final Signals signals;
@@ -17,6 +18,9 @@ public class Worker implements Runnable {
     private boolean isSolvedToOptimality;
     private boolean isOk;
     private long startTime;
+
+
+    private int logLevel = 0;
 
     public Worker(Graph graph, Node root, Signals signals, RootedSolver solver, long time) {
         this.solver = solver;
@@ -31,6 +35,12 @@ public class Worker implements Runnable {
     @Override
     public void run() {
         solver.setRoot(root);
+        if (root != null) {
+            Set<Node> toRemove = new BlockPreprocessing(graph, signals, root).result();
+            if (logLevel > 0) {
+                System.out.println("Block Preprocessing removed " + toRemove.size() + " nodes.");
+            }
+        }
         double tl = solver.getTimeLimit().getRemainingTime() - (System.currentTimeMillis() - startTime) / 1000.0;
         if (tl <= 0) {
             isSolvedToOptimality = false;
@@ -50,15 +60,15 @@ public class Worker implements Runnable {
         }
     }
 
-    public List<Unit> getResult(){
+    public List<Unit> getResult() {
         return result;
     }
 
-    public boolean isSolvedToOptimality(){
+    public boolean isSolvedToOptimality() {
         return isSolvedToOptimality;
     }
 
-    public boolean isOk(){
+    public boolean isOk() {
         return isOk;
     }
 }

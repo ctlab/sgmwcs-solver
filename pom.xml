@@ -72,7 +72,7 @@
                 <version>2.19.1</version>
                 <configuration>
                     <argLine>
-                        -Djava.library.path=${java.library.path} 
+                        -Djava.library.path=${java.library.path}
                         -Xmx512m
                         -Xms512m
                     </argLine>
