@@ -35,11 +35,11 @@ public class ComponentSolver implements Solver {
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
         if (edgePenalty == 0) {
-            if (logLevel > 0 ) {
+            if (logLevel > 1) {
                 new GraphPrinter(g, s).printGraph("beforePrep.dot");
             }
             new Preprocessor(g, s, threads, logLevel).preprocess();
-            if (logLevel > 0) {
+            if (logLevel > 1) {
                 new GraphPrinter(g, s).printGraph("afterPrep.dot");
                 System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
                 System.out.println("and " + (edgesBefore - g.edgeSet().size()) + " edges.");
