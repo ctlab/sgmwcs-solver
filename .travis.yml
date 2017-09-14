@@ -13,6 +13,7 @@ install:
 script:
 - mvn -Djava.library.path=lib/lib cobertura:cobertura
 - mvn install -DskipTests=true
+- java -Djava.library.path=lib/lib -cp lib/lib/cplex.jar:target/sgmwcs-solver.jar ru.ifmo.ctddev.gmwcs.Main -n nodes -e edges -s signals
 
 after_success:
 - bash <(curl -s https://codecov.io/bash)

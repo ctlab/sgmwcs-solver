@@ -86,6 +86,7 @@
             <groupId>com.ibm</groupId>
             <artifactId>cplex</artifactId>
             <version>[12.6.3,)</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jgrapht</groupId>
