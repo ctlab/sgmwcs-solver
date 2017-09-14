@@ -4,12 +4,14 @@ import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.solver.Solver;
+import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 
 import java.util.*;
 
 import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
 
-public class ReferenceSolver {
+public class ReferenceSolver implements Solver {
     public List<Unit> solve(Graph graph, Signals signals, List<Node> roots) {
         for (Node root : roots) {
             if (!graph.containsVertex(root)) {
@@ -23,8 +25,8 @@ public class ReferenceSolver {
         double max = roots.isEmpty() ? 0 : -Double.MAX_VALUE;
         // Isolated vertices
         for (Node node : graph.vertexSet()) {
-            if ((roots.isEmpty() || (roots.size() == 1 && roots.get(0) == node)) && node.getWeight() > max) {
-                max = node.getWeight();
+            if ((roots.isEmpty() || (roots.size() == 1 && roots.get(0) == node)) && signals.weight(node) > max) {
+                max = signals.weight(node);
                 maxSet = new ArrayList<>();
                 maxSet.add(node);
             }
@@ -67,5 +69,37 @@ public class ReferenceSolver {
             }
         }
         return maxSet;
+    }
+
+    @Override
+    public List<Unit> solve(Graph graph, Signals signals) throws SolverException {
+        return solve(graph, signals, Collections.emptyList());
+    }
+
+    @Override
+    public boolean isSolvedToOptimality() {
+        return true;
+    }
+
+    @Override
+    public TimeLimit getTimeLimit() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setTimeLimit(TimeLimit tl) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setLogLevel(int logLevel) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public void setLB(double lb) {
+        throw new UnsupportedOperationException();
+
     }
 }

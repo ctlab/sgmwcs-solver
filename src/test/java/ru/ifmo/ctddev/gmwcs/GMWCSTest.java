@@ -11,16 +11,16 @@ import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
+import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
 import ru.ifmo.ctddev.gmwcs.solver.Solver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
+import static ru.ifmo.ctddev.gmwcs.solver.Utils.copy;
 import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -29,6 +29,7 @@ public class GMWCSTest {
     private static final int TESTS_PER_SIZE = 300;
     private static final int MAX_SIZE = 15;
     private static final int RANDOM_TESTS = 2200;
+    private static final int RLT_MAX_SIZE = 100;
 
     static {
         try {
@@ -42,6 +43,7 @@ public class GMWCSTest {
     private List<TestCase> tests;
     private Solver solver;
     private ReferenceSolver referenceSolver;
+    private RLTSolver rltSolver;
     private Random random;
 
     public GMWCSTest() {
@@ -49,8 +51,49 @@ public class GMWCSTest {
         this.solver = new ComponentSolver(3);
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
-        makeConnectedGraphs();
+        rltSolver = new RLTSolver();
+        makeConnectedGraphs(1, MAX_SIZE);
         makeUnconnectedGraphs();
+    }
+
+    @Test
+    public void test_copy() {
+        int allTests = MAX_SIZE * TESTS_PER_SIZE;
+        for (int i = 0; i < allTests; i++) {
+            TestCase test = tests.get(i);
+            Graph graph = new Graph();
+            Signals signals = new Signals();
+            copy(test.graph(), test.signals(), graph, signals);
+            int[] nodesPrev = test.graph().vertexSet().stream()
+                    .map(signals::weight).sorted()
+                    .mapToInt(Double::intValue).toArray();
+            int[] nodesNew = graph.vertexSet().stream()
+                    .map(signals::weight).sorted()
+                    .mapToInt(Double::intValue).toArray();
+            Assert.assertArrayEquals("Node weights must be equal", nodesPrev, nodesNew);
+
+            int[] edgesPrev = test.graph().edgeSet().stream()
+                    .map(signals::weight).sorted()
+                    .mapToInt(Double::intValue).toArray();
+            int[] edgesNew = graph.edgeSet().stream()
+                    .map(signals::weight).sorted()
+                    .mapToInt(Double::intValue).toArray();
+            Assert.assertArrayEquals("Edge weights must be equal", edgesPrev, edgesNew);
+
+            Assert.assertEquals(test.signals().size(), signals.size());
+            for (int j = 0; j < signals.size(); ++j) {
+                List<Unit> newUnits = signals.set(j);
+                newUnits.sort(Comparator.comparingInt(Unit::getNum));
+                List<Unit> oldUnits = test.signals().set(j);
+                oldUnits.sort(Comparator.comparingInt(Unit::getNum));
+                for (int num = 0; num < newUnits.size(); ++num) {
+                    Unit nu = newUnits.get(num), ou = oldUnits.get(num);
+                    Assert.assertNotSame(nu, ou);
+                    Assert.assertEquals(nu.getNum(), ou.getNum());
+                    Assert.assertTrue(signals.weight(nu) - signals.weight(ou) < 0.01);
+                }
+            }
+        }
     }
 
     @Test
@@ -68,7 +111,7 @@ public class GMWCSTest {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
         for (int i = 0; i < allTests; i++) {
             TestCase test = tests.get(i);
-            check(test, i);
+            check(test, i, referenceSolver);
         }
         System.out.println();
     }
@@ -78,15 +121,26 @@ public class GMWCSTest {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
         for (int i = allTests; i < tests.size(); i++) {
             TestCase test = tests.get(i);
-            check(test, i);
+            check(test, i, referenceSolver);
         }
         System.out.println();
     }
 
-    private void check(TestCase test, int num) {
-        List<Unit> expected = referenceSolver.solve(test.graph(), test.signals(), Collections.emptyList());
+    @Test
+    public void test04_big() {
+        tests.clear();
+        makeConnectedGraphs(RLT_MAX_SIZE, RLT_MAX_SIZE);
+        for (int i = 0; i < tests.size(); i++) {
+            TestCase test = tests.get(i);
+            check(test, i, rltSolver);
+        }
+    }
+
+    private void check(TestCase test, int num, Solver refSolver) {
+        List<Unit> expected = null;
         List<Unit> actual = null;
         try {
+            expected = refSolver.solve(test.graph(), test.signals());
             solver.setLogLevel(0);
             actual = solver.solve(test.graph(), test.signals());
         } catch (SolverException e) {
@@ -108,13 +162,14 @@ public class GMWCSTest {
              PrintWriter edgeWriter = new PrintWriter("edges_" + testNum + ".error");
              PrintWriter signalWriter = new PrintWriter("signals" + testNum + ".error")) {
             Graph g = test.graph();
+            Signals s = test.signals();
             for (Node v : g.vertexSet()) {
-                nodeWriter.println(v.getNum() + "\t" + v.getWeight());
+                nodeWriter.println(v.getNum() + "\tS" + (s.unitSets(v).get(0) + 1));
             }
             for (Edge e : g.edgeSet()) {
                 Node from = g.getEdgeSource(e);
                 Node to = g.getEdgeTarget(e);
-                edgeWriter.println(from.getNum() + "\t" + to.getNum() + "\t" + e.getWeight());
+                edgeWriter.println(from.getNum() + "\t" + to.getNum() + "\tS" + (s.unitSets(e).get(0) + 1));
             }
             reportSignals(test, signalWriter);
             System.err.println("Correct solution(one of): ");
@@ -133,31 +188,19 @@ public class GMWCSTest {
 
     private void reportSignals(TestCase test, PrintWriter signalWriter) {
         Signals signals = test.signals();
-        Graph g = test.graph();
         for (int i = 0; i < signals.size(); i++) {
-            List<Unit> set = signals.set(i);
-            for (Unit u : set) {
-                if (u instanceof Edge) {
-                    Edge e = (Edge) u;
-                    signalWriter.print(g.getEdgeSource(e).getNum() + " -- " + g.getEdgeTarget(e).getNum() + "\t");
-                } else {
-                    signalWriter.print(u.getNum() + "\t");
-                }
-            }
-            if (!set.isEmpty()) {
-                signalWriter.println();
-            }
+            signalWriter.println("S" + (i + 1) + "\t" + signals.weight(i));
         }
     }
 
-    private void makeConnectedGraphs() {
-        for (int size = 1; size <= MAX_SIZE; size++) {
+    private void makeConnectedGraphs(int minSize, int maxSize) {
+        for (int size = minSize; size <= maxSize; size++) {
             List<Integer> edgesCount = new ArrayList<>();
             for (int i = 0; i < TESTS_PER_SIZE; i++) {
                 if (size == 1) {
                     edgesCount.add(0);
                 } else {
-                    int upper = Math.min((size * (size - 1)) / 2 + 1, MAX_SIZE);
+                    int upper = Math.min((size * (size - 1)) / 2 + 1, maxSize);
                     upper -= size - 1;
                     edgesCount.add(random.nextInt(upper));
                 }
@@ -165,17 +208,26 @@ public class GMWCSTest {
             Collections.sort(edgesCount);
             for (int count : edgesCount) {
                 Graph graph = new Graph();
-                Node[] nodes = fillNodes(graph, size);
+                Map<Node, Double> nodes = fillNodes(graph, size);
                 List<Integer> seq = new ArrayList<>();
                 for (int j = 0; j < size; j++) {
                     seq.add(j);
                 }
                 Collections.shuffle(seq, random);
+                Node[] nodesArray = nodes.keySet().toArray(new Node[0]);
+                Arrays.sort(nodesArray);
+                Map<Edge, Double> edges = new HashMap<>();
                 for (int j = 0; j < size - 1; j++) {
-                    graph.addEdge(nodes[seq.get(j)], nodes[seq.get(j + 1)], new Edge(j + 1, random.nextInt(16) - 8));
+                    double weight = random.nextInt(16) - 8;
+                    Edge edge = new Edge(j + 1);
+                    graph.addEdge(nodesArray[seq.get(j)], nodesArray[seq.get(j + 1)], edge);
+                    edges.put(edge, weight);
                 }
-                fillEdgesRandomly(graph, count, nodes, size);
-                tests.add(new TestCase(graph, random));
+                fillEdgesRandomly(graph, count, nodesArray, edges, size);
+                Map<Unit, Double> weights = new HashMap<>();
+                nodes.forEach(weights::put);
+                edges.forEach(weights::put);
+                tests.add(new TestCase(graph, weights, random));
             }
         }
     }
@@ -185,22 +237,30 @@ public class GMWCSTest {
             int n = random.nextInt(MAX_SIZE) + 1;
             int m = Math.min((n * (n - 1)) / 2, random.nextInt(MAX_SIZE));
             Graph graph = new Graph();
-            Node[] nodes = fillNodes(graph, n);
-            fillEdgesRandomly(graph, m, nodes, 1);
-            tests.add(new TestCase(graph, random));
+            Map<Node, Double> nodes = fillNodes(graph, n);
+            Map<Edge, Double> edges = new HashMap<>();
+            Node[] nodesArray = nodes.keySet().toArray(new Node[0]);
+            Arrays.sort(nodesArray);
+            fillEdgesRandomly(graph, m, nodesArray, edges, 1);
+            Map<Unit, Double> weights = new HashMap<>();
+            nodes.forEach(weights::put);
+            edges.forEach(weights::put);
+            tests.add(new TestCase(graph, weights, random));
         }
     }
 
-    private Node[] fillNodes(Graph graph, int size) {
-        Node[] nodes = new Node[size];
+    private Map<Node, Double> fillNodes(Graph graph, int size) {
+
+        Map<Node, Double> nodes = new HashMap<>();
         for (int j = 0; j < size; j++) {
-            nodes[j] = new Node(j + 1, random.nextInt(16) - 8);
-            graph.addVertex(nodes[j]);
+            Node node = new Node(j + 1);
+            nodes.put(node, random.nextInt(16) - 8.0);
+            graph.addVertex(node);
         }
         return nodes;
     }
 
-    private void fillEdgesRandomly(Graph graph, int count, Node[] nodes, int offset) {
+    private void fillEdgesRandomly(Graph graph, int count, Node[] nodes, Map<Edge, Double> edges, int offset) {
         int size = graph.vertexSet().size();
         for (int j = 0; j < count; j++) {
             int u = random.nextInt(size);
@@ -209,7 +269,10 @@ public class GMWCSTest {
                 j--;
                 continue;
             }
-            graph.addEdge(nodes[u], nodes[v], new Edge(offset + j, random.nextInt(16) - 8));
+            double weight = random.nextInt(16) - 8;
+            Edge edge = new Edge(offset + j);
+            graph.addEdge(nodes[u], nodes[v], edge);
+            edges.put(edge, weight);
         }
     }
 }

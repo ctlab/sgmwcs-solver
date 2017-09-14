@@ -39,7 +39,7 @@ public class GraphIO {
 
     private void parseNodes(LineNumberReader reader, Graph graph) throws ParseException, IOException {
         String line;
-        int cnt = 0;
+        int cnt = 1;
         while ((line = reader.readLine()) != null) {
             if (line.startsWith("#")) {
                 continue;
@@ -50,7 +50,7 @@ public class GraphIO {
             }
             String node = tokenizer.nextToken();
             try {
-                Node vertex = new Node(cnt++, 0);
+                Node vertex = new Node(cnt++);
                 if (nodeNames.containsKey(node)) {
                     throw new ParseException("Duplicate node " + node, 0);
                 }
@@ -58,14 +58,14 @@ public class GraphIO {
                 graph.addVertex(vertex);
                 processSignals(vertex, tokenizer);
                 unitMap.put(vertex, node);
-            } catch (ParseException e){
+            } catch (ParseException e) {
                 throw new ParseException(e.getMessage() + "node file, line", reader.getLineNumber());
             }
         }
     }
 
     private void parseEdges(LineNumberReader reader, Graph graph) throws ParseException, IOException {
-        int cnt = 0;
+        int cnt = 1;
         String line;
         while ((line = reader.readLine()) != null) {
             if (line.startsWith("#")) {
@@ -84,13 +84,13 @@ public class GraphIO {
                 if (!nodeNames.containsKey(first) || !nodeNames.containsKey(second)) {
                     throw new ParseException("There's no such vertex in edge list at line", reader.getLineNumber());
                 }
-                Edge edge = new Edge(cnt++, 0);
+                Edge edge = new Edge(cnt++);
                 Node from = nodeNames.get(first);
                 Node to = nodeNames.get(second);
                 graph.addEdge(from, to, edge);
                 unitMap.put(edge, first + "\t" + second);
                 processSignals(edge, tokenizer);
-            } catch (ParseException e){
+            } catch (ParseException e) {
                 throw new ParseException(e.getMessage() + "edge file, line", reader.getLineNumber());
             }
         }
@@ -98,16 +98,16 @@ public class GraphIO {
 
     private void processSignals(Unit unit, StringTokenizer tokenizer) throws ParseException {
         List<String> tokens = new ArrayList<>();
-        while(tokenizer.hasMoreTokens()){
+        while (tokenizer.hasMoreTokens()) {
             tokens.add(tokenizer.nextToken());
         }
-        if(!tokens.isEmpty()){
-            for(String token : tokens){
-                if(signalNames.containsKey(token)){
+        if (!tokens.isEmpty()) {
+            for (String token : tokens) {
+                if (signalNames.containsKey(token)) {
                     int signal = signalNames.get(token);
                     signals.add(unit, signal);
                 } else {
-                    signalNames.put(token, signals.add(unit));
+                    signalNames.put(token, signals.addAndSetWeight(unit, 0.0));
                 }
             }
         } else {
@@ -132,17 +132,14 @@ public class GraphIO {
                     throw new ParseException("Expected weight of signal at line", reader.getLineNumber());
                 }
                 double weight = Double.parseDouble(tokenizer.nextToken());
-                if(!signalNames.containsKey(signal)){
+                if (!signalNames.containsKey(signal)) {
                     throw new ParseException("Signal " + signal +
                             "doesn't appear in node/edge files", reader.getLineNumber());
                 }
                 int set = signalNames.get(signal);
                 signals.setWeight(set, weight);
-                for(Unit u : signals.set(set)){
-                    u.setWeight(u.getWeight() + weight);
-                }
             }
-        } catch (NumberFormatException e){
+        } catch (NumberFormatException e) {
             throw new ParseException("Wrong format of weight of signal at line", reader.getLineNumber());
         }
     }
@@ -151,13 +148,13 @@ public class GraphIO {
         if (units == null) {
             units = new ArrayList<>();
         }
-        try(PrintWriter nodeWriter = new PrintWriter(nodeIn + ".out");
-            PrintWriter edgeWriter = new PrintWriter(edgeIn + ".out")){
+        try (PrintWriter nodeWriter = new PrintWriter(nodeIn + ".out");
+             PrintWriter edgeWriter = new PrintWriter(edgeIn + ".out")) {
             for (Unit unit : units) {
                 if (!unitMap.containsKey(unit)) {
                     throw new IllegalStateException();
                 }
-                if(unit instanceof Node){
+                if (unit instanceof Node) {
                     nodeWriter.println(unitMap.get(unit));
                 } else {
                     edgeWriter.println(unitMap.get(unit));

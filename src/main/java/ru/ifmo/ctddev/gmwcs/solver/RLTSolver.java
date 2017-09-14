@@ -23,6 +23,7 @@ public class RLTSolver implements RootedSolver {
     private int threads;
     private int logLevel;
     private Graph graph;
+    private Signals signals;
     private Node root;
     private boolean isSolvedToOptimality;
     private int maxToAddCuts;
@@ -77,16 +78,17 @@ public class RLTSolver implements RootedSolver {
     public List<Unit> solve(Graph graph, Signals signals) throws SolverException {
         try {
             isSolvedToOptimality = false;
-            if(!isLBShared){
+            if (!isLBShared) {
                 lb = new AtomicDouble(externLB);
             }
             cplex = new IloCplex();
             this.graph = graph;
+            this.signals = signals;
             initVariables();
             addConstraints();
             addObjective(signals);
             if (edgePenalty <= 0) {
-                maxSizeConstraints();
+                maxSizeConstraints(signals);
             }
             if (root == null) {
                 breakRootSymmetry();
@@ -123,7 +125,8 @@ public class RLTSolver implements RootedSolver {
     private void tighten() throws IloException {
         Blocks blocks = new Blocks(graph);
         if (!blocks.cutpoints().contains(root)) {
-            throw new IllegalArgumentException();
+            return;
+//            throw new IllegalArgumentException();
         }
         Separator separator = new Separator(y, w, cplex, graph, sum, lb);
         separator.setMaxToAdd(maxToAddCuts);
@@ -244,17 +247,19 @@ public class RLTSolver implements RootedSolver {
         for (int i = 0; i < signals.size(); i++) {
             double weight = signals.weight(i);
             List<Unit> set = signals.set(i);
-            if (set.size() == 0 || weight == 0.0) {
+            IloNumVar[] vars = set.stream()
+                    .map(this::getVar).filter(Objects::nonNull)
+                    .toArray(IloNumVar[]::new);
+            if (vars.length == 0 || weight == 0.0) {
                 continue;
             }
-            ks.add(signals.weight(i));
-            if (set.size() == 1) {
-                vs.add(getVar(set.get(0)));
+            ks.add(weight);
+            if (vars.length == 1) {
+                vs.add(vars[0]);
                 continue;
             }
             IloNumVar x = cplex.boolVar("s" + i);
             vs.add(x);
-            IloNumExpr[] vars = set.stream().map(this::getVar).toArray(IloNumExpr[]::new);
             if (weight > 0) {
                 cplex.addLe(x, cplex.sum(vars));
             } else {
@@ -265,7 +270,7 @@ public class RLTSolver implements RootedSolver {
         if (edgePenalty > 0) {
             IloNumVar numEdges = cplex.numVar(0, Double.MAX_VALUE);
 
-            IloNumExpr edgesSum = cplex.sum(w.values().toArray(new IloNumVar[0])); 
+            IloNumExpr edgesSum = cplex.sum(w.values().toArray(new IloNumVar[0]));
 
             ks.add(-edgePenalty);
             vs.add(numEdges);
@@ -275,7 +280,7 @@ public class RLTSolver implements RootedSolver {
 
         IloNumExpr sum = cplex.scalProd(ks.stream().mapToDouble(d -> d).toArray(),
                 vs.toArray(new IloNumVar[vs.size()]));
-        
+
         this.sum = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE);
 
         cplex.addGe(sum, lb.get());
@@ -318,12 +323,12 @@ public class RLTSolver implements RootedSolver {
         cplex.addLe(cplex.sum(d.get(to), cplex.prod(n - 1, z)), cplex.sum(d.get(from), n));
     }
 
-    private void maxSizeConstraints() throws IloException {
+    private void maxSizeConstraints(Signals signals) throws IloException {
         for (Node v : graph.vertexSet()) {
             for (Node u : graph.neighborListOf(v)) {
-                if (u.getWeight() >= 0) {
+                if (signals.unitSets(u).stream().allMatch(x -> signals.weight(x) >= 0)) {
                     Edge e = graph.getEdge(v, u);
-                    if (e != null && e.getWeight() >= 0) {
+                    if (e != null && signals.weight(e) >= 0) {
                         cplex.addLe(y.get(v), w.get(e));
                     }
                 }
@@ -374,7 +379,7 @@ public class RLTSolver implements RootedSolver {
         this.externLB = lb;
     }
 
-    public void setSharedLB(AtomicDouble lb){
+    public void setSharedLB(AtomicDouble lb) {
         isLBShared = true;
         this.lb = lb;
     }
@@ -389,9 +394,9 @@ public class RLTSolver implements RootedSolver {
         @Override
         protected void main() throws IloException {
 
-            while(true){
+            while (true) {
                 double currLB = lb.get();
-                if(currLB >= getObjValue()){
+                if (currLB >= getObjValue()) {
                     break;
                 }
                 if (lb.compareAndSet(currLB, getObjValue()) && !silence) {
