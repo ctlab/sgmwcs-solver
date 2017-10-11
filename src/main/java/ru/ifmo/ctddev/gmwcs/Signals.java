@@ -145,6 +145,11 @@ public class Signals {
 
     }
 
+    public boolean bijection(Unit unit) {
+        List<Integer> ss = unitSets(unit);
+        return ss.stream().allMatch(s -> set(s).size() == 1);
+    }
+
     public List<Integer> positiveUnitSets(Collection<? extends Unit> units) {
         return unitSets(units.stream()).filter(u -> weight(u) >= 0).collect(Collectors.toList());
     }
