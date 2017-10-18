@@ -62,7 +62,8 @@ public class BlockPreprocessing {
              i >= 0 && distances.get(i).getValue() > sum;
              --i) {
             Node node = distances.get(i).getKey();
-            /*Set<Edge> edges = subgraph.edgesOf(node);
+            if (!signals.bijection(node)) continue;
+            Set<Edge> edges = subgraph.edgesOf(node);
             List<Integer> nodePos = signals.positiveUnitSets(node);
             nodePos.addAll(signals.positiveUnitSets(edges));
             for (int sig : nodePos) {
@@ -76,7 +77,7 @@ public class BlockPreprocessing {
                     }
                     sum -= signals.weight(sig);
                 }
-            }*/
+            }
             nodes.remove(node);
             toRemove.add(node);
         }

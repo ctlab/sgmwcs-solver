@@ -30,7 +30,7 @@ class Dijkstra {
     /**
      * Constructs Dijkstra algorithm instance provided {@link Graph} and
      * {@link Signals}. The distance between two nodes <code>u</code>
-     * and <code>v</code> is a modulus of sum of negative signals on a way
+     * and <code>v</code> is a modulus of sum of negative signals on path
      * u -> v.
      */
     Dijkstra(Graph graph, Signals signals) {
@@ -169,7 +169,6 @@ class Dijkstra {
         }
         return true;
     }
-
 
     /**
      *

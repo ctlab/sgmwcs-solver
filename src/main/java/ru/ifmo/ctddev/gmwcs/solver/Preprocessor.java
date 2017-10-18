@@ -81,8 +81,7 @@ public class Preprocessor {
     }
 
     private boolean bijection(Unit unit) {
-        List<Integer> ss = signals.unitSets(unit);
-        return ss.stream().allMatch(s -> signals.set(s).size() == 1);
+        return signals.bijection(unit);
     }
 
     private final Step cns = new Step(this::cns, "cns");
@@ -307,10 +306,13 @@ public class Preprocessor {
     }
 
     private void uselessEdges(Set<Node> ignore) {
-        // Remove nodes marked as deleted
-        graph.subgraph(graph.vertexSet(), graph.edgeSet());
+
         Set<Edge> toRemove;
         if (numThreads > 0) {
+            synchronized(this) {
+                // Remove nodes marked as deleted
+                graph.subgraph(graph.vertexSet());
+            }
             toRemove = new ConcurrentSkipListSet<>();
             parallelUselessEdges(toRemove);
         } else {
