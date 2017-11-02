@@ -22,24 +22,32 @@ public class Preprocessor {
         this.logLevel = level;
     }
 
-    private class Step {
-        private Consumer<Set<Node>> test;
+    private class Step<T extends Unit> {
+        private Consumer<Set<T>> test;
         private String name;
 
-        public Step(Consumer<Set<Node>> test, String name) {
+        Step(Consumer<Set<T>> test, String name) {
             this.name = name;
             this.test = test;
         }
 
-        public int apply(Set<Node> toRemove) {
+        int apply(Set<T> toRemove) {
             toRemove.clear();
             test.accept(toRemove);
             int res = toRemove.size();
 
             if (logLevel > 1) {
-                System.out.println(name + " test: " + res + " nodes to remove.");
+                System.out.println(name + " test: " + res + " units to remove.");
             }
-            toRemove.forEach(graph::removeVertex);
+            for (Unit t : toRemove) {
+                if (t instanceof Node) {
+                    graph.removeVertex((Node) t);
+                }
+                if (t instanceof Edge) {
+                    graph.removeEdge((Edge) t);
+                }
+
+            }
             return res;
         }
     }
@@ -84,11 +92,10 @@ public class Preprocessor {
         return signals.bijection(unit);
     }
 
-    private final Step cns = new Step(this::cns, "cns");
-    private final Step npv2 = new Step(this::npv2, "npv2");
-    private final Step leaves = new Step(this::leaves, "leaves");
-    private final Step npe = new Step(this::uselessEdges, "npe");
-
+    private final Step<Node> cns = new Step<>(this::cns, "cns");
+    private final Step<Node> npv2 = new Step<>(this::npv2, "npv2");
+    private final Step<Node> leaves = new Step<>(this::leaves, "leaves");
+    private final Step<Edge> npe = new Step<>(this::uselessEdges, "npe");
 
     public void preprocess() {
         for (int i = 0; i < 2; i++) {
@@ -110,7 +117,7 @@ public class Preprocessor {
                 primaryNode = v;
             }
         }
-        Step negR = new Step((s) -> negR(primaryNode, primaryNode, new HashSet<>(), s), "negR");
+        Step<Node> negR = new Step<>((s) -> negR(primaryNode, primaryNode, new HashSet<>(), s), "negR");
         if (primaryNode != null) {
             res += negR.apply(toRemove);
             res += leaves.apply(toRemove);
@@ -120,7 +127,8 @@ public class Preprocessor {
         negC();
         // NPE can be called only once
         if (num == 0) {
-            npe.apply(toRemove);
+            Set<Edge> edgesToRemove = numThreads == 0 ? new HashSet<>() : new ConcurrentSkipListSet<>();
+            npe.apply(edgesToRemove);
         }
         res += npv2.apply(toRemove);
         return res;
@@ -305,27 +313,19 @@ public class Preprocessor {
         }
     }
 
-    private void uselessEdges(Set<Node> ignore) {
-
-        Set<Edge> toRemove;
+    private void uselessEdges(Set<Edge> toRemove) {
         if (numThreads > 0) {
-            synchronized(this) {
+            synchronized (this) {
                 // Remove nodes marked as deleted
                 graph.subgraph(graph.vertexSet());
             }
-            toRemove = new ConcurrentSkipListSet<>();
             parallelUselessEdges(toRemove);
         } else {
-            toRemove = new HashSet<>();
             Dijkstra dijkstra = new Dijkstra(graph, signals);
             for (Node u : graph.vertexSet()) {
                 dijkstraIteration(dijkstra, u, toRemove);
             }
         }
-        if (logLevel > 1) {
-            System.out.println("npe test: " + toRemove.size() + " edges to remove.");
-        }
-        toRemove.forEach(graph::removeEdge);
     }
 
     private void parallelUselessEdges(Set<Edge> toRemove) {
