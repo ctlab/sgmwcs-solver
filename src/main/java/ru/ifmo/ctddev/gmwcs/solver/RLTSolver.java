@@ -87,9 +87,9 @@ public class RLTSolver implements RootedSolver {
             initVariables();
             addConstraints();
             addObjective(signals);
-            if (edgePenalty <= 0) {
+//            if (edgePenalty <= 0) {
                 maxSizeConstraints(signals);
-            }
+ //           }
             if (root == null) {
                 breakRootSymmetry();
             } else {
@@ -276,7 +276,7 @@ public class RLTSolver implements RootedSolver {
             vs.add(numEdges);
 
             cplex.addEq(numEdges, edgesSum);
-        } */
+        }*/
 
         IloNumExpr sum = cplex.scalProd(ks.stream().mapToDouble(d -> d).toArray(),
                 vs.toArray(new IloNumVar[vs.size()]));

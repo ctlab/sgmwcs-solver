@@ -27,11 +27,6 @@ public class ComponentSolver implements Solver {
 
     @Override
     public List<Unit> solve(Graph graph, Signals signals) throws SolverException {
-        if (edgePenalty > 0) {
-            for (Edge edge : graph.edgeSet()) {
-                signals.addAndSetWeight(edge, -edgePenalty);
-            }
-        }
         isSolvedToOptimality = true;
         Graph g = new Graph();
         Signals s = new Signals();
@@ -42,6 +37,7 @@ public class ComponentSolver implements Solver {
         if (logLevel > 0) {
             new GraphPrinter(g, s).printGraph("beforePrep.dot");
         }
+        //if (edgePenalty == 0)
         new Preprocessor(g, s, threads, logLevel).preprocess();
         if (logLevel > 0) {
             new GraphPrinter(g, s).printGraph("afterPrep.dot");

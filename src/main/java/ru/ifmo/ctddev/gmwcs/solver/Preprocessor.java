@@ -71,7 +71,6 @@ public class Preprocessor {
         this.numThreads = 0;
     }
 
-
     private double weight(Unit unit) {
         return signals.weight(unit);
     }
@@ -106,7 +105,6 @@ public class Preprocessor {
             if (removed == 0) break;
         }
     }
-
 
     private int iteration(int num) {
         int res = 0;
@@ -171,7 +169,6 @@ public class Preprocessor {
         }
         return safe;
     }
-
 
     private void negC() {
         for (Node v : new ArrayList<>(graph.vertexSet())) {
@@ -256,7 +253,6 @@ public class Preprocessor {
         absorb(main, aux);
         absorb(main, e);
     }
-
 
     private void leaves(Set<Node> toRemove) {
         Map<Node, List<Unit>> toAbsorb = new HashMap<>();

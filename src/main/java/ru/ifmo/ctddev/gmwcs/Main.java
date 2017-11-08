@@ -95,6 +95,9 @@ public class Main {
         try {
             Graph graph = graphIO.read();
             Signals signals = graphIO.getSignals();
+            if (edgePenalty > 0) {
+                signals.addEdgePenalties(-edgePenalty);
+            }
             List<Unit> units = solver.solve(graph, signals);
             System.out.println("Final score: " + Utils.sum(units, signals));
             if (solver.isSolvedToOptimality()) {

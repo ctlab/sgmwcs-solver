@@ -45,13 +45,10 @@ public class Utils {
         for (int i = 0; i < inS.size(); ++i) {
             final int sz = i;
             List<Unit> oldUnits = inS.set(i);
+            outS.addSignal(inS.weight(i));
             oldUnits.forEach(u -> {
                 Unit nu = oldToNew.get(u);
-                if (outS.size() < sz + 1) {
-                    outS.addAndSetWeight(nu, inS.weight(nu));
-                } else {
-                    outS.add(nu, sz);
-                }
+                outS.add(nu, sz);
             });
         }
     }
