@@ -326,11 +326,10 @@ public class Preprocessor {
 
     private void parallelUselessEdges(Set<Edge> toRemove) {
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        Signals neg = signals;
         for (Node u : graph.vertexSet()) {
             executor.execute(
                     () -> {
-                        Dijkstra dijkstra = new Dijkstra(graph, neg);
+                        Dijkstra dijkstra = new Dijkstra(graph, signals);
                         dijkstraIteration(dijkstra, u, toRemove);
                     }
             );
@@ -371,8 +370,9 @@ public class Preprocessor {
             if (delta.size() <= maxK && delta.size() >= 2) {
                 nodes.remove(v);
                 boolean res = new Dijkstra(
-                        graph.subgraph(nodes), signals)
-                        .solveClique(signals.minSum(v), new HashSet<>(delta));
+                        graph.subgraph(nodes), signals
+                ).solveClique(signals.minSum(v), new HashSet<>(delta)
+                );
                 if (res) {
                     toRemove.add(v);
                 }

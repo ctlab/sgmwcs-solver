@@ -6,7 +6,6 @@ import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 public class ComponentSolver implements Solver {
     public final int threshold;
@@ -15,14 +14,12 @@ public class ComponentSolver implements Solver {
     private boolean isSolvedToOptimality;
     private int logLevel;
     private int threads;
-    private double edgePenalty;
 
     public ComponentSolver(int threshold) {
         this.threshold = threshold;
         externLB = 0.0;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
-        edgePenalty = 0;
     }
 
     @Override
@@ -71,7 +68,6 @@ public class ComponentSolver implements Solver {
             RLTSolver solver = new RLTSolver();
             solver.setSharedLB(lb);
             solver.setTimeLimit(tl);
-            solver.setEdgePenalty(edgePenalty);
             solver.setLogLevel(logLevel);
             Set<Unit> subset = new HashSet<>(subgraph.vertexSet());
             subset.addAll(subgraph.edgeSet());
@@ -186,10 +182,6 @@ public class ComponentSolver implements Solver {
     @Override
     public void setTimeLimit(TimeLimit tl) {
         this.tl = tl;
-    }
-
-    public void setEdgePenalty(double edgePenalty) {
-        this.edgePenalty = edgePenalty;
     }
 
     @Override
