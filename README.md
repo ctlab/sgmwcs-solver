@@ -32,17 +32,17 @@ And jar file with name "sgmwcs-solver.jar" will appear in the "target" directory
 Running
 =======
 
-To run the program you should set jvm parameter java.library.path to directory of CPLEX binaries like that:
+To run the program you should set jvm parameter java.library.path to directory of CPLEX binaries and set parameter
+-classpath to program jar and cplex.jar like in the example below.
 
-    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_linux -jar sgmwcs-solver.jar
+    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_linux/ -cp /opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar:sgmwcs-solver.jar ru.ifmo.ctddev.gmwcs.Main
 
 See more help by using flag -h.
 
-Tip: you can put the file `libcplex%version%.so` to the one of the predefined in java.library.path 
-directories(e.g. `/usr/lib`). Then to run the program you can simply type:
+Tip: you can put the file `libcplex%version%.so` or symbolic link to it in the one of the predefined 
+java.library.path directories(e.g. `/usr/lib`). In that case it's no longer necessary to point out path to CPLEX
+binaries.
  
-    java -jar sgmwcs-solver.jar
-
 Problem
 =========
 
@@ -99,4 +99,4 @@ Red units in graph below - solution.
 Running the example
 ==============
 
-    java -Djava.library.path=PATH_TO_CPLEX -jar signal.jar -n nodes -e edges -s signals
+    java -cp /opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar:sgmwcs-solver.jar ru.ifmo.ctddev.gmwcs.Main -n nodes -e edges -s signals
