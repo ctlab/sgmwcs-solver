@@ -37,7 +37,6 @@ public class ComponentSolver implements Solver {
         if (logLevel > 0) {
             new GraphPrinter(g, s).printGraph("beforePrep.dot");
         }
-        //if (edgePenalty == 0)
         new Preprocessor(g, s, threads, logLevel).preprocess();
         if (logLevel > 0) {
             new GraphPrinter(g, s).printGraph("afterPrep.dot");

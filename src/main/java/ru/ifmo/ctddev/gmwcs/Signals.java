@@ -207,7 +207,7 @@ public class Signals {
             if (unit instanceof Edge) {
                 if (bijection(unit)) {
                     int set = unitSets(unit).get(0);
-                    setWeight(set, weight(set) + weight)
+                    setWeight(set, weight(set) + weight);
                 } else {
                     appendSignalToUnit(unit, weight);
                 }

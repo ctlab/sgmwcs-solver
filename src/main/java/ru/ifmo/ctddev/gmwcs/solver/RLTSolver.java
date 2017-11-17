@@ -87,9 +87,7 @@ public class RLTSolver implements RootedSolver {
             initVariables();
             addConstraints();
             addObjective(signals);
-//            if (edgePenalty <= 0) {
-                maxSizeConstraints(signals);
- //           }
+            maxSizeConstraints(signals);
             if (root == null) {
                 breakRootSymmetry();
             } else {
@@ -266,7 +264,6 @@ public class RLTSolver implements RootedSolver {
                 cplex.addGe(cplex.prod(vars.length, x), cplex.sum(vars));
             }
         }
-
         /*if (edgePenalty > 0) {
             IloNumVar numEdges = cplex.numVar(0, Double.MAX_VALUE);
 
