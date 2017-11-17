@@ -41,14 +41,14 @@ public class GMWCSTest {
     }
 
     private List<TestCase> tests;
-    private Solver solver;
+    private ComponentSolver solver;
     private ReferenceSolver referenceSolver;
     private RLTSolver rltSolver;
     private Random random;
 
     public GMWCSTest() {
         random = new Random(SEED);
-        this.solver = new ComponentSolver(3);
+        solver = new ComponentSolver(3, false);
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
         rltSolver = new RLTSolver();
@@ -111,9 +111,11 @@ public class GMWCSTest {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
         for (int i = 0; i < allTests; i++) {
             TestCase test = tests.get(i);
-            if (random.nextBoolean())
-                test.signals().addEdgePenalties(-random.nextInt(5));
+            if (random.nextBoolean()) {
+                addPenalties(test, random.nextInt(10));
+            }
             check(test, i, referenceSolver);
+            solver.setEdgePenalty(0);
         }
         System.out.println();
     }
@@ -121,6 +123,7 @@ public class GMWCSTest {
     @Test
     public void test03_random() {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
+        solver.setEdgePenalty(0);
         for (int i = allTests; i < tests.size(); i++) {
             TestCase test = tests.get(i);
             check(test, i, referenceSolver);
@@ -135,7 +138,7 @@ public class GMWCSTest {
         for (int i = 0; i < tests.size(); i++) {
             TestCase test = tests.get(i);
             if (random.nextBoolean())
-                test.signals().addEdgePenalties(-random.nextInt(10));
+                addPenalties(test, random.nextInt(10));
             check(test, i, rltSolver);
         }
     }
@@ -278,5 +281,9 @@ public class GMWCSTest {
             graph.addEdge(nodes[u], nodes[v], edge);
             edges.put(edge, weight);
         }
+    }
+    private void addPenalties(TestCase test, double pen){
+        solver.setEdgePenalty(pen);
+        test.signals().addEdgePenalties(-pen);
     }
 }

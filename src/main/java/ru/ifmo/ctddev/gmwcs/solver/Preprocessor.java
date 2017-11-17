@@ -18,6 +18,8 @@ public class Preprocessor {
 
     private int logLevel = 0;
 
+    private boolean edgePenalty;
+
     public void setLogLevel(int level) {
         this.logLevel = level;
     }
@@ -59,10 +61,15 @@ public class Preprocessor {
 
     private Node primaryNode;
 
-    public Preprocessor(Graph graph, Signals signals, int numThreads, int logLevel) {
+    public Preprocessor(Graph graph,
+                        Signals signals,
+                        int numThreads,
+                        int logLevel,
+                        boolean edgePenalty) {
         this(graph, signals);
         this.numThreads = numThreads - 1;
         this.logLevel = logLevel;
+        this.edgePenalty = edgePenalty;
     }
 
     public Preprocessor(Graph graph, Signals signals) {
@@ -115,9 +122,11 @@ public class Preprocessor {
                 primaryNode = v;
             }
         }
-        Step<Node> negR = new Step<>((s) -> negR(primaryNode, primaryNode, new HashSet<>(), s), "negR");
         if (primaryNode != null) {
-            res += negR.apply(toRemove);
+            if (!edgePenalty)
+                new Step<Node>(s ->
+                        negR(primaryNode, primaryNode, new HashSet<>(), s)
+                        , "negR").apply(toRemove);
             res += leaves.apply(toRemove);
             res += cns.apply(toRemove);
         }

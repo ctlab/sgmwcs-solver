@@ -15,8 +15,18 @@ public class ComponentSolver implements Solver {
     private int logLevel;
     private int threads;
 
-    public ComponentSolver(int threshold) {
+    private boolean isEdgePenalty;
+
+    public void setEdgePenalty(double edgePenalty) {
+        if (edgePenalty < 0) {
+            throw new IllegalArgumentException("Edge penalty must be >= 0");
+        }
+        isEdgePenalty = edgePenalty > 0;
+    }
+
+    public ComponentSolver(int threshold, boolean isEdgePenalty) {
         this.threshold = threshold;
+        this.isEdgePenalty = isEdgePenalty;
         externLB = 0.0;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
@@ -34,7 +44,7 @@ public class ComponentSolver implements Solver {
         if (logLevel > 0) {
             new GraphPrinter(g, s).printGraph("beforePrep.dot");
         }
-        new Preprocessor(g, s, threads, logLevel).preprocess();
+        new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess();
         if (logLevel > 0) {
             new GraphPrinter(g, s).printGraph("afterPrep.dot");
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
@@ -58,7 +68,8 @@ public class ComponentSolver implements Solver {
             Set<Node> component = components.poll();
             Graph subgraph = graph.subgraph(component);
             Node root = null;
-            double timeRemains = tl.getRemainingTime() - (System.currentTimeMillis() - timeBefore) / 1000.0;
+            double timeRemains = tl.getRemainingTime()
+                    - (System.currentTimeMillis() - timeBefore) / 1000.0;
             if (component.size() >= threshold && timeRemains > 0) {
                 root = getRoot(subgraph, new Blocks(subgraph));
                 if (root != null) {
@@ -71,7 +82,8 @@ public class ComponentSolver implements Solver {
             solver.setLogLevel(logLevel);
             Set<Unit> subset = new HashSet<>(subgraph.vertexSet());
             subset.addAll(subgraph.edgeSet());
-            Worker worker = new Worker(subgraph, root, new Signals(signals, subset), solver, timeBefore);
+            Worker worker = new Worker(subgraph, root,
+                    new Signals(signals, subset), solver, timeBefore);
             executor.execute(worker);
             memorized.add(worker);
         }

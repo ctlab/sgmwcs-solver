@@ -86,7 +86,7 @@ public class Main {
             System.err.println("Edge penalty can't be negative");
             System.exit(1);
         }
-        ComponentSolver solver = new ComponentSolver(threshold);
+        ComponentSolver solver = new ComponentSolver(threshold, edgePenalty > 0);
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
         solver.setLogLevel(1);
@@ -97,6 +97,7 @@ public class Main {
             if (edgePenalty > 0) {
                 signals.addEdgePenalties(-edgePenalty);
             }
+            solver.setEdgePenalty(edgePenalty);
             List<Unit> units = solver.solve(graph, signals);
             System.out.println("Final score: " + Utils.sum(units, signals));
             if (solver.isSolvedToOptimality()) {
