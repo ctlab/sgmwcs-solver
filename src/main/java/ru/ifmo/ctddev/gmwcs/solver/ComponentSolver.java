@@ -49,7 +49,6 @@ public class ComponentSolver implements Solver {
             new GraphPrinter(g, s).printGraph("afterPrep.dot");
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
             System.out.println("and " + (edgesBefore - g.edgeSet().size()) + " edges.");
-        }
         isSolvedToOptimality = true;
         if (g.vertexSet().size() == 0) {
             return null;
@@ -174,8 +173,7 @@ public class ComponentSolver implements Solver {
     }
 
     private void addComponents(Graph graph, Node root, PriorityQueue<Set<Node>> components) {
-        Graph copy = graph.subgraph(graph.vertexSet());
-        graph = copy;
+        graph = graph.subgraph(graph.vertexSet());
         graph.removeVertex(root);
         components.addAll(graph.connectedSets());
     }

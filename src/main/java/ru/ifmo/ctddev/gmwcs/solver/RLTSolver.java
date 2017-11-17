@@ -245,7 +245,7 @@ public class RLTSolver implements RootedSolver {
             if (vars.length == 0 || weight == 0.0) {
                 continue;
             }
-            ks.add(signals.weight(i));
+            ks.add(weight);
             if (vars.length == 1) {
                 vs.add(vars[0]);
                 continue;
