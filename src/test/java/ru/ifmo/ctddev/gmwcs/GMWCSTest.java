@@ -41,14 +41,14 @@ public class GMWCSTest {
     }
 
     private List<TestCase> tests;
-    private Solver solver;
+    private ComponentSolver solver;
     private ReferenceSolver referenceSolver;
     private RLTSolver rltSolver;
     private Random random;
 
     public GMWCSTest() {
         random = new Random(SEED);
-        this.solver = new ComponentSolver(3);
+        solver = new ComponentSolver(3, false);
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
         rltSolver = new RLTSolver();
@@ -111,7 +111,11 @@ public class GMWCSTest {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
         for (int i = 0; i < allTests; i++) {
             TestCase test = tests.get(i);
+            if (random.nextBoolean()) {
+                addPenalties(test, random.nextInt(10));
+            }
             check(test, i, referenceSolver);
+            solver.setEdgePenalty(0);
         }
         System.out.println();
     }
@@ -119,6 +123,7 @@ public class GMWCSTest {
     @Test
     public void test03_random() {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
+        solver.setEdgePenalty(0);
         for (int i = allTests; i < tests.size(); i++) {
             TestCase test = tests.get(i);
             check(test, i, referenceSolver);
@@ -132,6 +137,8 @@ public class GMWCSTest {
         makeConnectedGraphs(RLT_MAX_SIZE, RLT_MAX_SIZE);
         for (int i = 0; i < tests.size(); i++) {
             TestCase test = tests.get(i);
+            if (random.nextBoolean())
+                addPenalties(test, random.nextInt(10));
             check(test, i, rltSolver);
         }
     }
@@ -160,7 +167,7 @@ public class GMWCSTest {
     private void reportError(TestCase test, List<Unit> expected, int testNum) {
         try (PrintWriter nodeWriter = new PrintWriter("nodes_" + testNum + ".error");
              PrintWriter edgeWriter = new PrintWriter("edges_" + testNum + ".error");
-             PrintWriter signalWriter = new PrintWriter("signals" + testNum + ".error")) {
+             PrintWriter signalWriter = new PrintWriter("signals_" + testNum + ".error")) {
             Graph g = test.graph();
             Signals s = test.signals();
             for (Node v : g.vertexSet()) {
@@ -274,5 +281,9 @@ public class GMWCSTest {
             graph.addEdge(nodes[u], nodes[v], edge);
             edges.put(edge, weight);
         }
+    }
+    private void addPenalties(TestCase test, double pen){
+        solver.setEdgePenalty(pen);
+        test.signals().addEdgePenalties(-pen);
     }
 }

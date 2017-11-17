@@ -1,5 +1,6 @@
 package ru.ifmo.ctddev.gmwcs;
 
+import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
@@ -30,7 +31,6 @@ public class Signals {
         }
         return s;
     }
-
 
     public Signals(Signals signals, Set<Unit> subset) {
         this();
@@ -63,7 +63,6 @@ public class Signals {
         return weights.get(num).getAsDouble();
     }
 
-
     public double minSum(Collection<? extends Unit> units) {
         return minSum(units.toArray(new Unit[0]));
     }
@@ -85,7 +84,6 @@ public class Signals {
                 .mapToDouble(this::weight)
                 .filter(pred::test).sum();
     }
-
 
     public double weight(Unit unit) {
         return unitsSets.get(unit).stream().mapToDouble(this::weight).sum();
@@ -202,6 +200,30 @@ public class Signals {
         int num = add(unit);
         setWeight(num, weight);
         return num;
+    }
+
+    public void addEdgePenalties(double weight) {
+        for (Unit unit : unitSets().keySet()) {
+            if (unit instanceof Edge) {
+                if (bijection(unit)) {
+                    int signal = unitSets(unit).get(0);
+                    setWeight(signal, weight(signal) + weight);
+                } else {
+                    appendSignalToUnit(unit, weight);
+                }
+            }
+        }
+    }
+
+    private void appendSignalToUnit(Unit unit, double weight) {
+        int sig = addSignal(weight);
+        add(unit, sig);
+    }
+
+    public int addSignal(double weight) {
+        sets.add(new HashSet<>());
+        weights.add(OptionalDouble.of(weight));
+        return weights.size() - 1;
     }
 
     public void setWeight(int set, double weight) {
