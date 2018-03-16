@@ -276,9 +276,7 @@ public class Preprocessor {
                     && minSum == signals.minSum(node)
                     && minSum == signals.minSum(oppos)
                     && graph.degreeOf(oppos) > 1) {
-                toAbsorb.putIfAbsent(oppos, new ArrayList<>());
-                toAbsorb.get(oppos).add(node);
-                toAbsorb.get(oppos).add(edge);
+                toAbsorb.putIfAbsent(oppos, Arrays.asList(node, edge));//new ArrayList<>());
                 toRemove.add(node);
             } else if (negative(edge) && negative(node)) {
                 toRemove.add(node);
@@ -290,16 +288,18 @@ public class Preprocessor {
         }
     }
 
+    private boolean positiveEdge(Node u, Node v) {
+        return graph.getAllEdges(u, v).stream().anyMatch(this::positive);
+    }
+
     private void cns(Set<Node> toRemove) {
         Set<Node> vertexSet = graph.vertexSet();
         Set<Node> w;
         for (Node v : vertexSet) {
             w = graph.neighborListOf(v).stream()
                     .filter(n -> positive(n)
-                            && graph.getAllEdges(v, n)
-                            .stream()
-                            .anyMatch(this::positive))
-                    .collect(Collectors.toSet());
+                            && positiveEdge(v, n)
+                    ).collect(Collectors.toSet());
             w.add(v);
             if (toRemove.contains(v)) continue;
             for (Node n : w) {
@@ -310,7 +310,7 @@ public class Preprocessor {
                     double bestSum = signals.maxSum(graph.edgesOf(r)) + rWeight;
                     if (!w.contains(r) && rWeight <= signals.minSum(v)
                             && (signals.maxSum(graph.edgesOf(r)) == 0
-                            || bestSum <= signals.minSum(v) && bijection(r))
+                            || signals.minSum(v) >= bestSum && bijection(r))
                             && w.containsAll(graph.neighborListOf(r)))
                         toRemove.add(r);
                 }

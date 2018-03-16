@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class ComponentSolver implements Solver {
-    public final int threshold;
+    private final int threshold;
     private TimeLimit tl;
     private Double externLB;
     private boolean isSolvedToOptimality;

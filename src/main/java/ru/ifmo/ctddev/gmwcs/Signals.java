@@ -123,6 +123,10 @@ public class Signals {
         return result;
     }
 
+    public List<Integer> unitSets(Unit... units) {
+        return unitSets(Arrays.asList(units));
+    }
+
     public List<Integer> unitSets(Collection<? extends Unit> units) {
         return unitSets(units.stream()).collect(Collectors.toList());
     }
@@ -148,10 +152,17 @@ public class Signals {
         return ss.stream().allMatch(s -> set(s).size() == 1);
     }
 
+    public List<Integer> positiveUnitSets(Unit... units) {
+        return positiveUnitSets(Arrays.asList(units));
+    }
+
     public List<Integer> positiveUnitSets(Collection<? extends Unit> units) {
         return unitSets(units.stream()).filter(u -> weight(u) >= 0).collect(Collectors.toList());
     }
 
+    public List<Integer> negativeUnitSets(Unit... units) {
+        return negativeUnitSets(Arrays.asList(units));
+    }
 
     public List<Integer> negativeUnitSets(Collection<? extends Unit> units) {
         return unitSets(units.stream()).filter(u -> weight(u) < 0).collect(Collectors.toList());

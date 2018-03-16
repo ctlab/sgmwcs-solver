@@ -365,6 +365,30 @@ public class RLTSolver implements RootedSolver {
         this.lb = lb;
     }
 
+    private Map<Edge, Double> makeHeuristicWeights() {
+        Map<Edge, Double> weights = new HashMap<>();
+        for (Edge e : graph.edgeSet()) {
+            Node u = graph.getEdgeSource(e), v = graph.getEdgeTarget(e);
+            double edgeMin = signals.minSum(e), edgeMax = signals.maxSum(e);
+            List<Integer> nns = signals.negativeUnitSets(u, v);
+            List<Integer> ens = signals.negativeUnitSets(e);
+            List<Integer> nps = signals.positiveUnitSets(u, v);
+            List<Integer> eps = signals.positiveUnitSets(e);
+            double nodesMin = signals.minSum(e, u, v), nodesMax = signals.maxSum(e, u, v);
+            if (edgeMin == 0 || nns.containsAll(ens)) {
+                weights.put(e, 0.0); // Edge is non-negative so it has the highest priority
+            } else if (edgeMax > 0 && !nps.containsAll(eps)) {
+                eps.removeAll(nps); //Edge contains both negative and positive signals
+                weights.put(e, 1.0 / signals.weightSum(eps));
+            } else {
+                ens.removeAll(nns); //Edge contains only negative signals
+                weights.put(e, -signals.weightSum(ens));
+            }
+        }
+        return weights;
+    }
+
+
     private class MIPCallback extends IloCplex.IncumbentCallback {
         private boolean silence;
 
