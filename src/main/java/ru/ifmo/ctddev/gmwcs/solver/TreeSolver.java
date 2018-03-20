@@ -18,35 +18,20 @@ public class TreeSolver {
 
     class Solution {
         Set<Unit> units;
-        Set<Integer> sets;
-        private double sum = 0;
 
         Solution() {
-            this.units= Collections.emptySet();
-            this.sets = new HashSet<>();
+            this.units = Collections.emptySet();
+        }
+
+        Set<Integer> sets() {
+            return s.unitSets(units);
         }
 
         Solution(Set<Unit> units) {
             this.units = units;
-            this.sets = new HashSet<>(s.unitSets(units));
-            sum = s.weightSum(sets);
         }
 
-        void addUnits(Set<? extends Unit> us) {
-            units.addAll(us);
-            for (int set: s.unitSets(us)) {
-                if (!sets.contains(set)) {
-                  sets.add(set);
-                  sum += s.weight(set);
-                }
-            }
-        }
-
-        double sum() {
-            return sum;
-        }
     }
-
 
     private final Graph g;
     private final Signals s;
@@ -67,27 +52,33 @@ public class TreeSolver {
         this.s = s;
     }
 
-    private Solution solve(Node root, Node parent, Set<Integer> rootSets) {
+    public Solution solveRooted(Node root) {
+        return solve(root, null, Collections.emptySet());
+    }
+
+    private Solution solve(Node root, Node parent, Set<Integer> parentSets) {
         List<Node> nodes = g.neighborListOf(root);
         assert (parent == null || nodes.contains(parent));
-        Solution single = new Solution(Collections.singleton(root));
-        Solution sol = new Solution();
+        Solution nonEmpty = new Solution(Collections.singleton(root));
+        Solution empty = new Solution();
+        Set<Integer> rootSets = new HashSet<>(parentSets);
+        rootSets.addAll(s.unitSets(root));
         if (parent != null) {
             nodes.remove(parent);
+            rootSets.addAll(s.unitSets(g.getEdge(root, parent)));
         }
-        if (nodes.isEmpty()) {
-            if (s.minSum(root) < 0 && rootSets.containsAll(single.sets)) {
-                return sol;
-            } else {
-                return single;
-            }
+        if (nodes.isEmpty()
+                && s.minSum(root) < 0
+                && parentSets.containsAll(s.positiveUnitSets(root))) {
+            return empty;
         } else for (Node node : nodes) {
-            double sum = s.weightSum(sol.sets);
-            Set<Integer> nodeSets = new HashSet<>(s.unitSets(node));
-            nodeSets.addAll(rootSets);
-            Solution childSol = solve(node, root, nodeSets);
+            Solution childSol = solve(node, root, rootSets);
+            childSol.sets().removeAll(rootSets);
+            if (s.weightSum(childSol.sets()) >= 0) {
+                nonEmpty.units.addAll(childSol.units);
+                rootSets.addAll(childSol.sets());
+            }
         }
-        return sol;
-
+        return nonEmpty;
     }
 }

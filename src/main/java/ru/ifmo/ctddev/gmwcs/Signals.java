@@ -123,12 +123,12 @@ public class Signals {
         return result;
     }
 
-    public List<Integer> unitSets(Unit... units) {
+    public Set<Integer> unitSets(Unit... units) {
         return unitSets(Arrays.asList(units));
     }
 
-    public List<Integer> unitSets(Collection<? extends Unit> units) {
-        return unitSets(units.stream()).collect(Collectors.toList());
+    public Set<Integer> unitSets(Collection<? extends Unit> units) {
+        return unitSets(units.stream()).collect(Collectors.toSet());
     }
 
     public double weightSum(Collection<Integer> signals) {
@@ -137,14 +137,13 @@ public class Signals {
 
     public List<Integer> positiveUnitSets(Collection<? extends Unit> units, boolean distinct) {
         if (distinct) {
-            return positiveUnitSets(units);
+            return unitSets(units.stream()).collect(Collectors.toList());
         } else {
             return units.stream()
                     .map(this::unitSets)
                     .flatMap(Collection::stream).filter(u -> weight(u) >= 0)
                     .collect(Collectors.toList());
         }
-
     }
 
     public boolean bijection(Unit unit) {
@@ -152,27 +151,27 @@ public class Signals {
         return ss.stream().allMatch(s -> set(s).size() == 1);
     }
 
-    public List<Integer> positiveUnitSets(Unit... units) {
+    public Set<Integer> positiveUnitSets(Unit... units) {
         return positiveUnitSets(Arrays.asList(units));
     }
 
-    public List<Integer> positiveUnitSets(Collection<? extends Unit> units) {
-        return unitSets(units.stream()).filter(u -> weight(u) >= 0).collect(Collectors.toList());
+    public Set<Integer> positiveUnitSets(Collection<? extends Unit> units) {
+        return unitSets(units.stream()).filter(u -> weight(u) >= 0).collect(Collectors.toSet());
     }
 
-    public List<Integer> negativeUnitSets(Unit... units) {
+    public Set<Integer> negativeUnitSets(Unit... units) {
         return negativeUnitSets(Arrays.asList(units));
     }
 
-    public List<Integer> negativeUnitSets(Collection<? extends Unit> units) {
-        return unitSets(units.stream()).filter(u -> weight(u) < 0).collect(Collectors.toList());
+    public Set<Integer> negativeUnitSets(Collection<? extends Unit> units) {
+        return unitSets(units.stream()).filter(u -> weight(u) < 0).collect(Collectors.toSet());
     }
 
-    public List<Integer> negativeUnitSets(Unit unit) {
+    public Set<Integer> negativeUnitSets(Unit unit) {
         return negativeUnitSets(Collections.singletonList(unit));
     }
 
-    public List<Integer> positiveUnitSets(Unit unit) {
+    public Set<Integer> positiveUnitSets(Unit unit) {
         return positiveUnitSets(Collections.singletonList(unit));
     }
 
