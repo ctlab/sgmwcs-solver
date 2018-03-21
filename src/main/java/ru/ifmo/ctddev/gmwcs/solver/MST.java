@@ -11,7 +11,6 @@ public class MST {
     private boolean solved = false;
     private double res;
 
-
     public MST(Set<Node> nodes, Map<Node, Map<Node, Double>> weights) {
         this.nodes = nodes;
         this.weights = weights;
@@ -50,6 +49,5 @@ public class MST {
         }
         return res;
     }
-
 
 }

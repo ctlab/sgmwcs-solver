@@ -370,10 +370,10 @@ public class RLTSolver implements RootedSolver {
         for (Edge e : graph.edgeSet()) {
             Node u = graph.getEdgeSource(e), v = graph.getEdgeTarget(e);
             double edgeMin = signals.minSum(e), edgeMax = signals.maxSum(e);
-            List<Integer> nns = signals.negativeUnitSets(u, v);
-            List<Integer> ens = signals.negativeUnitSets(e);
-            List<Integer> nps = signals.positiveUnitSets(u, v);
-            List<Integer> eps = signals.positiveUnitSets(e);
+            Set<Integer> nns = signals.negativeUnitSets(u, v);
+            Set<Integer> ens = signals.negativeUnitSets(e);
+            Set<Integer> nps = signals.positiveUnitSets(u, v);
+            Set<Integer> eps = signals.positiveUnitSets(e);
             double nodesMin = signals.minSum(e, u, v), nodesMax = signals.maxSum(e, u, v);
             if (edgeMin == 0 || nns.containsAll(ens)) {
                 weights.put(e, 0.0); // Edge is non-negative so it has the highest priority

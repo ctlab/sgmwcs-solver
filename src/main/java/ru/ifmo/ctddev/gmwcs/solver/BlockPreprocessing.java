@@ -51,9 +51,9 @@ public class BlockPreprocessing {
         Graph subgraph = graph.subgraph(nodes);
         Set<Unit> units = new HashSet<>(subgraph.edgeSet());
         units.addAll(nodes);
-        List<Integer> posSignals = signals.positiveUnitSets(units, false);
-        Collections.sort(posSignals);
-        double sum = signals.weightSum(posSignals);
+        List<Integer> posSets = signals.positiveUnitSets(units, false);
+        Collections.sort(posSets);
+        double sum = signals.weightSum(posSets);
         Dijkstra dk = new Dijkstra(subgraph, signals);
         dk.solve(parent);
         List<Map.Entry<Node, Double>> distances = new ArrayList<>(dk.distances().entrySet());
@@ -64,15 +64,15 @@ public class BlockPreprocessing {
             Node node = distances.get(i).getKey();
             if (!signals.bijection(node)) continue;
             Set<Edge> edges = subgraph.edgesOf(node);
-            List<Integer> nodePos = signals.positiveUnitSets(node);
+            List<Integer> nodePos = signals.positiveUnitSets(Collections.singleton(node), true);
             nodePos.addAll(signals.positiveUnitSets(edges));
             for (int sig : nodePos) {
-                int pos = Collections.binarySearch(posSignals, sig);
+                int pos = Collections.binarySearch(posSets, sig);
                 if (pos >= 0) {
-                    posSignals.remove(pos);
+                    posSets.remove(pos);
                     //Don't decrease sum if more than 1 unit contains this signal
-                    if (pos < posSignals.size() && posSignals.get(pos) == sig
-                            || pos > 0 && posSignals.get(pos - 1) == sig) {
+                    if (pos < posSets.size() && posSets.get(pos) == sig
+                            || pos > 0 && posSets.get(pos - 1) == sig) {
                         continue;
                     }
                     sum -= signals.weight(sig);
@@ -83,5 +83,4 @@ public class BlockPreprocessing {
         }
         return nodes;
     }
-
 }

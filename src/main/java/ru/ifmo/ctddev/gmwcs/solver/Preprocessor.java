@@ -141,7 +141,6 @@ public class Preprocessor {
         return res;
     }
 
-
     private boolean negR(Node v, Node r, Set<Node> vis, Set<Node> toRemove) {
         boolean safe = false;
         vis.add(v);
@@ -270,13 +269,14 @@ public class Preprocessor {
             if (edges.size() != 1
                     || weight(node) == weight(primaryNode)) continue;
             Edge edge = edges.stream().findAny().orElse(null);
-            Node oppos = graph.getOppositeVertex(node, edge);
-            double minSum = signals.minSum(edge, node, oppos);
+            Node opposite = graph.getOppositeVertex(node, edge);
+            double minSum = signals.minSum(edge, node, opposite);
             if (minSum == signals.minSum(edge)
                     && minSum == signals.minSum(node)
-                    && minSum == signals.minSum(oppos)
-                    && graph.degreeOf(oppos) > 1) {
-                toAbsorb.putIfAbsent(oppos, Arrays.asList(node, edge));//new ArrayList<>());
+                    && minSum == signals.minSum(opposite)
+                    && graph.degreeOf(opposite) > 1) {
+                toAbsorb.putIfAbsent(opposite, new ArrayList<>());
+                toAbsorb.get(opposite).addAll(Arrays.asList(node, edge));
                 toRemove.add(node);
             } else if (negative(edge) && negative(node)) {
                 toRemove.add(node);

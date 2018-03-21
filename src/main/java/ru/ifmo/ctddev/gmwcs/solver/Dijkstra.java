@@ -11,16 +11,11 @@ class Dijkstra {
     private Map<Node, Double> d;
     private Map<Unit, Set<Integer>> p;
     private Map<Set<Integer>, Double> cache;
-    private Map<Unit, List<Integer>> unitSetHash;
 
     private Set<Integer> currentSignals;
 
     private double currentWeight() {
         return cache.computeIfAbsent(currentSignals, s -> -signals.weightSum(s));
-    }
-
-    private List<Integer> negativeUnitSets(Unit unit) {
-        return unitSetHash.computeIfAbsent(unit, u -> signals.negativeUnitSets(u));
     }
 
     private double weight(Unit unit) {
@@ -50,17 +45,18 @@ class Dijkstra {
         PriorityQueue<Node> q = new PriorityQueue<>(Comparator.comparingDouble(this::weight));
         cache = new HashMap<>();
         currentSignals = new HashSet<>();
-        unitSetHash = new HashMap<>();
         q.add(u);
         d.put(u, 0.0);
         p.put(u, new HashSet<>());
         Node cur;
-        List<Integer> negE, negN, addedE = new ArrayList<>(), addedN = new ArrayList<>();
+        Set<Integer> negE, negN;
+        List<Integer> addedE = new ArrayList<>(), addedN = new ArrayList<>();
         while ((cur = q.poll()) != null) {
             currentSignals = p.getOrDefault(cur, new HashSet<>());
             double cw = currentWeight();
             for (Node node : graph.neighborListOf(cur)) {
-                negN = negativeUnitSets(node);
+                Collections.singleton(node);
+                negN = signals.negativeUnitSets(node);
                 double sumN = 0;
                 for (int i : negN) {
                     if (currentSignals.add(i)) {
@@ -70,7 +66,7 @@ class Dijkstra {
                 }
                 cw += sumN;
                 for (Edge edge : graph.getAllEdges(node, cur)) {
-                    negE = negativeUnitSets(edge);
+                    negE = signals.negativeUnitSets(edge);
                     double sumE = 0;
                     for (int i : negE) {
                         if (currentSignals.add(i)) {

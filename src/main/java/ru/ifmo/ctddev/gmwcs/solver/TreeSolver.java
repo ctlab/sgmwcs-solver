@@ -1,6 +1,5 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import apple.laf.JRSUIUtils;
 import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;

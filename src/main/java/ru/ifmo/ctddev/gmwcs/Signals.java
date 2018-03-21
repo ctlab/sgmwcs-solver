@@ -80,7 +80,7 @@ public class Signals {
     }
 
     private double sumByPredicate(Unit[] units, Predicate<Double> pred) {
-        return unitSets(Arrays.stream(units))
+        return unitSets(Arrays.stream(units), true)
                 .mapToDouble(this::weight)
                 .filter(pred::test).sum();
     }
@@ -123,28 +123,11 @@ public class Signals {
         return result;
     }
 
-    public Set<Integer> unitSets(Unit... units) {
-        return unitSets(Arrays.asList(units));
+    public double weightSum(Collection<Integer> sets) {
+        return sets.stream().distinct().mapToDouble(this::weight).sum();
     }
 
-    public Set<Integer> unitSets(Collection<? extends Unit> units) {
-        return unitSets(units.stream()).collect(Collectors.toSet());
-    }
 
-    public double weightSum(Collection<Integer> signals) {
-        return signals.stream().distinct().mapToDouble(this::weight).sum();
-    }
-
-    public List<Integer> positiveUnitSets(Collection<? extends Unit> units, boolean distinct) {
-        if (distinct) {
-            return unitSets(units.stream()).collect(Collectors.toList());
-        } else {
-            return units.stream()
-                    .map(this::unitSets)
-                    .flatMap(Collection::stream).filter(u -> weight(u) >= 0)
-                    .collect(Collectors.toList());
-        }
-    }
 
     public boolean bijection(Unit unit) {
         List<Integer> ss = unitSets(unit);
@@ -156,7 +139,15 @@ public class Signals {
     }
 
     public Set<Integer> positiveUnitSets(Collection<? extends Unit> units) {
-        return unitSets(units.stream()).filter(u -> weight(u) >= 0).collect(Collectors.toSet());
+        return unitSets(units.stream(), true).filter(u -> weight(u) >= 0).collect(Collectors.toSet());
+    }
+
+    public Set<Integer> positiveUnitSets(Unit unit) {
+        return positiveUnitSets(Collections.singletonList(unit));
+    }
+
+    public List<Integer> positiveUnitSets(Collection<? extends Unit> units, boolean distinct) {
+        return unitSets(units.stream(), distinct).filter(s -> weight(s) > 0).collect(Collectors.toList());
     }
 
     public Set<Integer> negativeUnitSets(Unit... units) {
@@ -164,25 +155,36 @@ public class Signals {
     }
 
     public Set<Integer> negativeUnitSets(Collection<? extends Unit> units) {
-        return unitSets(units.stream()).filter(u -> weight(u) < 0).collect(Collectors.toSet());
+        return unitSets(units.stream(), true).filter(u -> weight(u) < 0).collect(Collectors.toSet());
     }
 
     public Set<Integer> negativeUnitSets(Unit unit) {
         return negativeUnitSets(Collections.singletonList(unit));
     }
 
-    public Set<Integer> positiveUnitSets(Unit unit) {
-        return positiveUnitSets(Collections.singletonList(unit));
+    public List<Integer> negativeUnitSets(Collection<? extends Unit> units, boolean distinct) {
+        return unitSets(units.stream(), distinct).filter(u -> weight(u) < 0).collect(Collectors.toList());
     }
 
-    private Stream<Integer> unitSets(Stream<? extends Unit> units) {
-        return units.map(this::unitSets)
-                .flatMap(Collection::stream)
-                .distinct();
+    public Set<Integer> unitSets(Unit... units) {
+        return unitSets(Arrays.stream(units), true).collect(Collectors.toSet());
+    }
+
+    public Set<Integer> unitSets(Collection<? extends Unit> units) {
+        return unitSets(units.toArray(new Unit[0]));
     }
 
     public List<Integer> unitSets(Unit unit) {
         return Collections.unmodifiableList(unitsSets.get(unit));
+    }
+
+    public List<Integer> unitSets(Collection<? extends Unit> units, boolean distinct) {
+        return unitSets(units.stream(), distinct).collect(Collectors.toList());
+    }
+
+    private Stream<Integer> unitSets(Stream<? extends Unit> units, boolean distinct) {
+        final Stream<Integer> res = units.map(this::unitSets).flatMap(Collection::stream);
+        return distinct ? res.distinct() : res;
     }
 
     public List<Unit> set(int num) {
