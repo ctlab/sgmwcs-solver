@@ -11,6 +11,8 @@ import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 
+import static ru.ifmo.ctddev.gmwcs.solver.TreeSolver.*;
+
 public class RLTSolver implements RootedSolver {
     private static final double EPS = 0.01;
     private IloCplex cplex;
@@ -89,6 +91,7 @@ public class RLTSolver implements RootedSolver {
             }
             breakTreeSymmetries();
             tuning(cplex);
+            usePrimalHeuristic();
             boolean solFound = cplex.solve();
             if (cplex.getCplexStatus() != IloCplex.CplexStatus.AbortTimeLim) {
                 isSolvedToOptimality = true;
@@ -102,6 +105,17 @@ public class RLTSolver implements RootedSolver {
         } finally {
             cplex.end();
         }
+    }
+
+    private void usePrimalHeuristic() {
+        Map<Edge, Double> edgeWeights = makeHeuristicWeights();
+        Node treeRoot = Optional.ofNullable(root)
+                        .orElse(graph.vertexSet().iterator().next());
+        MSTSolver mst = new MSTSolver(graph, edgeWeights, treeRoot);
+        mst.solve();
+        Graph tree = graph.subgraph(graph.vertexSet(), mst.getEdges());
+        TreeSolver.Solution sol = new TreeSolver(tree, signals).solveRooted(treeRoot);
+        System.err.println("MST heuristic solution: " + signals.weightSum(sol.sets()));
     }
 
     private void breakTreeSymmetries() throws IloException {

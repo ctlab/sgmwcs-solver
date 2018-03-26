@@ -1,6 +1,7 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
 import ru.ifmo.ctddev.gmwcs.Signals;
+import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
@@ -19,7 +20,7 @@ public class TreeSolver {
         Set<Unit> units;
 
         Solution() {
-            this.units = Collections.emptySet();
+            this.units = new HashSet<>();
         }
 
         Set<Integer> sets() {
@@ -58,24 +59,25 @@ public class TreeSolver {
     private Solution solve(Node root, Node parent, Set<Integer> parentSets) {
         List<Node> nodes = g.neighborListOf(root);
         assert (parent == null || nodes.contains(parent));
-        Solution nonEmpty = new Solution(Collections.singleton(root));
+        Set<Unit> rootSet = new HashSet<>();
+        rootSet.add(root);
+        Solution nonEmpty = new Solution(rootSet);
         Solution empty = new Solution();
-        Set<Integer> rootSets = new HashSet<>(parentSets);
-        rootSets.addAll(s.unitSets(root));
         if (parent != null) {
+            Edge e = g.getEdge(root, parent);
             nodes.remove(parent);
-            rootSets.addAll(s.unitSets(g.getEdge(root, parent)));
+            rootSet.add(e);
         }
         if (nodes.isEmpty()
                 && s.minSum(root) < 0
                 && parentSets.containsAll(s.positiveUnitSets(root))) {
             return empty;
         } else for (Node node : nodes) {
-            Solution childSol = solve(node, root, rootSets);
-            childSol.sets().removeAll(rootSets);
+            Set<Integer> signals = nonEmpty.sets();
+            Solution childSol = solve(node, root, signals);
+            childSol.sets().removeAll(signals);
             if (s.weightSum(childSol.sets()) >= 0) {
                 nonEmpty.units.addAll(childSol.units);
-                rootSets.addAll(childSol.sets());
             }
         }
         return nonEmpty;

@@ -134,7 +134,7 @@ class Dijkstra {
     }
 
     /**
-     * Tests NPk reduction condition which holds if the {@link MST} solutions for
+     * Tests NPk reduction condition which holds if the {@link NaiveMST} solutions for
      * all subsets of <code>k</code> have less value than <code>p</code>.
      *
      * @param p The weight of {@linkplain Node}.
@@ -159,7 +159,7 @@ class Dijkstra {
         Set<Set<Node>> subsets = Utils.subsets(k);
         for (Set<Node> subset : subsets) {
             if (subset.size() < 2) continue;
-            if (new MST(subset, distances).result() + p > 0) {
+            if (new NaiveMST(subset, distances).result() + p > 0) {
                 return false;
             }
         }
