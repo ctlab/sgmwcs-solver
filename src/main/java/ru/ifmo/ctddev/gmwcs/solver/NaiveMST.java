@@ -4,14 +4,14 @@ import ru.ifmo.ctddev.gmwcs.graph.Node;
 
 import java.util.*;
 
-public class MST {
+public class NaiveMST {
     private final Set<Node> nodes;
     private final Map<Node, Map<Node, Double>> weights;
 
     private boolean solved = false;
     private double res;
 
-    public MST(Set<Node> nodes, Map<Node, Map<Node, Double>> weights) {
+    public NaiveMST(Set<Node> nodes, Map<Node, Map<Node, Double>> weights) {
         this.nodes = nodes;
         this.weights = weights;
     }

@@ -11,6 +11,7 @@ class Dijkstra {
     private Map<Node, Double> d;
     private Map<Unit, Set<Integer>> p;
     private Map<Set<Integer>, Double> cache;
+    private Set<Node> dests;
 
     private Set<Integer> currentSignals;
 
@@ -31,6 +32,7 @@ class Dijkstra {
     Dijkstra(Graph graph, Signals signals) {
         this.graph = graph;
         this.signals = signals;
+        this.dests = new HashSet<>();
     }
 
     /**
@@ -51,11 +53,16 @@ class Dijkstra {
         Node cur;
         Set<Integer> negE, negN;
         List<Integer> addedE = new ArrayList<>(), addedN = new ArrayList<>();
+        Set<Node> visitedDests = new HashSet<>();
         while ((cur = q.poll()) != null) {
+            if (dests.contains(cur)
+                    && visitedDests.add(cur)
+                    && visitedDests.containsAll(dests)) {
+                    break;
+            }
             currentSignals = p.getOrDefault(cur, new HashSet<>());
             double cw = currentWeight();
             for (Node node : graph.neighborListOf(cur)) {
-                Collections.singleton(node);
                 negN = signals.negativeUnitSets(node);
                 double sumN = 0;
                 for (int i : negN) {
@@ -78,8 +85,7 @@ class Dijkstra {
                     if (cw < weight(node)) {
                         q.remove(node);
                         d.put(node, cw);
-                        p.put(node, new HashSet<>());
-                        p.get(node).addAll(currentSignals);
+                        p.put(node, new HashSet<>(currentSignals));
                         q.add(node);
                     }
                     currentSignals.removeAll(addedE);
@@ -105,6 +111,7 @@ class Dijkstra {
         List<Node> nbors = graph.neighborListOf(u);
         if (nbors.size() != 2) return false;
         Node v_1 = nbors.get(0), v_2 = nbors.get(1);
+        this.dests.add(v_2);
         solve(v_1);
         Set<Integer> unitSets = new HashSet<>(signals.negativeUnitSets(u));
         unitSets.addAll(signals.negativeUnitSets(graph.edgesOf(u)));
@@ -123,18 +130,21 @@ class Dijkstra {
 
     Set<Edge> solveNE(Node u, List<Node> neighbors) {
         solve(u);
+        this.dests = new HashSet<>(neighbors);
         Set<Edge> res = new HashSet<>();
         neighbors.forEach(n -> {
             List<Edge> edges = graph.getAllEdges(n, u);
-            for (Edge e : edges)
+            for (Edge e : edges) {
+                p.get(n).removeAll(signals.unitSets(u, n));
                 if (!p.get(n).containsAll(signals.negativeUnitSets(e)))
                     res.add(e);
+            }
         });
         return res;
     }
 
     /**
-     * Tests NPk reduction condition which holds if the {@link MST} solutions for
+     * Tests NPk reduction condition which holds if the {@link NaiveMST} solutions for
      * all subsets of <code>k</code> have less value than <code>p</code>.
      *
      * @param p The weight of {@linkplain Node}.
@@ -159,9 +169,8 @@ class Dijkstra {
         Set<Set<Node>> subsets = Utils.subsets(k);
         for (Set<Node> subset : subsets) {
             if (subset.size() < 2) continue;
-            if (new MST(subset, distances).result() + p > 0) {
+            if (new NaiveMST(subset, distances).result() + p > 0)
                 return false;
-            }
         }
         return true;
     }

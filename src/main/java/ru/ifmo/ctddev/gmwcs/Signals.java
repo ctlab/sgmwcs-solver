@@ -123,11 +123,17 @@ public class Signals {
         return result;
     }
 
+    public double sum(Unit... units) {
+        return weightSum(unitSets(units));
+    }
+
+    public double sum(Collection<? extends Unit> units) {
+       return weightSum(unitSets(units));
+    }
+
     public double weightSum(Collection<Integer> sets) {
         return sets.stream().distinct().mapToDouble(this::weight).sum();
     }
-
-
 
     public boolean bijection(Unit unit) {
         List<Integer> ss = unitSets(unit);
@@ -182,7 +188,7 @@ public class Signals {
         return unitSets(units.stream(), distinct).collect(Collectors.toList());
     }
 
-    private Stream<Integer> unitSets(Stream<? extends Unit> units, boolean distinct) {
+    public Stream<Integer> unitSets(Stream<? extends Unit> units, boolean distinct) {
         final Stream<Integer> res = units.map(this::unitSets).flatMap(Collection::stream);
         return distinct ? res.distinct() : res;
     }

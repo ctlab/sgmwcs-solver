@@ -37,9 +37,9 @@ public class Worker implements Runnable {
         solver.setRoot(root);
         if (root != null) {
             //   Set<Node> toRemove = new BlockPreprocessing(graph, signals, root).result();
-            if (logLevel > 0) {
+//            if (logLevel > 0) {
 //                System.out.println("Block Preprocessing removed " + toRemove.size() + " nodes.");
-            }
+ //           }
         }
         double tl = solver.getTimeLimit().getRemainingTime() - (System.currentTimeMillis() - startTime) / 1000.0;
         if (tl <= 0) {

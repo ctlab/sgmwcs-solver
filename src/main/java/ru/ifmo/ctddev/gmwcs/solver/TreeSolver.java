@@ -1,14 +1,12 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
 import ru.ifmo.ctddev.gmwcs.Signals;
+import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by Nikolay Poperechnyi on 17.03.18.
@@ -19,7 +17,7 @@ public class TreeSolver {
         Set<Unit> units;
 
         Solution() {
-            this.units = Collections.emptySet();
+            this.units = new HashSet<>();
         }
 
         Set<Integer> sets() {
@@ -58,24 +56,46 @@ public class TreeSolver {
     private Solution solve(Node root, Node parent, Set<Integer> parentSets) {
         List<Node> nodes = g.neighborListOf(root);
         assert (parent == null || nodes.contains(parent));
-        Solution nonEmpty = new Solution(Collections.singleton(root));
+        Set<Unit> rootSet = new HashSet<>();
+        rootSet.add(root);
+        Solution nonEmpty = new Solution(rootSet);
         Solution empty = new Solution();
-        Set<Integer> rootSets = new HashSet<>(parentSets);
-        rootSets.addAll(s.unitSets(root));
         if (parent != null) {
+            Edge e = g.getEdge(root, parent);
             nodes.remove(parent);
-            rootSets.addAll(s.unitSets(g.getEdge(root, parent)));
+            rootSet.add(e);
         }
         if (nodes.isEmpty()
                 && s.minSum(root) < 0
-                && parentSets.containsAll(s.positiveUnitSets(root))) {
+                && parentSets.containsAll(
+                s.positiveUnitSets(nonEmpty.units))) {
             return empty;
-        } else for (Node node : nodes) {
-            Solution childSol = solve(node, root, rootSets);
-            childSol.sets().removeAll(rootSets);
-            if (s.weightSum(childSol.sets()) >= 0) {
-                nonEmpty.units.addAll(childSol.units);
-                rootSets.addAll(childSol.sets());
+        } else {
+            List<Solution> childSols = new ArrayList<>();
+            Set<Integer> signals = new HashSet<>(nonEmpty.sets());
+            signals.addAll(parentSets);
+            for (Node node : nodes) {
+                childSols.add(solve(node, root, signals));
+            }
+            /*while (!childSols.isEmpty()) {
+                Solution max = childSols.stream().max(
+                        Comparator.comparingDouble(sol -> s.weightSum(sol.sets()))
+                ).get();
+                max.sets().removeAll(signals);
+                if (s.weightSum(max.sets()) < 0) {
+                    break;
+                } else {
+                    childSols.remove(max);
+                    nonEmpty.units.addAll(max.units);
+                }
+            }*/
+            for (Solution childSol: childSols) {
+                Set<Integer> childSets = childSol.sets();
+//                 Set<Integer> setSum = new HashSet<>(childSets);
+   //             setSum.addAll(signals);
+                if (s.weightSum(childSets) >= 0) {
+                    nonEmpty.units.addAll(childSol.units);
+                }
             }
         }
         return nonEmpty;

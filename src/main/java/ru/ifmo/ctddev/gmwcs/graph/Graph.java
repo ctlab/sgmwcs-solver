@@ -169,6 +169,15 @@ public class Graph {
         return subgraph(nodes, edges);
     }
 
+    public Graph edgesSubgraph(Set<Edge> edges) {
+        Set<Node> nodes = new HashSet<>();
+        for (Edge e: edges) {
+            nodes.add(getEdgeSource(e));
+            nodes.add(getEdgeTarget(e));
+        }
+        return subgraph(nodes, edges);
+    }
+
     public Graph subgraph(Set<Node> nodes, Set<Edge> edges) {
         Graph res = new Graph();
         nodes.forEach(res::addVertex);
