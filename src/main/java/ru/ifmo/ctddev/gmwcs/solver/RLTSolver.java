@@ -10,7 +10,10 @@ import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+import static java.util.Arrays.asList;
+import static java.util.Arrays.fill;
 import static ru.ifmo.ctddev.gmwcs.solver.TreeSolver.*;
 
 public class RLTSolver implements RootedSolver {
@@ -91,7 +94,14 @@ public class RLTSolver implements RootedSolver {
             }
             breakTreeSymmetries();
             tuning(cplex);
-            usePrimalHeuristic();
+            List<IloNumVar> solVariables = new ArrayList<>();
+            List<Double> solValues = new ArrayList<>();
+            MSTHeuristic(solVariables, solValues);
+            double[] sol = new double[solValues.size()];
+            for (int i = 0; i < solValues.size(); ++i) {
+                sol[i] = solValues.get(i);
+            }
+            cplex.addMIPStart(solVariables.toArray(new IloNumVar[0]), sol);
             boolean solFound = cplex.solve();
             if (cplex.getCplexStatus() != IloCplex.CplexStatus.AbortTimeLim) {
                 isSolvedToOptimality = true;
@@ -107,15 +117,14 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
-    private void usePrimalHeuristic() {
+    private Set<Unit> usePrimalHeuristic(Node treeRoot) {
         Map<Edge, Double> edgeWeights = makeHeuristicWeights();
-        Node treeRoot = Optional.ofNullable(root)
-                        .orElse(graph.vertexSet().iterator().next());
         MSTSolver mst = new MSTSolver(graph, edgeWeights, treeRoot);
         mst.solve();
         Graph tree = graph.subgraph(graph.vertexSet(), mst.getEdges());
         TreeSolver.Solution sol = new TreeSolver(tree, signals).solveRooted(treeRoot);
         System.err.println("MST heuristic solution: " + signals.weightSum(sol.sets()));
+        return sol.units;
     }
 
     private void breakTreeSymmetries() throws IloException {
@@ -400,6 +409,135 @@ public class RLTSolver implements RootedSolver {
             }
         }
         return weights;
+    }
+
+    private void tryMstSolution(Set<Unit> mstSol,
+                                Node root,
+                                List<IloNumVar> solVars,
+                                List<Double> solValues) {
+        List<IloNumVar> vars = new ArrayList<>();
+        List<Double> weights = new ArrayList<>();
+        final Double[] w = new Double[this.w.size()];
+        final Double[] y = new Double[this.y.size()];
+        final Double[] d = new Double[this.d.size()];
+        final Double[] x0 = new Double[this.x0.size()];
+        final IloNumVar[] w_n = new IloNumVar[this.w.size()];
+        final IloNumVar[] y_n = new IloNumVar[this.y.size()];
+        final IloNumVar[] d_n = new IloNumVar[this.d.size()];
+        final IloNumVar[] x0_n = new IloNumVar[this.x0.size()];
+        Node cur;
+        final Set<Edge> zeroEdges = new HashSet<>(this.graph.edgeSet());
+        final Set<Node> zeroNodes = new HashSet<>(this.graph.vertexSet());
+        final Deque<Node> deque = new ArrayDeque<>();
+        deque.add(root);
+        int n = 0;
+        List<IloNumVar> arcs = new ArrayList<>();
+        List<Double> arcs_w = new ArrayList<>();
+        d[0] = 0.0;
+        d_n[0] = this.d.get(deque.getFirst());
+        fill(x0, 0.0);
+        x0[0] = 1.0;
+        int dist = 0;
+        Set<Node> visited = new HashSet<>();
+        while (!deque.isEmpty()) {
+            cur = deque.pollFirst();
+            x0_n[n] = this.x0.get(cur);
+            y_n[n] = this.y.get(cur);
+            y[n] = 1.0;
+            n++;
+            visited.add(cur);
+            mstSol.remove(cur);
+            int l = deque.size();
+            final Node c = cur;
+            List<Node> neighbors = graph.neighborListOf(cur)
+                    .stream().filter(node -> mstSol.contains(node) ||
+                            isGoodNode(node, graph.getEdge(c, node), visited)
+                    ).collect(Collectors.toList());
+            if (!neighbors.isEmpty()) {
+                dist++;
+            }
+            for (Node node : neighbors) {
+                d_n[n + l] = this.d.get(node);
+                d[n + l] = (double) dist;
+                l++;
+                Edge e = graph.getEdge(node, cur);
+                arcs.add(getX(e, node));
+                arcs.add(getX(e, cur));
+                arcs_w.add(1.0);
+                arcs_w.add(0.0);
+                zeroEdges.remove(e);
+                vars.add(RLTSolver.this.w.get(e));
+                weights.add(1.0);
+                deque.add(node);
+            }
+        }
+        zeroNodes.removeAll(visited);
+        for (Edge e : zeroEdges) {
+            vars.add(RLTSolver.this.w.get(e));
+            weights.add(0.0);
+            Pair<IloNumVar, IloNumVar> p = this.x.get(e);
+            arcs.add(p.first);
+            arcs.add(p.second);
+            arcs_w.add(0.0);
+            arcs_w.add(0.0);
+        }
+        final Double[] x = new Double[arcs.size()];
+        final IloNumVar[] x_n = new IloNumVar[arcs.size()];
+        for (Node node : zeroNodes) {
+            x0_n[n] = RLTSolver.this.x0.get(node);
+            d_n[n] = RLTSolver.this.d.get(node);
+            d[n] = 0.0;
+            y[n] = 0.0;
+            y_n[n] = RLTSolver.this.y.get(node);
+            n++;
+        }
+        for (int i = 0; i < arcs.size(); ++i) {
+            x_n[i] = arcs.get(i);
+            x[i] = arcs_w.get(i);
+        }
+        for (int i = 0; i < weights.size(); ++i) {
+            w[i] = weights.get(i);
+            w_n[i] = vars.get(i);
+        }
+        solVars.addAll(asList(w_n));
+        solVars.addAll(asList(y_n));
+        solVars.addAll(asList(d_n));
+        solVars.addAll(asList(x_n));
+        solVars.addAll(asList(x0_n));
+        solValues.addAll(asList(w));
+        solValues.addAll(asList(y));
+        solValues.addAll(asList(d));
+        solValues.addAll(asList(x));
+        solValues.addAll(asList(x0));
+
+    }
+
+    private boolean isGoodNode(Node node, Edge edge, Set<Node> visited) {
+        return signals.minSum(node, edge) == 0 && !visited.contains(node);
+    }
+
+    private void MSTHeuristic(List<IloNumVar> solVariables, List<Double> solValues) {
+        Node treeRoot = Optional.ofNullable(root)
+                .orElse(graph.vertexSet().iterator().next());
+        Set<Unit> units = usePrimalHeuristic(treeRoot);
+        tryMstSolution(units, treeRoot, solVariables, solValues);
+    }
+
+    private class MSTCallback extends IloCplex.HeuristicCallback {
+        List<IloNumVar> solVariables = new ArrayList<>();
+        List<Double> solValues = new ArrayList<>();
+
+        @Override
+        protected void main() throws IloException {
+            Node treeRoot = Optional.ofNullable(root)
+                    .orElse(graph.vertexSet().iterator().next());
+            MSTHeuristic(solVariables, solValues);
+            double[] sol = new double[solValues.size()];
+            for (int i = 0; i < solValues.size(); ++i) {
+                sol[i] = solValues.get(i);
+            }
+            setSolution(solVariables.toArray(new IloNumVar[0]), sol);
+        }
     }
 
 
