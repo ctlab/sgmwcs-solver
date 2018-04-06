@@ -89,7 +89,7 @@ public class Main {
         ComponentSolver solver = new ComponentSolver(threshold, edgePenalty > 0);
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
-        solver.setLogLevel(1);
+        solver.setLogLevel(2);
         GraphIO graphIO = new GraphIO(nodeFile, edgeFile, signalFile);
         try {
             Graph graph = graphIO.read();
