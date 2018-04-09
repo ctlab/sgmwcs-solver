@@ -70,13 +70,15 @@ public class TreeSolver {
         }
         if (nodes.isEmpty()
                 && s.minSum(root) < 0
-                && parentSets.containsAll(s.positiveUnitSets(root))) {
+                && parentSets.containsAll(
+                s.positiveUnitSets(nonEmpty.units))) {
             return empty;
         } else for (Node node : nodes) {
             Set<Integer> signals = nonEmpty.sets();
             Solution childSol = solve(node, root, signals);
-            childSol.sets().removeAll(signals);
-            if (s.weightSum(childSol.sets()) >= 0) {
+            Set<Integer> childSets = childSol.sets();
+            childSets.removeAll(signals);
+            if (s.weightSum(childSets) >= 0) {
                 nonEmpty.units.addAll(childSol.units);
             }
         }

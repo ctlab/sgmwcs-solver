@@ -108,12 +108,14 @@ public class GMWCSTest {
 
     @Test
     public void test02_connected() {
+        solver.setThreadsNum(1);
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
         for (int i = 0; i < allTests; i++) {
+            System.err.println("Test " + i);
             TestCase test = tests.get(i);
-            if (random.nextBoolean()) {
-                addPenalties(test, random.nextInt(10));
-            }
+//            if (random.nextBoolean()) {
+ //               addPenalties(test, random.nextInt(10));
+  //          }
             check(test, i, referenceSolver);
             solver.setEdgePenalty(0);
         }
