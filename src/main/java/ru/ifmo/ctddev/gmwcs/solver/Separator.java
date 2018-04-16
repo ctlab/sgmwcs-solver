@@ -77,7 +77,7 @@ public class Separator extends IloCplex.UserCutCallback {
     @Override
     protected void main() throws IloException {
         double currLb = lb.get();
-        if(currLb > last){
+        if (currLb > last) {
             last = currLb;
             add(cplex.ge(sum, currLb), IloCplex.CutManagement.UseCutPurge);
         }

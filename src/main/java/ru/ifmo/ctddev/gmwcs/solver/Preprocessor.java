@@ -90,7 +90,7 @@ public class Preprocessor {
         return signals.minSum(unit) == 0;
     }
 
-    private boolean negative(Unit unit) {
+    private boolean nonPositive(Unit unit) {
         return signals.maxSum(unit) == 0;
     }
 
@@ -135,6 +135,7 @@ public class Preprocessor {
         // NPE can be called only once
         if (num == 0) {
             Set<Edge> edgesToRemove = numThreads == 0 ? new HashSet<>() : new ConcurrentSkipListSet<>();
+
             npe.apply(edgesToRemove);
         }
         res += npv2.apply(toRemove);
@@ -278,7 +279,7 @@ public class Preprocessor {
                 toAbsorb.putIfAbsent(opposite, new ArrayList<>());
                 toAbsorb.get(opposite).addAll(Arrays.asList(node, edge));
                 toRemove.add(node);
-            } else if (negative(edge) && negative(node)) {
+            } else if (nonPositive(edge) && nonPositive(node)) {
                 toRemove.add(node);
             }
         }
@@ -305,7 +306,7 @@ public class Preprocessor {
             for (Node n : w) {
                 List<Node> neighbors = graph.neighborListOf(n);
                 for (Node r : neighbors) {
-                    if (!negative(r)) continue;
+                    if (!nonPositive(r)) continue;
                     double rWeight = signals.minSum(r);
                     double bestSum = signals.maxSum(graph.edgesOf(r)) + rWeight;
                     if (!w.contains(r) && rWeight <= signals.minSum(v)
@@ -353,12 +354,12 @@ public class Preprocessor {
     private void dijkstraIteration(Dijkstra dijkstra, Node u, Set<Edge> toRemove) {
         List<Node> neighbors = graph.neighborListOf(u).stream()
                 .filter(n -> graph.getAllEdges(n, u)
-                        .stream().anyMatch(e -> negative(e) && bijection(e)))
+                        .stream().anyMatch(e -> nonPositive(e) && bijection(e)))
                 .collect(Collectors.toList());
         if (neighbors.isEmpty()) return;
         Set<Edge> res = dijkstra.solveNE(u, neighbors);
         for (Edge edge : res) {
-            if (negative(edge) && bijection(edge)) {
+            if (nonPositive(edge) && bijection(edge)) {
                 toRemove.add(edge);
             }
         }

@@ -110,7 +110,7 @@ public class GMWCSTest {
     public void test02_connected() {
         solver.setThreadsNum(1);
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
-        for (int i = 0; i < allTests; i++) {
+        for (int i = 1388; i < allTests; i++) {
             System.err.println("Test " + i);
             TestCase test = tests.get(i);
 //            if (random.nextBoolean()) {
@@ -150,7 +150,7 @@ public class GMWCSTest {
         List<Unit> actual = null;
         try {
             expected = refSolver.solve(test.graph(), test.signals());
-            solver.setLogLevel(0);
+            solver.setLogLevel(2);
             actual = solver.solve(test.graph(), test.signals());
         } catch (SolverException e) {
             System.out.println();

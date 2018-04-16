@@ -123,6 +123,10 @@ public class Signals {
         return result;
     }
 
+    public double sum(Collection<? extends Unit> units) {
+       return weightSum(unitSets(units));
+    }
+
     public double weightSum(Collection<Integer> sets) {
         return sets.stream().distinct().mapToDouble(this::weight).sum();
     }

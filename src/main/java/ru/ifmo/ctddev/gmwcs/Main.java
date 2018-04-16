@@ -92,6 +92,7 @@ public class Main {
         solver.setLogLevel(2);
         GraphIO graphIO = new GraphIO(nodeFile, edgeFile, signalFile);
         try {
+            long before = System.currentTimeMillis();
             Graph graph = graphIO.read();
             Signals signals = graphIO.getSignals();
             if (edgePenalty > 0) {
@@ -103,6 +104,7 @@ public class Main {
             if (solver.isSolvedToOptimality()) {
                 System.out.println("SOLVED TO OPTIMALITY");
             }
+            System.err.println("time:" + (System.currentTimeMillis() - before));
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
