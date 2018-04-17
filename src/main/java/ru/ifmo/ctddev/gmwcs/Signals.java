@@ -123,6 +123,10 @@ public class Signals {
         return result;
     }
 
+    public double sum(Unit... units) {
+        return weightSum(unitSets(units));
+    }
+
     public double sum(Collection<? extends Unit> units) {
        return weightSum(unitSets(units));
     }

@@ -6,10 +6,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by Nikolay Poperechnyi on 17.03.18.
@@ -73,13 +70,32 @@ public class TreeSolver {
                 && parentSets.containsAll(
                 s.positiveUnitSets(nonEmpty.units))) {
             return empty;
-        } else for (Node node : nodes) {
-            Set<Integer> signals = nonEmpty.sets();
-            Solution childSol = solve(node, root, signals);
-            Set<Integer> childSets = childSol.sets();
-            childSets.removeAll(signals);
-            if (s.weightSum(childSets) >= 0) {
-                nonEmpty.units.addAll(childSol.units);
+        } else {
+            List<Solution> childSols = new ArrayList<>();
+            Set<Integer> signals = new HashSet<>(nonEmpty.sets());
+            signals.addAll(parentSets);
+            for (Node node : nodes) {
+                childSols.add(solve(node, root, signals));
+            }
+            /*while (!childSols.isEmpty()) {
+                Solution max = childSols.stream().max(
+                        Comparator.comparingDouble(sol -> s.weightSum(sol.sets()))
+                ).get();
+                max.sets().removeAll(signals);
+                if (s.weightSum(max.sets()) < 0) {
+                    break;
+                } else {
+                    childSols.remove(max);
+                    nonEmpty.units.addAll(max.units);
+                }
+            }*/
+            for (Solution childSol: childSols) {
+                Set<Integer> childSets = childSol.sets();
+//                 Set<Integer> setSum = new HashSet<>(childSets);
+   //             setSum.addAll(signals);
+                if (s.weightSum(childSets) >= 0) {
+                    nonEmpty.units.addAll(childSol.units);
+                }
             }
         }
         return nonEmpty;
