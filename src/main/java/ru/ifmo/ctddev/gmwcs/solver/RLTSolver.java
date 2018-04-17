@@ -7,13 +7,11 @@ import ru.ifmo.ctddev.gmwcs.Signals;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.*;
 
-import java.lang.Exception;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static ilog.cplex.IloCplex.*;
-import static java.util.Arrays.fill;
 
 public class RLTSolver implements RootedSolver {
     private static final double EPS = 0.01;
@@ -86,19 +84,19 @@ public class RLTSolver implements RootedSolver {
             initVariables();
             addConstraints();
             addObjective(signals);
-      //      maxSizeConstraints(signals);
+            maxSizeConstraints(signals);
             if (root == null) {
                 breakRootSymmetry();
             } else {
                 tighten();
             }
-            // breakTreeSymmetries();
+            breakTreeSymmetries();
             tuning(cplex);
             CplexSolution sol = MSTHeuristic();
             if (sol != null) {
                 boolean applied = sol.apply((var, val) -> {
                             try {
-                                cplex.addMIPStart(var, val, MIPStartEffort.SolveMIP);
+                                cplex.addMIPStart(var, val, MIPStartEffort.Repair);
                                 return true;
                             } catch (IloException e) {
                                 return false;
@@ -200,24 +198,17 @@ public class RLTSolver implements RootedSolver {
     }
 
     private List<Unit> getResult() throws IloException {
-        for (Pair<IloNumVar, IloNumVar> p : x.values()) {
-            System.err.println(p.first + " " + cplex.getValue(p.first));
-            System.err.println(p.second + " " + cplex.getValue(p.second));
-        }
         List<Unit> result = new ArrayList<>();
         for (Node node : graph.vertexSet()) {
-            System.err.println(d.get(node) + " " + cplex.getValue(d.get(node)));
             if (cplex.getValue(y.get(node)) > EPS) {
                 result.add(node);
             }
         }
         for (Edge edge : graph.edgeSet()) {
             if (cplex.getValue(w.get(edge)) > EPS) {
-                System.err.println(w.get(edge));
                 result.add(edge);
             }
         }
-        System.err.println(cplex.getValue(this.sum));
         return result;
     }
 
@@ -453,16 +444,16 @@ public class RLTSolver implements RootedSolver {
         final Set<Node> unvisitedNodes = new HashSet<>(this.graph.vertexSet());
         final Deque<Node> deque = new ArrayDeque<>();
         deque.add(root);
-        solution.addVariable(d, root, 0.0);
         Map<Node, Integer> ds = new HashMap<>();
         ds.put(root, 0);
         Set<Node> visitedNodes = new HashSet<>();
         Set<Edge> visitedEdges = new HashSet<>();
         visitedNodes.add(root);
         mstSol.remove(root);
+        System.err.println("root " + root.toString());
         while (!deque.isEmpty()) {
             final Node cur = deque.pollFirst();
-            solution.addVariable(x0, cur, ds.get(cur) > 0 ? 0 : 1);
+            solution.addVariable(x0, cur, cur == root ? 1 : 0);
             solution.addVariable(y, cur, 1);
             List<Node> neighbors = tree.neighborListOf(cur)
                     .stream().filter(node -> mstSol.contains(node) ||
@@ -470,14 +461,9 @@ public class RLTSolver implements RootedSolver {
                     ).collect(Collectors.toList());
             visitedNodes.addAll(neighbors);
             mstSol.removeAll(neighbors);
-            int dist = ds.get(cur) + 1;
             for (Node node : neighbors) {
-                ds.put(node, dist);
-                solution.addVariable(d, node, dist);
                 Edge e = tree.getAllEdges(node, cur)
                         .stream().filter(mstSol::contains).findFirst().get();
-                solution.addVariable(getX(e, node), 1);
-                solution.addVariable(getX(e, cur), 0);
                 unvisitedEdges.remove(e);
                 visitedEdges.add(e);
                 solution.addVariable(w, e, 1.0);
@@ -488,33 +474,55 @@ public class RLTSolver implements RootedSolver {
         for (Edge e : new ArrayList<>(unvisitedEdges)) {
             Node u = graph.getEdgeSource(e), v = graph.getEdgeTarget(e);
             IloNumVar from = getX(e, u), to = getX(e, v);
-            if (visitedNodes.contains(u) && visitedNodes.contains(v)) {
-                double minSum = signals.minSum(e);
-                if (minSum >= 0) {
-                    unvisitedEdges.remove(e);
-                    visitedEdges.add(e);
-                }
-                solution.addVariable(w, e, minSum >= 0 ? 1 : 0);
-                solution.addNullVariables(from, to);
+            if (visitedNodes.contains(u) && visitedNodes.contains(v) && signals.minSum(e) >= 0) {
+                unvisitedEdges.remove(e);
+                visitedEdges.add(e);
             } else {
                 solution.addNullVariables(w.get(e), from, to);
             }
         }
+        deque.add(root);
+        Set<Unit> solutionUnits = new HashSet<>(visitedNodes);
+        solutionUnits.addAll(visitedEdges);
+        visitedNodes.remove(root);
+        while (!deque.isEmpty()) {
+            final Node cur = deque.poll();
+            List<Node> neighbors = new ArrayList<>();
+            for (Edge e: graph.edgesOf(cur).stream().filter(visitedEdges::contains)
+                    .collect(Collectors.toList())) {
+                neighbors.add(graph.getOppositeVertex(cur, e));
+            }
+            for (Node node : neighbors) {
+                if (!visitedNodes.contains(node))
+                    continue;
+                deque.add(node);
+                visitedNodes.remove(node);
+                Edge e = graph.getAllEdges(node, cur).stream().filter(visitedEdges::contains).findFirst().get();
+                solution.addVariable(getX(e, node), 1);
+                solution.addVariable(getX(e, cur), 0);
+                visitedEdges.remove(e);
+                ds.put(node, ds.get(cur) + 1);
+            }
+        }
+        for (Edge e : visitedEdges) {
+            Node u = graph.getEdgeSource(e), v = graph.getEdgeTarget(e);
+            IloNumVar from = getX(e, u), to = getX(e, v);
+            solution.addVariable(w, e, 1);
+            solution.addNullVariables(from, to);
+        }
+        assert visitedNodes.isEmpty();
+        for (Map.Entry<Node, Integer> nd : ds.entrySet()) {
+            solution.addVariable(d, nd.getKey(), nd.getValue());
+        }
         for (Node node : unvisitedNodes) {
             solution.addNullVariables(x0.get(node), d.get(node), y.get(node));
         }
-        Set<Unit> solutionUnits = new HashSet<>(visitedEdges);
-        solutionUnits.addAll(visitedNodes);
         for (int sig = 0; sig < signals.size(); sig++) {
             List<Unit> units = signals.set(sig);
             if (units.size() > 1 && signals.weight(sig) != 0) {
                 boolean val = units.stream().anyMatch(solutionUnits::contains);
                 solution.addVariable(s.get(sig), val ? 1 : 0);
             }
-        }
-        for (int i = 0; i < solution.variables.size(); i++) {
-            if (solution.values.get(i) > 0)
-                System.err.println(solution.variables.get(i) + " " + solution.values.get(i));
         }
         solution.addVariable(this.sum, signals.sum(solutionUnits));
         return solution;
@@ -569,11 +577,11 @@ public class RLTSolver implements RootedSolver {
         }
 
         void addVariable(IloNumVar var, double val) {
-            try {
-                cplex.addEq(var, val);
-            } catch (IloException e) {
+/*            try {
+                cplex.addEq(var, val); // for debug purposes: add
+            } catch (IloException e) { // these constraints to check infeasibility of heuristic
                 throw new Error("oops");
-            }
+            } */
             variables.add(var);
             values.add(val);
         }
