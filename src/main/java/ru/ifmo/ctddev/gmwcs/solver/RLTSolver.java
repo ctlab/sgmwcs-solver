@@ -532,6 +532,8 @@ public class RLTSolver implements RootedSolver {
 
     private CplexSolution MSTHeuristic(Map<Edge, Double> weights) {
         Node treeRoot = Optional.ofNullable(root)
+//                .orElse(graph.vertexSet().stream()
+ //                       .max(Comparator.comparingDouble(signals::weight)).get());
                 .orElse(graph.vertexSet().stream().min(Comparator.naturalOrder()).get());
         Set<Unit> units = usePrimalHeuristic(treeRoot, weights);
         if (units.isEmpty()) {
@@ -561,8 +563,8 @@ public class RLTSolver implements RootedSolver {
             CplexSolution sol = MSTHeuristic(weights);
             assert sol != null && sol.values.size() == sol.variables.size();
             double obj = sol.values.get(sol.values.size() - 1);
-            if (obj >= lb.get()) {
-                System.err.println("MST heuristic found solution with objective " + obj);
+            if (obj >= getIncumbentObjValue()) {
+//                System.err.println("MST heuristic found solution with objective " + obj);
                 setSolution(sol.variables(), sol.values());
             }
         }

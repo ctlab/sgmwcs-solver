@@ -89,22 +89,26 @@ public class Main {
         ComponentSolver solver = new ComponentSolver(threshold, edgePenalty > 0);
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
-        solver.setLogLevel(1);
+        solver.setLogLevel(0);
         GraphIO graphIO = new GraphIO(nodeFile, edgeFile, signalFile);
         try {
             long before = System.currentTimeMillis();
             Graph graph = graphIO.read();
+            System.out.println("Graph with " +
+                    graph.edgeSet().size() + " edges and " +
+                    graph.vertexSet().size() + " nodes");
             Signals signals = graphIO.getSignals();
             if (edgePenalty > 0) {
                 signals.addEdgePenalties(-edgePenalty);
             }
             solver.setEdgePenalty(edgePenalty);
             List<Unit> units = solver.solve(graph, signals);
-            System.out.println("Final score: " + Utils.sum(units, signals));
+            long now = System.currentTimeMillis();
             if (solver.isSolvedToOptimality()) {
                 System.out.println("SOLVED TO OPTIMALITY");
             }
-            System.err.println("time:" + (System.currentTimeMillis() - before));
+            System.out.println(Utils.sum(units, signals));
+            System.out.println("time:" + (now - before));
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());

@@ -145,8 +145,7 @@ public class Preprocessor {
     private boolean negR(Node v, Node r, Set<Node> vis, Set<Node> toRemove) {
         boolean safe = false;
         vis.add(v);
-        List<Unit> units = new ArrayList<>();
-        units.addAll(vis);
+        List<Unit> units = new ArrayList<>(vis);
         for (Edge e : graph.edgesOf(v)) {
             double minSum = signals.minSum(units);
             Node u = graph.getOppositeVertex(v, e);
