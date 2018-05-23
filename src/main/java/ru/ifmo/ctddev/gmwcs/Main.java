@@ -4,9 +4,7 @@ import ilog.concert.IloException;
 import ilog.cplex.IloCplex;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import ru.ifmo.ctddev.gmwcs.graph.Graph;
-import ru.ifmo.ctddev.gmwcs.graph.GraphIO;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.*;
 import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 import ru.ifmo.ctddev.gmwcs.solver.Utils;
@@ -14,7 +12,10 @@ import ru.ifmo.ctddev.gmwcs.solver.Utils;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
 
@@ -40,13 +41,15 @@ public class Main {
         optionParser.acceptsAll(asList("e", "edges"), "Edge list file").withRequiredArg().required();
         optionParser.acceptsAll(asList("s", "signals"), "Signals file").withRequiredArg().required();
         optionParser.acceptsAll(asList("m", "threads"), "Number of threads")
-            .withRequiredArg().ofType(Integer.class).defaultsTo(1);
+                .withRequiredArg().ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
         optionParser.accepts("c", "Threshold for CPE solver").withRequiredArg().
                 ofType(Integer.class).defaultsTo(500);
         optionParser.acceptsAll(asList("p", "penalty"), "Penalty for each additional edge")
                 .withRequiredArg().ofType(Double.class).defaultsTo(.0);
+        optionParser.acceptsAll(asList("l", "log"), "Log level")
+                .withRequiredArg().ofType(Integer.class).defaultsTo(0);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -82,6 +85,7 @@ public class Main {
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         File signalFile = new File((String) optionSet.valueOf("signals"));
         double edgePenalty = (Double) optionSet.valueOf("p");
+        int logLevel = (Integer) optionSet.valueOf("l");
         if (edgePenalty < 0) {
             System.err.println("Edge penalty can't be negative");
             System.exit(1);
@@ -89,7 +93,7 @@ public class Main {
         ComponentSolver solver = new ComponentSolver(threshold, edgePenalty > 0);
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
-        solver.setLogLevel(0);
+        solver.setLogLevel(logLevel);
         GraphIO graphIO = new GraphIO(nodeFile, edgeFile, signalFile);
         try {
             long before = System.currentTimeMillis();
@@ -109,6 +113,19 @@ public class Main {
             }
             System.out.println(Utils.sum(units, signals));
             System.out.println("time:" + (now - before));
+            Set<Edge> edges = new HashSet<>();
+            Set<Node> nodes = new HashSet<>();
+            if (logLevel == 2) {
+                for (Unit unit : units) {
+                    if (unit instanceof Edge) {
+                        edges.add((Edge) unit);
+                    } else {
+                        nodes.add((Node) unit);
+                    }
+                }
+                Graph solGraph = graph.subgraph(nodes, edges);
+                new GraphPrinter(solGraph, signals).printGraph("sol.dot");
+            }
             graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());

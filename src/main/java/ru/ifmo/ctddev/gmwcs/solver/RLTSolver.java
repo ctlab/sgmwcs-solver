@@ -160,7 +160,6 @@ public class RLTSolver implements RootedSolver {
         Blocks blocks = new Blocks(graph);
         if (!blocks.cutpoints().contains(root)) {
             return;
-//            throw new IllegalArgumentException();
         }
         Separator separator = new Separator(y, w, cplex, graph, sum, lb);
         separator.setMaxToAdd(maxToAddCuts);
@@ -276,8 +275,10 @@ public class RLTSolver implements RootedSolver {
             rs[k - 1] = cplex.prod(k, y.get(node));
             k--;
         }
+        sum = cplex.numVar(0, n, "prSum");
+        cplex.addEq(sum, cplex.sum(terms));
         for (int i = 0; i < n; i++) {
-            cplex.addGe(cplex.sum(terms), rs[i]);
+            cplex.addGe(sum, rs[i]);
         }
     }
 
@@ -532,9 +533,7 @@ public class RLTSolver implements RootedSolver {
 
     private CplexSolution MSTHeuristic(Map<Edge, Double> weights) {
         Node treeRoot = Optional.ofNullable(root)
-//                .orElse(graph.vertexSet().stream()
- //                       .max(Comparator.comparingDouble(signals::weight)).get());
-                .orElse(graph.vertexSet().stream().min(Comparator.naturalOrder()).get());
+                .orElse(graph.vertexSet().stream().max(Comparator.naturalOrder()).get());
         Set<Unit> units = usePrimalHeuristic(treeRoot, weights);
         if (units.isEmpty()) {
             return null; //TODO!!

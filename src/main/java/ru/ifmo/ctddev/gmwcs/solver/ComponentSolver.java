@@ -82,8 +82,9 @@ public class ComponentSolver implements Solver {
             solver.setLogLevel(logLevel);
             Set<Unit> subset = new HashSet<>(subgraph.vertexSet());
             subset.addAll(subgraph.edgeSet());
+            Signals subSignals = new Signals(signals, subset);
             Worker worker = new Worker(subgraph, root,
-                    new Signals(signals, subset), solver, timeBefore);
+                    subSignals, solver, timeBefore);
             executor.execute(worker);
             memorized.add(worker);
         }
