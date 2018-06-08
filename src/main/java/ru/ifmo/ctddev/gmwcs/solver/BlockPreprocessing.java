@@ -18,15 +18,14 @@ public class BlockPreprocessing {
         this.graph = graph;
         this.signals = signals;
         blocks = new Blocks(graph);
-            doPreprocessing(graph.vertexSet(), root);
-            //preprocess(root);
+        unreachableNodes(root);
     }
 
     public Set<Node> result() {
         return toRemove;
     }
 
-    private void preprocess(Node root) {
+    /* private void preprocess(Node root) {
         for (Set<Node> block : blocks.incidentBlocks(root)) {
             dfs(block, root);
         }
@@ -45,42 +44,28 @@ public class BlockPreprocessing {
         S = doPreprocessing(S, parent);
         return S;
     }
+    */
 
-    private Set<Node> doPreprocessing(Set<Node> nodes, Node parent) {
-        nodes = new HashSet<>(nodes);
-        Graph subgraph = graph.subgraph(nodes);
-        Set<Unit> units = new HashSet<>(subgraph.edgeSet());
-        units.addAll(nodes);
-        List<Integer> posSets = signals.positiveUnitSets(units, false);
-        Collections.sort(posSets);
-        double sum = signals.weightSum(posSets);
-        Dijkstra dk = new Dijkstra(subgraph, signals);
-        dk.solve(parent);
-        List<Map.Entry<Node, Double>> distances = new ArrayList<>(dk.distances().entrySet());
-        distances.sort(Comparator.comparingDouble(Map.Entry::getValue));
-        for (int i = distances.size() - 1;
-             i >= 0 && distances.get(i).getValue() > sum;
-             --i) {
-            Node node = distances.get(i).getKey();
-            if (!signals.bijection(node)) continue;
-            Set<Edge> edges = subgraph.edgesOf(node);
-            List<Integer> nodePos = signals.positiveUnitSets(Collections.singleton(node), true);
-            nodePos.addAll(signals.positiveUnitSets(edges));
-            for (int sig : nodePos) {
-                int pos = Collections.binarySearch(posSets, sig);
-                if (pos >= 0) {
-                    posSets.remove(pos);
-                    //Don't decrease sum if more than 1 unit contains this signal
-                    if (pos < posSets.size() && posSets.get(pos) == sig
-                            || pos > 0 && posSets.get(pos - 1) == sig) {
-                        continue;
-                    }
-                    sum -= signals.weight(sig);
-                }
+    private void unreachableNodes(Node root) {
+        Dijkstra dk = new Dijkstra(graph, signals);
+        dk.solve(root);
+        final Map<Node, Double> bottlenecks = dk.distances();
+        Comparator<Node> comparator = Comparator.comparingDouble(bottlenecks::get);
+        NavigableSet<Node> dists = new TreeSet<>(comparator);
+        Set<Integer> posSigs = signals.positiveUnitSets(graph.vertexSet());
+        double S = signals.weightSum(posSigs);
+        dists.addAll(bottlenecks.keySet());
+        while (true) {
+            Node n = dists.pollLast();
+            if (n == null || n == root) break;
+            if (!bottlenecks.containsKey(n) || bottlenecks.get(n) >= S) {
+               toRemove.add(n);
+               if (signals.bijection(n)) {
+                   S -= signals.maxSum(n);
+               }
+            } else {
+               break;
             }
-            nodes.remove(node);
-            toRemove.add(node);
         }
-        return nodes;
     }
 }

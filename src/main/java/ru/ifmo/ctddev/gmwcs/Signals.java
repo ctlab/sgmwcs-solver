@@ -214,6 +214,15 @@ public class Signals {
         return num;
     }
 
+    public void remove(Unit unit) {
+        List<Integer> us = unitsSets.get(unit);
+        for (int s: us) {
+            Set<Unit> set = sets.get(s);
+            set.remove(unit);
+        }
+        unitsSets.remove(unit);
+    }
+
     public int addAndSetWeight(Unit unit, Double weight) {
         int num = add(unit);
         setWeight(num, weight);
