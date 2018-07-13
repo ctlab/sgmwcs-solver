@@ -7,17 +7,21 @@ import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class PSD {
-    Graph g;
-    Signals s;
-
+    private Graph g;
+    private Signals s;
 
     private double[] d;
 
     private Map<Node, Center> centers;
 
     private Map<Node, Path> paths;
+
+    private Map<Center, Path> bestPaths;
+
+    private Map<Integer, Path> dsuPaths;
 
     private class Path {
         Node n;
@@ -29,6 +33,7 @@ public class PSD {
             this.c = c;
             this.n = n;
             this.parent = this;
+            this.sigs = new HashSet<>(s.negativeUnitSets(n));
         }
 
         Path(Path p, Node n, Edge e) {
@@ -36,7 +41,7 @@ public class PSD {
             this.parent = p;
             this.n = n;
             this.sigs = new HashSet<>(p.sigs);
-            this.sigs.addAll(s.unitSets(n, e));
+            this.sigs.addAll(s.negativeUnitSets(n, e));
         }
     }
 
@@ -50,7 +55,7 @@ public class PSD {
                 Edge e = (Edge) elem;
                 Node u = g.getEdgeSource(e);
                 Node v = g.getEdgeTarget(e);
-                signals.addAll(s.unitSets(e, u, v));
+                signals.addAll(s.positiveUnitSets(e, u, v));
                 d[u.getNum()] = 0;
                 d[v.getNum()] = 0;
                 centers.putIfAbsent(u, this);
@@ -66,15 +71,96 @@ public class PSD {
     public PSD(Graph g, Signals s) {
         this.g = g;
         this.s = s;
+        g.vertexSet();
         this.centers = new HashMap<>();
-        d = new double[g.vertexSet().size()];
+        this.paths = new HashMap<>();
+        this.bestPaths = new HashMap<>();
+        this.dsuPaths = new HashMap<>();
+        d = new double[5000]; // TODO
         Arrays.fill(d, Double.POSITIVE_INFINITY);
-        decompose();
     }
 
-    private void decompose() {
+    public void decompose() {
         makeCenters();
         dijkstra();
+        findBoundaries();
+        filterBoundaries();
+        double ub = dsuPaths.values().stream()
+                .flatMap(p -> p.c.signals.stream()).distinct()
+                .mapToDouble(set -> s.weight(set)).sum();
+        ub += dsuPaths.values().stream().distinct()
+                .mapToDouble(p -> s.weightSum(p.sigs)).sum();
+        System.err.println(ub);
+    }
+
+    private void findBoundaries() {
+        for (Path p : paths.values()) {
+            if (isBoundary(p) && s.weightSum(p.sigs) + s.weightSum(p.c.signals) >= 0) {
+                Path prev = bestPaths.get(p.c);
+                if (prev == null || s.weightSum(prev.sigs) < s.weightSum(p.sigs))
+                    bestPaths.put(p.c, p);
+            }
+        }
+    }
+
+    private void filterBoundaries() {
+        DSU dsu = new DSU(s);
+        for (int sig = 0; sig < s.size(); sig++) {
+            if (s.weight(sig) > 0) {
+                List<Unit> units = s.set(sig);
+                for (Unit u : units) {
+                    List<Node> nodes;
+                    if (u instanceof Edge && g.containsEdge((Edge) u)) {
+                        nodes = g.disjointVertices((Edge) u);
+                    } else if (u instanceof Node && g.containsVertex((Node) u)) {
+                        nodes = Collections.singletonList((Node) u);
+                    } else continue;
+                    for (Node n : nodes) {
+                        Center c = centers.get(n);
+                        if (c == null || !c.signals.contains(sig)) continue;
+                        List<Integer> sets = c.signals.stream()
+                                .filter(num -> s.weight(num) > 0).collect(Collectors.toList());
+                        int min = dsu.min(sets.get(0));
+                        for (int set : sets) {
+                            dsu.union(min, set);
+                        }
+                        min = dsu.min(min);
+                        Path p = bestPaths.get(c);
+                        if (p != null) {
+                            updatePath(min, p);
+                        } else {
+                            centers.remove(n);
+                        }
+                    }
+                }
+            }
+        }
+        Set<Integer> usedSets = new HashSet<>();
+        for (Map.Entry<Integer, Path> kvp : dsuPaths.entrySet()) {
+            usedSets.add(dsu.min(kvp.getKey()));
+        }
+        for (Node n: new HashSet<>(centers.keySet())) {
+            Unit u = paths.get(n).c.elem;
+            if (paths.get(n).parent != paths.get(n) ||
+                    !usedSets.containsAll(s.positiveUnitSets(n, u))) {
+                centers.remove(n);
+            }
+        }
+        System.out.println(usedSets.size());
+    }
+
+
+    private boolean isBoundary(Path p) {
+        return g.neighborListOf(p.n).stream()
+                .anyMatch(n -> paths.get(n).c != p.c);
+    }
+
+    private void updatePath(int set, Path p) {
+        Path prev = dsuPaths.get(set);
+        if (prev == null || s.weightSum(p.sigs) > s.weightSum(prev.sigs)) {
+            System.out.println(s.weightSum(p.sigs));
+            dsuPaths.put(set, p);
+        }
     }
 
     private Center addCenter(Unit unit) {
@@ -90,7 +176,10 @@ public class PSD {
         }
         for (Edge e : g.edgeSet()) {
             if (s.minSum(e) == 0) {
-                addCenter(e);
+                Center c = addCenter(e);
+                Node u = g.getEdgeSource(e), v = g.getEdgeTarget(e);
+                paths.put(u, new Path(c, u));
+                paths.put(v, new Path(c, v));
             }
         }
     }
@@ -103,16 +192,22 @@ public class PSD {
         while (!q.isEmpty()) {
             Node cur = q.poll();
             Path p = paths.get(cur);
+            Center c = centers.get(cur);
             for (Node n : g.neighborListOf(cur)) {
                 Edge e = g.getEdge(n, cur);
-                double w = d[cur.getNum()] - s.weight(e);
+                if (s.weight(e) > 0) continue;
+                double w = d[cur.getNum()] - s.minSum(e, n);
                 if (d[n.getNum()] > w) {
-                    // TODO: edge m.b. positive
+                    centers.put(n, c);
                     paths.put(n, new Path(p, n, e));
                     d[n.getNum()] = w;
                     q.add(n);
                 }
             }
         }
+    }
+
+    private void test(Node n) {
+        // double ub =
     }
 }

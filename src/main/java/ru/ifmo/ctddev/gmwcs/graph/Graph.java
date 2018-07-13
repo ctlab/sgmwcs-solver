@@ -157,6 +157,11 @@ public class Graph {
         return l.u;
     }
 
+    public List<Node> disjointVertices(Edge e) {
+        Link l = links.get(e);
+        return Arrays.asList(l.u, l.v);
+    }
+
     public Graph subgraph(Set<Node> nodes) {
         Set<Edge> edges = new LinkedHashSet<>();
         for (Node v : nodes) {

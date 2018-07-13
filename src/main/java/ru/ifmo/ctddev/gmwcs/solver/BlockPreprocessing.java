@@ -18,7 +18,7 @@ public class BlockPreprocessing {
         this.graph = graph;
         this.signals = signals;
         blocks = new Blocks(graph);
-        unreachableNodes(root, bl);
+        unreachableNodes(root);
     }
 
     public Set<Node> result() {
@@ -46,7 +46,7 @@ public class BlockPreprocessing {
     }
     */
 
-    private void unreachableNodes(Node root, Set<Node> block) {
+    private void unreachableNodes(Node root/*, Set<Node> block*/) {
         Dijkstra dk = new Dijkstra(graph, signals);
         dk.solve(root);
         final Map<Node, Double> bottlenecks = dk.distances();

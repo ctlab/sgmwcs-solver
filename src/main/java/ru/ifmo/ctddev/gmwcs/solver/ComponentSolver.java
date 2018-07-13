@@ -50,6 +50,8 @@ public class ComponentSolver implements Solver {
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
             System.out.println("and " + (edgesBefore - g.edgeSet().size()) + " edges.");
         }
+        PSD psd = new PSD(g, s);
+        psd.decompose();
         isSolvedToOptimality = true;
         if (g.vertexSet().size() == 0) {
             return null;
