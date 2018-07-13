@@ -89,17 +89,20 @@ public class PSD {
                 .flatMap(p -> p.c.signals.stream()).distinct()
                 .mapToDouble(set -> s.weight(set)).sum();
         ub += dsuPaths.values().stream().distinct()
-                .mapToDouble(p -> s.weightSum(p.sigs)).sum();
+                .flatMap(p -> p.sigs.stream()).distinct()
+                .mapToDouble(set -> s.weight(set)).sum();
         System.err.println(ub);
     }
 
     private void findBoundaries() {
         for (Path p : paths.values()) {
-            if (isBoundary(p) && s.weightSum(p.sigs) + s.weightSum(p.c.signals) >= 0) {
+            double ws = s.weightSum(p.c.signals);
+            if (isBoundary(p) && s.weightSum(p.sigs) + ws > 0) {
                 Set<Integer> eSigs = g.edgesOf(p.n).stream().filter(u -> u != p.c.elem)
                         .max(Comparator.comparingDouble(u -> s.weight(u)))
                         .map(u -> s.negativeUnitSets(u)).orElse(Collections.emptySet());
                 p.sigs.addAll(eSigs);
+                if (s.weightSum(p.sigs) + ws <= 0) continue;
                 Path prev = bestPaths.get(p.c);
                 if (prev == null || s.weightSum(prev.sigs) < s.weightSum(p.sigs))
                     bestPaths.put(p.c, p);
