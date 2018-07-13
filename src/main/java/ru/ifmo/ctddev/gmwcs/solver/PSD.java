@@ -96,6 +96,10 @@ public class PSD {
     private void findBoundaries() {
         for (Path p : paths.values()) {
             if (isBoundary(p) && s.weightSum(p.sigs) + s.weightSum(p.c.signals) >= 0) {
+                Set<Integer> eSigs = g.edgesOf(p.n).stream().filter(u -> u != p.c.elem)
+                        .max(Comparator.comparingDouble(u -> s.weight(u)))
+                        .map(u -> s.negativeUnitSets(u)).orElse(Collections.emptySet());
+                p.sigs.addAll(eSigs);
                 Path prev = bestPaths.get(p.c);
                 if (prev == null || s.weightSum(prev.sigs) < s.weightSum(p.sigs))
                     bestPaths.put(p.c, p);
