@@ -84,7 +84,6 @@ public class RLTSolver implements RootedSolver {
             PSD psd = new PSD(graph, signals);
             psd.decompose();
             if (psd.ub() < lb.get()) {
-                System.err.println(psd.ub());
                 return Collections.emptyList();
             }
             initVariables();
