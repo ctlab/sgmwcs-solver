@@ -23,6 +23,12 @@ public class PSD {
 
     private Map<Integer, Path> dsuPaths;
 
+    private double ub;
+
+    public double ub() {
+        return ub;
+    }
+
     private class Path {
         Node n;
         Path parent;
@@ -55,7 +61,7 @@ public class PSD {
                 Edge e = (Edge) elem;
                 Node u = g.getEdgeSource(e);
                 Node v = g.getEdgeTarget(e);
-                signals.addAll(s.positiveUnitSets(e, u, v));
+                signals.addAll(s.positiveUnitSets(e));
                 d[u.getNum()] = 0;
                 d[v.getNum()] = 0;
                 centers.putIfAbsent(u, this);
@@ -91,7 +97,7 @@ public class PSD {
         ub += dsuPaths.values().stream().distinct()
                 .flatMap(p -> p.sigs.stream()).distinct()
                 .mapToDouble(set -> s.weight(set)).sum();
-        System.err.println(ub);
+        this.ub = ub;
     }
 
     private void findBoundaries() {
@@ -125,8 +131,7 @@ public class PSD {
                     for (Node n : nodes) {
                         Center c = centers.get(n);
                         if (c == null || !c.signals.contains(sig)) continue;
-                        List<Integer> sets = c.signals.stream()
-                                .filter(num -> s.weight(num) > 0).collect(Collectors.toList());
+                        List<Integer> sets = c.signals;
                         int min = dsu.min(sets.get(0));
                         for (int set : sets) {
                             dsu.union(min, set);
@@ -153,7 +158,6 @@ public class PSD {
                 centers.remove(n);
             }
         }
-        System.out.println(usedSets.size());
     }
 
 
@@ -165,7 +169,6 @@ public class PSD {
     private void updatePath(int set, Path p) {
         Path prev = dsuPaths.get(set);
         if (prev == null || s.weightSum(p.sigs) > s.weightSum(prev.sigs)) {
-            System.out.println(s.weightSum(p.sigs));
             dsuPaths.put(set, p);
         }
     }
@@ -185,8 +188,8 @@ public class PSD {
             if (s.minSum(e) == 0) {
                 Center c = addCenter(e);
                 Node u = g.getEdgeSource(e), v = g.getEdgeTarget(e);
-                paths.put(u, new Path(c, u));
-                paths.put(v, new Path(c, v));
+                paths.putIfAbsent(u, new Path(c, u));
+                paths.putIfAbsent(v, new Path(c, v));
             }
         }
     }

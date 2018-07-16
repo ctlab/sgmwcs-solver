@@ -81,6 +81,12 @@ public class RLTSolver implements RootedSolver {
             cplex = new IloCplex();
             this.graph = graph;
             this.signals = signals;
+            PSD psd = new PSD(graph, signals);
+            psd.decompose();
+            if (psd.ub() < lb.get()) {
+                System.err.println(psd.ub());
+                return Collections.emptyList();
+            }
             initVariables();
             addConstraints();
             addObjective(signals);
