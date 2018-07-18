@@ -11,6 +11,8 @@ public class BlockPreprocessing {
     private Blocks blocks;
     private Set<Node> toRemove = new HashSet<>();
 
+    private double lb;
+
     /**
      * @param root
      */
@@ -18,21 +20,20 @@ public class BlockPreprocessing {
         this.graph = graph;
         this.signals = signals;
         blocks = new Blocks(graph);
-        unreachableNodes(root);
+//        unreachableNodes(root, graph.vertexSet(), blocks.cutpoints());
+        dfs(blocks.componentOf(root), root);
+    }
+
+    public void setLB(double lb) {
+        this.lb = lb;
     }
 
     public Set<Node> result() {
         return toRemove;
     }
 
-    /* private void preprocess(Node root) {
-        for (Set<Node> block : blocks.incidentBlocks(root)) {
-            dfs(block, root);
-        }
-    }
-
     private Set<Node> dfs(Set<Node> block, Node parent) {
-        Set<Node> S = new HashSet<>();
+        Set<Node> S = new HashSet<>(block);
         for (Node cp : blocks.cutpointsOf(block)) {
             if (cp == parent) continue;
             for (Set<Node> bl : blocks.incidentBlocks(cp)) {
@@ -40,29 +41,26 @@ public class BlockPreprocessing {
                 S.addAll(dfs(bl, cp));
             }
         }
-        S.addAll(block);
-        S = doPreprocessing(S, parent);
+        unreachableNodes(parent, S, blocks.cutpointsOf(block));
         return S;
     }
-    */
 
-    private void unreachableNodes(Node root/*, Set<Node> block*/) {
-        Dijkstra dk = new Dijkstra(graph, signals);
+    private void unreachableNodes(Node root, Set<Node> block, Set<Node> cps) {
+        PSD psd = new PSD(graph.subgraph(block), signals);
+        psd.decompose();
+        Dijkstra dk = new Dijkstra(graph.subgraph(block), signals);
         dk.solve(root);
         final Map<Node, Double> bottlenecks = dk.distances();
         Comparator<Node> comparator = Comparator.comparingDouble(bottlenecks::get);
         NavigableSet<Node> dists = new TreeSet<>(comparator);
-        Set<Integer> posSigs = signals.positiveUnitSets(graph.vertexSet());
-        double S = signals.weightSum(posSigs);
+        double ub = psd.ub();
         dists.addAll(bottlenecks.keySet());
         while (true) {
             Node n = dists.pollLast();
             if (n == null || n == root) break;
-            if (!bottlenecks.containsKey(n) || bottlenecks.get(n) >= S) {
+            if (cps.contains(n)) continue;
+            if (!bottlenecks.containsKey(n) || this.lb >= ub - bottlenecks.get(n)) {
                toRemove.add(n);
-               if (signals.bijection(n)) {
-                   S -= signals.maxSum(n);
-               }
             } else {
                break;
             }

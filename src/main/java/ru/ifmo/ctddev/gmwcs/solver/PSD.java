@@ -7,7 +7,6 @@ import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class PSD {
     private Graph g;
@@ -41,7 +40,7 @@ public class PSD {
             this.c = c;
             this.n = n;
             this.parent = this;
-            this.sigs = new HashSet<>(s.negativeUnitSets(n));
+            this.sigs = new HashSet<>(s.negativeUnitSets(n, c.elem));
         }
 
         Path(Path p, Node n, Edge e) {
@@ -54,7 +53,7 @@ public class PSD {
     }
 
     private class Center {
-        List<Integer> signals = new ArrayList<>();
+        List<Integer> sigs = new ArrayList<>();
         Unit elem;
 
         Center(Unit elem) {
@@ -63,14 +62,14 @@ public class PSD {
                 Edge e = (Edge) elem;
                 Node u = g.getEdgeSource(e);
                 Node v = g.getEdgeTarget(e);
-                signals.addAll(s.positiveUnitSets(e));
+                sigs.addAll(s.positiveUnitSets(e));
                 d[u.getNum()] = 0;
                 d[v.getNum()] = 0;
                 centers.putIfAbsent(u, this);
                 centers.putIfAbsent(v, this);
             } else {
                 centers.put((Node) elem, this);
-                signals.addAll(s.positiveUnitSets(elem));
+                sigs.addAll(s.positiveUnitSets(elem));
                 d[elem.getNum()] = 0;
             }
         }
@@ -94,23 +93,23 @@ public class PSD {
         findBoundaries();
         filterBoundaries();
         double ub = dsuPaths.values().stream()
-                .flatMap(p -> p.c.signals.stream()).distinct()
+                .flatMap(p -> p.c.sigs.stream()).distinct()
                 .mapToDouble(set -> s.weight(set)).sum();
         ub += dsuPaths.values().stream().distinct()
                 .flatMap(p -> p.sigs.stream()).distinct()
                 .mapToDouble(set -> s.weight(set)).sum();
         this.ub = ub;
-        System.out.println(ub);
     }
 
     private void findBoundaries() {
         for (Path p : paths.values()) {
-            double ws = s.weightSum(p.c.signals);
-            Set<Integer> eSigs = g.edgesOf(p.n).stream().filter(u -> u != p.c.elem)
+            double ws = s.weightSum(p.c.sigs);
+            Collection<Integer> eSigs = g.edgesOf(p.n).stream().filter(u -> u != p.c.elem)
                     .max(Comparator.comparingDouble(u -> s.weight(u)))
                     .map(u -> s.negativeUnitSets(u)).orElse(Collections.emptySet());
             p.sigs.addAll(eSigs);
-            if (isBoundary(p) && s.weightSum(p.sigs) + ws > 0) {
+            double r = s.weightSum(p.sigs) + ws;
+            if (isBoundary(p) && r > 0) {
                 Path prev = bestPaths.get(p.c);
                 if (prev == null || s.weightSum(prev.sigs) < s.weightSum(p.sigs))
                     bestPaths.put(p.c, p);
@@ -133,8 +132,8 @@ public class PSD {
                     } else continue;
                     for (Node n : nodes) {
                         Center c = centers.get(n);
-                        if (c == null || !c.signals.contains(sig)) continue;
-                        List<Integer> sets = c.signals;
+                        if (c == null) continue;
+                        List<Integer> sets = c.sigs;
                         int min = dsu.min(sets.get(0));
                         for (int set : sets) {
                             dsu.union(min, set);
@@ -143,7 +142,6 @@ public class PSD {
                         Path p = bestPaths.get(c);
                         if (p != null) {
                             updatePath(min, p);
-//                            dsuPaths.get(min).c.signals.add(sig);
                         } else {
                             centers.remove(n);
                         }
@@ -153,7 +151,7 @@ public class PSD {
         }
         Set<Integer> usedSets = new HashSet<>();
         for (Map.Entry<Integer, Path> kvp : dsuPaths.entrySet()) {
-            usedSets.addAll(kvp.getValue().c.signals);
+            usedSets.addAll(kvp.getValue().c.sigs);
         }
         for (Node n : new HashSet<>(centers.keySet())) {
             Unit u = paths.get(n).c.elem;
@@ -165,7 +163,7 @@ public class PSD {
 
 
     private boolean isBoundary(Path p) {
-        return g.neighborListOf(p.n).stream()
+        return g.vertexSet().size() == 1 || g.neighborListOf(p.n).stream()
                 .anyMatch(n -> paths.get(n).c != p.c);
     }
 
@@ -182,13 +180,13 @@ public class PSD {
 
     private void makeCenters() {
         for (Node n : g.vertexSet()) {
-            if (s.weight(n) > 0) {
+            if (s.maxSum(n) > 0) {
                 Center c = addCenter(n);
                 paths.put(n, new Path(c, n));
             }
         }
         for (Edge e : g.edgeSet()) {
-            if (s.weight(e) > 0) {
+            if (s.maxSum(e) > 0) {
                 Center c = addCenter(e);
                 Node u = g.getEdgeSource(e), v = g.getEdgeTarget(e);
                 paths.putIfAbsent(u, new Path(c, u));

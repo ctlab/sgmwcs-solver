@@ -19,4 +19,6 @@ public interface Solver {
     void setLogLevel(int logLevel);
 
     void setLB(double lb);
+
+    double getLB();
 }

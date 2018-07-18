@@ -100,6 +100,10 @@ public class ReferenceSolver implements Solver {
     @Override
     public void setLB(double lb) {
         throw new UnsupportedOperationException();
+    }
 
+    @Override
+    public double getLB() {
+        return 0;
     }
 }

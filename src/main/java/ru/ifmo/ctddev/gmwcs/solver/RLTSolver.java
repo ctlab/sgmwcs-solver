@@ -97,7 +97,7 @@ public class RLTSolver implements RootedSolver {
             }
             breakTreeSymmetries();
             tuning(cplex);
-            if (graph.vertexSet().size() >= 50) {
+            if (graph.edgeSet().size() >= 1) {
                 cplex.use(new MSTCallback());
                 CplexSolution sol = MSTHeuristic(makeHeuristicWeights());
                 if (sol != null) {
@@ -422,6 +422,10 @@ public class RLTSolver implements RootedSolver {
         this.lb = lb;
     }
 
+    public double getLB() {
+        return lb.get();
+    }
+
     private Map<Edge, Double> makeHeuristicWeights() {
         Map<Edge, Double> weights = new HashMap<>();
         for (Edge e : graph.edgeSet()) {
@@ -430,13 +434,6 @@ public class RLTSolver implements RootedSolver {
             if (weightSum > 0) {
                 weights.put(e,  1.0 / weightSum); // Edge is non-negative so it has the highest priority
             } else weights.put(e, 2.0);
-           /* else if (edgeMax > 0 && !nps.containsAll(eps)) {
-                eps.removeAll(nps); //Edge contains both negative and positive signals
-                weights.put(e, 1.0 / signals.weightSum(eps));
-            } else {
-                ens.removeAll(nns); //Edge contains only negative signals
-                weights.put(e, -signals.weightSum(ens));
-            } */
         }
         return weights;
     }
@@ -579,11 +576,11 @@ public class RLTSolver implements RootedSolver {
         private List<IloNumVar> variables = new LinkedList<>();
         private List<Double> values = new LinkedList<>();
 
-        public IloNumVar[] variables() {
+        IloNumVar[] variables() {
             return variables.toArray(new IloNumVar[0]);
         }
 
-        public double[] values() {
+        double[] values() {
             return values.stream().mapToDouble(d -> d).toArray();
         }
 
@@ -593,11 +590,6 @@ public class RLTSolver implements RootedSolver {
         }
 
         void addVariable(IloNumVar var, double val) {
-/*            try {
-                cplex.addEq(var, val); // for debug purposes: add
-            } catch (IloException e) { // these constraints to check infeasibility of heuristic
-                throw new Error("oops");
-            } */
             variables.add(var);
             values.add(val);
         }
@@ -607,7 +599,6 @@ public class RLTSolver implements RootedSolver {
                 addVariable(var, 0);
             }
         }
-
 
         boolean apply(BiFunction<IloNumVar[], double[], Boolean> set) {
             double[] vals = new double[values.size()];

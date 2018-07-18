@@ -81,7 +81,7 @@ public class TreeSolver {
                 Solution max = childSols.stream().max(
                         Comparator.comparingDouble(sol -> s.weightSum(sol.sets()))
                 ).get();
-                max.sets().removeAll(signals);
+                max.sets().removeAll(sigs);
                 if (s.weightSum(max.sets()) < 0) {
                     break;
                 } else {
@@ -90,10 +90,11 @@ public class TreeSolver {
                 }
             }*/
             for (Solution childSol: childSols) {
-                Set<Integer> childSets = childSol.sets();
+                Set<Integer> childSets = new HashSet<>(childSol.sets());
 //                 Set<Integer> setSum = new HashSet<>(childSets);
-   //             setSum.addAll(signals);
-                if (s.weightSum(childSets) >= 0) {
+   //             setSum.addAll(sigs);
+                childSets.addAll(signals);
+                if (s.weightSum(childSets) >= s.weightSum(signals)) {
                     nonEmpty.units.addAll(childSol.units);
                 }
             }

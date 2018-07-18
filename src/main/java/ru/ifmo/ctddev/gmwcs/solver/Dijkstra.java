@@ -26,7 +26,7 @@ class Dijkstra {
     /**
      * Constructs Dijkstra algorithm instance provided {@link Graph} and
      * {@link Signals}. The distance between two nodes <code>u</code>
-     * and <code>v</code> is a modulus of sum of negative signals on path
+     * and <code>v</code> is a modulus of sum of negative sigs on path
      * u -> v.
      */
     Dijkstra(Graph graph, Signals signals) {
@@ -101,8 +101,8 @@ class Dijkstra {
 
     /**
      * Tests NP2 reduction rule which holds if the degree of {@linkplain Node} <code>u</code>
-     * is 2, the shortest distance between it's neighbours is less than the sum of negative signals
-     * of <code>u</code> and its adjacent edges and none of them contains positive signals.
+     * is 2, the shortest distance between it's neighbours is less than the sum of negative sigs
+     * of <code>u</code> and its adjacent edges and none of them contains positive sigs.
      *
      * @param u Candidate {@linkplain Node} for removal
      * @return <code>true</code> if <code>u</code> can be removed from {@link Graph}

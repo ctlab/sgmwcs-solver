@@ -31,14 +31,14 @@ public class MSTSolver {
     }
 
     public void solve() {
-        Double cost = 0.0;
+        double cost = 0.0;
         Set<Edge> res = new HashSet<>();
         Set<Node> unvisited = new HashSet<>(g.vertexSet());
         Node cur = root;
         unvisited.remove(root);
         PriorityQueue<Edge> q =
                 new PriorityQueue<>(Comparator.comparingDouble(ws::get));
-        while (!unvisited.isEmpty()) {
+        for (int i = 0; i < g.vertexSet().size(); ++i) {
             Node nbor;
             for (Edge e : g.edgesOf(cur)) {
                 nbor = g.getOppositeVertex(cur, e);

@@ -38,14 +38,17 @@ public class Worker implements Runnable {
     public void run() {
         solver.setRoot(root);
         if (root != null) {
-            Set<Node> toRemove = new BlockPreprocessing(graph, signals, root).result();
+            BlockPreprocessing bp = new BlockPreprocessing(graph, signals, root);
+            bp.setLB(solver.getLB());
+            Set<Node> toRemove = bp.result();
             toRemove.forEach(n -> {
                 Set<Edge> edges = graph.edgesOf(n);
                 graph.removeVertex(n);
                 edges.forEach(signals::remove);
                 signals.remove(n);
             });
-            if (true || logLevel > 0) {
+
+            if (logLevel > 0) {
                 System.out.println("Block Preprocessing removed " + toRemove.size() + " nodes.");
             }
         }
@@ -58,7 +61,12 @@ public class Worker implements Runnable {
         if (graph.vertexSet().isEmpty()) {
             result = Collections.emptyList();
         } else try {
-            List<Unit> sol = solver.solve(graph, signals);
+            Set<Node> comp = null;
+            if (graph.connectedSets().size() > 1) {
+                comp = graph.connectedSets().stream().filter(s -> s.contains(root)).findFirst().get();
+            }
+            graph.vertexSet();
+            List<Unit> sol = solver.solve(comp != null ? graph.subgraph(comp) : graph, signals);
             if (Utils.sum(sol, signals) > Utils.sum(result, signals)) {
                 result = sol;
             }
