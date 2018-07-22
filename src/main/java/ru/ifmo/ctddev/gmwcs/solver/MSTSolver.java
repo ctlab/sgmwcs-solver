@@ -38,10 +38,9 @@ public class MSTSolver {
         unvisited.remove(root);
         PriorityQueue<Edge> q =
                 new PriorityQueue<>(Comparator.comparingDouble(ws::get));
-        for (int i = 0; i < g.vertexSet().size(); ++i) {
-            Node nbor;
+        for (int i = 0; i < g.vertexSet().size() - 1; ++i) {
             for (Edge e : g.edgesOf(cur)) {
-                nbor = g.getOppositeVertex(cur, e);
+                Node nbor = g.getOppositeVertex(cur, e);
                 if (unvisited.contains(nbor)) {
                     q.add(e);
                 }
@@ -53,8 +52,8 @@ public class MSTSolver {
                 cost += ws.get(e);
                 res.add(e);
                 cur = unvisited.contains(et) ? et : es;
+                unvisited.remove(cur);
             }
-            unvisited.remove(cur);
         }
         this.cost = cost;
         this.res = res;

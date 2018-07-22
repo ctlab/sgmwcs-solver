@@ -20,9 +20,9 @@ public class Worker implements Runnable {
     private boolean isSolvedToOptimality;
     private boolean isOk;
     private long startTime;
+    private int logLevel; // todo
 
 
-    private int logLevel = 0;
 
     public Worker(Graph graph, Node root, Signals signals, RootedSolver solver, long time) {
         this.solver = solver;
@@ -48,7 +48,7 @@ public class Worker implements Runnable {
                 signals.remove(n);
             });
 
-            if (logLevel > 0) {
+            if (logLevel > 1 || true) {
                 System.out.println("Block Preprocessing removed " + toRemove.size() + " nodes.");
             }
         }
@@ -65,7 +65,6 @@ public class Worker implements Runnable {
             if (graph.connectedSets().size() > 1) {
                 comp = graph.connectedSets().stream().filter(s -> s.contains(root)).findFirst().get();
             }
-            graph.vertexSet();
             List<Unit> sol = solver.solve(comp != null ? graph.subgraph(comp) : graph, signals);
             if (Utils.sum(sol, signals) > Utils.sum(result, signals)) {
                 result = sol;

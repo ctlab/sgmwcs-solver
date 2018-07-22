@@ -183,6 +183,7 @@ public class Graph {
         return subgraph(nodes, edges);
     }
 
+
     public Graph subgraph(Set<Node> nodes, Set<Edge> edges) {
         Graph res = new Graph();
         nodes.forEach(res::addVertex);

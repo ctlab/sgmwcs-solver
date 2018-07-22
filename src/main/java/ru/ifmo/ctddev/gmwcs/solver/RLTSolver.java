@@ -83,7 +83,7 @@ public class RLTSolver implements RootedSolver {
             this.signals = signals;
             PSD psd = new PSD(graph, signals);
             psd.decompose();
-            if (psd.ub() < lb.get()) {
+            if (psd.ub() < externLB) {
                 return Collections.emptyList();
             }
             initVariables();
@@ -520,7 +520,7 @@ public class RLTSolver implements RootedSolver {
         }
         for (int sig = 0; sig < signals.size(); sig++) {
             List<Unit> units = signals.set(sig);
-            if (units.size() > 1 && signals.weight(sig) != 0) {
+            if (s.containsKey(sig) && units.size() > 1 && signals.weight(sig) != 0) {
                 boolean val = units.stream().anyMatch(solutionUnits::contains);
                 solution.addVariable(s.get(sig), val ? 1 : 0);
             }

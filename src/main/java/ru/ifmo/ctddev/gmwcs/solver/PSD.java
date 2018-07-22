@@ -7,10 +7,13 @@ import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class PSD {
     private Graph g;
     private Signals s;
+
+    private DSU dsu;
 
     private double[] d;
 
@@ -22,6 +25,8 @@ public class PSD {
 
     private Map<Integer, Path> dsuPaths;
 
+    private Set<Node> forced;
+
     private double ub;
 
     private double sub;
@@ -30,7 +35,11 @@ public class PSD {
         return ub;
     }
 
-    private class Path {
+    public double sub() {
+        return sub;
+    }
+
+    public class Path {
         Node n;
         Path parent;
         Center c;
@@ -52,7 +61,7 @@ public class PSD {
         }
     }
 
-    private class Center {
+    public class Center {
         List<Integer> sigs = new ArrayList<>();
         Unit elem;
 
@@ -75,16 +84,30 @@ public class PSD {
         }
     }
 
-    public PSD(Graph g, Signals s) {
+    public PSD(Graph g, Signals s, Set<Node> forced) {
         this.g = g;
         this.s = s;
-        g.vertexSet();
         this.centers = new HashMap<>();
         this.paths = new HashMap<>();
         this.bestPaths = new HashMap<>();
         this.dsuPaths = new HashMap<>();
+        this.forced = forced;
         d = new double[5000]; // TODO
         Arrays.fill(d, Double.POSITIVE_INFINITY);
+    }
+
+    public PSD(Graph g, Signals s) {
+        this(g, s, Collections.emptySet());
+    }
+
+
+    private double getUpperBound() {
+        return dsuPaths.values().stream()
+                .flatMap(p -> Stream.concat(
+                        p.c.sigs.stream(),
+                        p.sigs.stream()
+                )).distinct()
+                .mapToDouble(set -> s.weight(set)).sum();
     }
 
     public void decompose() {
@@ -92,13 +115,26 @@ public class PSD {
         dijkstra();
         findBoundaries();
         filterBoundaries();
-        double ub = dsuPaths.values().stream()
-                .flatMap(p -> p.c.sigs.stream()).distinct()
-                .mapToDouble(set -> s.weight(set)).sum();
-        ub += dsuPaths.values().stream().distinct()
-                .flatMap(p -> p.sigs.stream()).distinct()
-                .mapToDouble(set -> s.weight(set)).sum();
-        this.ub = ub;
+        forceVertices(forced);
+        this.ub = getUpperBound();
+    }
+
+    public Optional<Path> forceVertex(Node f) {
+        Path p = paths.get(f);
+        int key = dsu.min(p.c.sigs.get(0));
+        Path prev = dsuPaths.put(key, p);
+        if (prev != null && prev != p) {
+            return Optional.of(prev);
+        } else return Optional.empty();
+    }
+
+    public Set<Path> forceVertices(Set<Node> vertices) {
+        Set<Path> res = new HashSet<>();
+        this.forced = vertices;
+        for (Node f : forced) {
+            forceVertex(f).ifPresent(res::add);
+        }
+        return res;
     }
 
     private void findBoundaries() {
@@ -118,10 +154,10 @@ public class PSD {
     }
 
     private void filterBoundaries() {
-        DSU dsu = new DSU(s);
+        dsu = new DSU(s);
         for (int sig = 0; sig < s.size(); sig++) {
             if (s.weight(sig) > 0) {
-                sub += s.weight(sig);
+                double add = 0;
                 List<Unit> units = s.set(sig);
                 for (Unit u : units) {
                     List<Node> nodes;
@@ -141,12 +177,19 @@ public class PSD {
                         min = dsu.min(min);
                         Path p = bestPaths.get(c);
                         if (p != null) {
+                            add = s.weight(sig);
                             updatePath(min, p);
+                            for (int si: p.c.sigs) {
+                                if (!c.sigs.contains(si)) {
+                                    c.sigs.add(si);
+                                }
+                            }
                         } else {
                             centers.remove(n);
                         }
                     }
                 }
+                sub += add;
             }
         }
         Set<Integer> usedSets = new HashSet<>();
@@ -215,9 +258,5 @@ public class PSD {
                 }
             }
         }
-    }
-
-    private void test(Node n) {
-        // double ub =
     }
 }

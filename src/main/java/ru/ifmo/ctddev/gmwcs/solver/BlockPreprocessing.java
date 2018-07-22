@@ -20,8 +20,8 @@ public class BlockPreprocessing {
         this.graph = graph;
         this.signals = signals;
         blocks = new Blocks(graph);
-//        unreachableNodes(root, graph.vertexSet(), blocks.cutpoints());
-        dfs(blocks.componentOf(root), root);
+        unreachableNodes(root, graph.vertexSet());
+        // dfs(blocks.componentOf(root), root);
     }
 
     public void setLB(double lb) {
@@ -41,28 +41,33 @@ public class BlockPreprocessing {
                 S.addAll(dfs(bl, cp));
             }
         }
-        unreachableNodes(parent, S, blocks.cutpointsOf(block));
+        // unreachableNodes(parent, S, blocks.cutpointsOf(block));
         return S;
     }
 
-    private void unreachableNodes(Node root, Set<Node> block, Set<Node> cps) {
-        PSD psd = new PSD(graph.subgraph(block), signals);
+    private void unreachableNodes(Node root, Set<Node> block) {
+        PSD psd = new PSD(graph.subgraph(block), signals, Collections.singleton(root));
         psd.decompose();
+        double ub = psd.ub();
+        System.out.println(ub);
         Dijkstra dk = new Dijkstra(graph.subgraph(block), signals);
         dk.solve(root);
         final Map<Node, Double> bottlenecks = dk.distances();
         Comparator<Node> comparator = Comparator.comparingDouble(bottlenecks::get);
         NavigableSet<Node> dists = new TreeSet<>(comparator);
-        double ub = psd.ub();
         dists.addAll(bottlenecks.keySet());
+        Optional<PSD.Path> prev = Optional.empty();
         while (true) {
+            prev.ifPresent(path -> psd.forceVertex(path.n));
             Node n = dists.pollLast();
+            prev = psd.forceVertex(n);
+            double newUb = psd.ub();
             if (n == null || n == root) break;
-            if (cps.contains(n)) continue;
-            if (!bottlenecks.containsKey(n) || this.lb >= ub - bottlenecks.get(n)) {
-               toRemove.add(n);
+            if (!bottlenecks.containsKey(n)
+                    || this.lb >= newUb || this.lb >= psd.sub() + bottlenecks.get(n)) {
+                toRemove.add(n);
             } else {
-               break;
+                break;
             }
         }
     }
