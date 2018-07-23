@@ -27,7 +27,7 @@ public class PSD {
 
     private Set<Node> forced;
 
-    private boolean solutionIsTree;
+    public final boolean solutionIsTree;
 
     private double ub;
 

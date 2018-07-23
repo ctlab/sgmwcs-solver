@@ -95,6 +95,10 @@ public class RLTSolver implements RootedSolver {
             } else {
                 tighten();
             }
+            if (psd.solutionIsTree) {
+                System.out.println("tree");
+                treeConstraints();
+            }
             breakTreeSymmetries();
             tuning(cplex);
             if (graph.edgeSet().size() >= 1) {
@@ -141,6 +145,7 @@ public class RLTSolver implements RootedSolver {
             cplex.end();
         }
     }
+
 
     private Set<Unit> usePrimalHeuristic(Node treeRoot,
                                          Map<Edge, Double> edgeWeights) {
@@ -386,6 +391,7 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
+
     private void sumConstraints() throws IloException {
         // (31)
         cplex.addLe(cplex.sum(graph.vertexSet().stream().map(x -> x0.get(x)).toArray(IloNumVar[]::new)), 1);
@@ -403,6 +409,11 @@ public class RLTSolver implements RootedSolver {
             xSum[xSum.length - 1] = x0.get(node);
             cplex.addEq(cplex.sum(xSum), y.get(node));
         }
+    }
+
+    private void treeConstraints() throws IloException {
+        cplex.addEq(cplex.sum(y.values().toArray(new IloNumVar[0])),
+                cplex.sum(1, cplex.sum(w.values().toArray(new IloNumVar[0]))));
     }
 
     private IloNumVar getX(Edge e, Node to) {
@@ -427,12 +438,18 @@ public class RLTSolver implements RootedSolver {
     }
 
     private Map<Edge, Double> makeHeuristicWeights() {
+        return makeHeuristicWeights(graph, signals);
+    }
+
+
+    // todo: move somewhere else
+    public static Map<Edge, Double> makeHeuristicWeights(Graph graph, Signals signals) {
         Map<Edge, Double> weights = new HashMap<>();
         for (Edge e : graph.edgeSet()) {
             Node u = graph.getEdgeSource(e), v = graph.getEdgeTarget(e);
             double weightSum = signals.sum(e, u, v);
             if (weightSum > 0) {
-                weights.put(e,  1.0 / weightSum); // Edge is non-negative so it has the highest priority
+                weights.put(e, 1.0 / weightSum); // Edge is non-negative so it has the highest priority
             } else weights.put(e, 2.0);
         }
         return weights;

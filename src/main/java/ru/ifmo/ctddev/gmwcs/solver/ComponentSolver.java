@@ -83,6 +83,21 @@ public class ComponentSolver implements Solver {
             Set<Unit> subset = new HashSet<>(subgraph.vertexSet());
             subset.addAll(subgraph.edgeSet());
             Signals subSignals = new Signals(signals, subset);
+            if (root != null) {
+                MSTSolver ms = new MSTSolver(
+                        subgraph, RLTSolver.makeHeuristicWeights(subgraph, subSignals), root
+                );
+                ms.solve();
+                Graph subtree = subgraph.subgraph(subgraph.vertexSet(), ms.getEdges());
+                TreeSolver ts = new TreeSolver(subtree, subSignals);
+                TreeSolver.Solution sol = ts.solveRooted(root);
+                double tlb = subSignals.weightSum(sol.sets());
+                double plb = lb.get();
+                if (tlb >= plb) {
+                    lb.compareAndSet(plb, tlb);
+                    solver.setLB(tlb);
+                }
+            }
             Worker worker = new Worker(subgraph, root,
                     subSignals, solver, timeBefore);
             executor.execute(worker);
