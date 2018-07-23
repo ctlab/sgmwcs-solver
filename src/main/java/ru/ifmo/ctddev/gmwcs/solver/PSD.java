@@ -27,6 +27,8 @@ public class PSD {
 
     private Set<Node> forced;
 
+    private boolean solutionIsTree;
+
     private double ub;
 
     private double sub;
@@ -85,6 +87,9 @@ public class PSD {
     }
 
     public PSD(Graph g, Signals s, Set<Node> forced) {
+        int sz = g.vertexSet().stream().mapToInt(Unit::getNum).max().orElse(0) + 1;
+        d = new double[sz];
+        Arrays.fill(d, Double.POSITIVE_INFINITY);
         this.g = g;
         this.s = s;
         this.centers = new HashMap<>();
@@ -92,8 +97,15 @@ public class PSD {
         this.bestPaths = new HashMap<>();
         this.dsuPaths = new HashMap<>();
         this.forced = forced;
-        d = new double[5000]; // TODO
-        Arrays.fill(d, Double.POSITIVE_INFINITY);
+
+        int[] colors = new int[sz];
+        boolean posCycle = false;
+        for (Node n : g.vertexSet()) {
+            if (colors[n.getNum()] == 0) {
+                posCycle |= posCycles(n, null, colors);
+            }
+        }
+        solutionIsTree = !posCycle;
     }
 
     public PSD(Graph g, Signals s) {
@@ -101,12 +113,30 @@ public class PSD {
     }
 
 
+    private boolean posCycles(Node r, Node par, int[] colors) {
+        colors[r.getNum()] = 1;
+        boolean pos = false;
+        for (Node n : g.neighborListOf(r)) {
+            if (colors[n.getNum()] == 2 || n == par) continue;
+            for (Edge e : g.getAllEdges(r, n)) {
+                if (s.weight(e) >= 0) {
+                    if (colors[n.getNum()] == 1)
+                        pos = true;
+                    else
+                        pos |= posCycles(n, r, colors);
+                }
+            }
+        }
+        colors[r.getNum()] = 2;
+        return pos;
+    }
+
+
     private double getUpperBound() {
         return dsuPaths.values().stream()
                 .flatMap(p -> Stream.concat(
                         p.c.sigs.stream(),
-                        p.sigs.stream()
-                )).distinct()
+                        p.sigs.stream())).distinct()
                 .mapToDouble(set -> s.weight(set)).sum();
     }
 
@@ -141,8 +171,8 @@ public class PSD {
         for (Path p : paths.values()) {
             double ws = s.weightSum(p.c.sigs);
             Collection<Integer> eSigs = g.edgesOf(p.n).stream().filter(u -> u != p.c.elem)
-                    .max(Comparator.comparingDouble(u -> s.weight(u)))
-                    .map(u -> s.negativeUnitSets(u)).orElse(Collections.emptySet());
+                    .max(Comparator.comparingDouble(s::weight))
+                    .map(s::negativeUnitSets).orElse(Collections.emptySet());
             p.sigs.addAll(eSigs);
             double r = s.weightSum(p.sigs) + ws;
             if (isBoundary(p) && r > 0) {
@@ -179,7 +209,7 @@ public class PSD {
                         if (p != null) {
                             add = s.weight(sig);
                             updatePath(min, p);
-                            for (int si: p.c.sigs) {
+                            for (int si : p.c.sigs) {
                                 if (!c.sigs.contains(si)) {
                                     c.sigs.add(si);
                                 }

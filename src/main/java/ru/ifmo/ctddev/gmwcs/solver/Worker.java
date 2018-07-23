@@ -22,8 +22,6 @@ public class Worker implements Runnable {
     private long startTime;
     private int logLevel; // todo
 
-
-
     public Worker(Graph graph, Node root, Signals signals, RootedSolver solver, long time) {
         this.solver = solver;
         this.graph = graph;
