@@ -35,6 +35,11 @@ public class RLTSolver implements RootedSolver {
     private double externLB;
     private boolean isLBShared;
     private IloNumVar sum;
+    private boolean solutionIsTree;
+
+    public void setSolIsTree(boolean tree) {
+        solutionIsTree = tree;
+    }
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
@@ -81,11 +86,6 @@ public class RLTSolver implements RootedSolver {
             cplex = new IloCplex();
             this.graph = graph;
             this.signals = signals;
-            PSD psd = new PSD(graph, signals);
-            psd.decompose();
-            if (psd.ub() < externLB) {
-                return Collections.emptyList();
-            }
             initVariables();
             addConstraints();
             addObjective(signals);
@@ -95,7 +95,7 @@ public class RLTSolver implements RootedSolver {
             } else {
                 tighten();
             }
-            if (psd.solutionIsTree) {
+            if (solutionIsTree) {
                 System.out.println("tree");
                 treeConstraints();
             }
@@ -322,7 +322,7 @@ public class RLTSolver implements RootedSolver {
         IloNumExpr sum = cplex.scalProd(ks.stream().mapToDouble(d -> d).toArray(),
                 vs.toArray(new IloNumVar[0]));
 
-        this.sum = cplex.numVar(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, "prSum");
+        this.sum = cplex.numVar(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, "sum");
         cplex.addGe(sum, lb.get());
         cplex.addEq(this.sum, sum);
         cplex.addMaximize(this.sum);

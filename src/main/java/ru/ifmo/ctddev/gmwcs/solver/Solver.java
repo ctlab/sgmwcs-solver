@@ -21,4 +21,5 @@ public interface Solver {
     void setLB(double lb);
 
     double getLB();
+
 }

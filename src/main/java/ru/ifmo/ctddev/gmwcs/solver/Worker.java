@@ -45,7 +45,11 @@ public class Worker implements Runnable {
                 edges.forEach(signals::remove);
                 signals.remove(n);
             });
-
+            if (bp.psd.ub() <= bp.getLB()) {
+                result = Collections.emptyList();
+                return;
+            }
+            solver.setSolIsTree(bp.psd.solutionIsTree);
             if (logLevel > 1 || true) {
                 System.out.println("Block Preprocessing removed " + toRemove.size() + " nodes.");
             }

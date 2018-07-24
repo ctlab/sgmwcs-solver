@@ -93,9 +93,9 @@ public class ComponentSolver implements Solver {
                 TreeSolver.Solution sol = ts.solveRooted(root);
                 double tlb = subSignals.weightSum(sol.sets());
                 double plb = lb.get();
+                System.out.println("found lb " + tlb);
                 if (tlb >= plb) {
                     lb.compareAndSet(plb, tlb);
-                    solver.setLB(tlb);
                 }
             }
             Worker worker = new Worker(subgraph, root,

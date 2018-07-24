@@ -102,10 +102,11 @@ public class PSD {
         boolean posCycle = false;
         for (Node n : g.vertexSet()) {
             if (colors[n.getNum()] == 0) {
-                posCycle |= posCycles(n, null, colors);
+                posCycle |= posCycles(n, null, colors, new HashSet<>());
             }
         }
         solutionIsTree = !posCycle;
+        System.out.println(solutionIsTree);
     }
 
     public PSD(Graph g, Signals s) {
@@ -113,17 +114,27 @@ public class PSD {
     }
 
 
-    private boolean posCycles(Node r, Node par, int[] colors) {
+    private boolean posCycles(Node r, Node par, int[] colors, Set<Integer> sigs) {
         colors[r.getNum()] = 1;
         boolean pos = false;
+        sigs.addAll(s.positiveUnitSets(r));
         for (Node n : g.neighborListOf(r)) {
             if (colors[n.getNum()] == 2 || n == par) continue;
             for (Edge e : g.getAllEdges(r, n)) {
-                if (s.weight(e) >= 0) {
+                Set<Integer> ens = s.positiveUnitSets(e, n);
+                if (s.weight(e) >= 0 && !sigs.containsAll(ens)) {
                     if (colors[n.getNum()] == 1)
                         pos = true;
-                    else
-                        pos |= posCycles(n, r, colors);
+                    else {
+                        Set<Integer> added = new HashSet<>();
+                        for (int sig: ens) {
+                            if (sigs.add(sig)) {
+                                added.add(sig);
+                            }
+                        }
+                        pos |= posCycles(n, r, colors, sigs);
+                        sigs.removeAll(added);
+                    }
                 }
             }
         }
@@ -140,13 +151,16 @@ public class PSD {
                 .mapToDouble(set -> s.weight(set)).sum();
     }
 
-    public void decompose() {
+    public boolean decompose() {
         makeCenters();
+        if (paths.isEmpty())
+            return false; // No positive veritces, no decomposition exists
         dijkstra();
         findBoundaries();
         filterBoundaries();
         forceVertices(forced);
         this.ub = getUpperBound();
+        return true;
     }
 
     public Optional<Path> forceVertex(Node f) {

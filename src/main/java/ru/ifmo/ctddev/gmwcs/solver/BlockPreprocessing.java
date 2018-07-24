@@ -12,6 +12,7 @@ public class BlockPreprocessing {
     private Set<Node> toRemove = new HashSet<>();
 
     private double lb;
+    public PSD psd;
 
     /**
      * @param root
@@ -22,6 +23,10 @@ public class BlockPreprocessing {
         blocks = new Blocks(graph);
         unreachableNodes(root, graph.vertexSet());
         // dfs(blocks.componentOf(root), root);
+    }
+
+    public double getLB() {
+        return this.lb;
     }
 
     public void setLB(double lb) {
@@ -46,8 +51,12 @@ public class BlockPreprocessing {
     }
 
     private void unreachableNodes(Node root, Set<Node> block) {
-        PSD psd = new PSD(graph.subgraph(block), signals, Collections.singleton(root));
-        psd.decompose();
+        Graph subgraph = graph.subgraph(block);
+        psd = new PSD(subgraph, signals, Collections.singleton(root));
+        if (!psd.decompose()) {
+            toRemove.addAll(subgraph.vertexSet());
+            return;
+        }
         double ub = psd.ub();
         System.out.println(ub);
         Dijkstra dk = new Dijkstra(graph.subgraph(block), signals);
