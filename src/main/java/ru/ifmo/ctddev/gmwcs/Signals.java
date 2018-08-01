@@ -217,8 +217,7 @@ public class Signals {
     public void remove(Unit unit) {
         List<Integer> us = unitsSets.get(unit);
         for (int s: us) {
-            Set<Unit> set = sets.get(s);
-            set.remove(unit);
+            sets.get(s).remove(unit);
         }
         unitsSets.remove(unit);
     }

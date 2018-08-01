@@ -106,7 +106,6 @@ public class PSD {
             }
         }
         solutionIsTree = !posCycle;
-        System.out.println(solutionIsTree);
     }
 
     public PSD(Graph g, Signals s) {
@@ -154,7 +153,7 @@ public class PSD {
     public boolean decompose() {
         makeCenters();
         if (paths.isEmpty())
-            return false; // No positive veritces, no decomposition exists
+            return false; // No positive vertices, no decomposition exists
         dijkstra();
         findBoundaries();
         filterBoundaries();
