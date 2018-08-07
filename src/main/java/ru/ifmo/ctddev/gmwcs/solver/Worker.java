@@ -14,7 +14,7 @@ import java.util.Set;
 public class Worker implements Runnable {
     private final Signals signals;
     private final Graph graph;
-    private final RootedSolver solver;
+    private final RLTSolver solver; //was RootedSolver, TODO!!!!!!!!!!!!
     private final Node root;
     private List<Unit> result;
     private boolean isSolvedToOptimality;
@@ -22,7 +22,7 @@ public class Worker implements Runnable {
     private long startTime;
     private int logLevel; // todo
 
-    public Worker(Graph graph, Node root, Signals signals, RootedSolver solver, long time) {
+    public Worker(Graph graph, Node root, Signals signals, RLTSolver solver, long time) {
         this.solver = solver;
         this.graph = graph;
         this.signals = signals;
@@ -50,6 +50,7 @@ public class Worker implements Runnable {
                 return;
             }
             solver.setSolIsTree(bp.psd.solutionIsTree);
+            solver.setPSD(bp.psd);
             if (logLevel > 1 || true) {
                 System.out.println("Block Preprocessing removed " + toRemove.size() + " nodes.");
             }

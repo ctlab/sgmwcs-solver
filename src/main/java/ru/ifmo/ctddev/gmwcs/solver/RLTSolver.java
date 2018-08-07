@@ -38,6 +38,7 @@ public class RLTSolver implements RootedSolver {
     private IloNumVar sum;
     private boolean solutionIsTree;
     private IloNumVar prSum;
+    private PSD psd;
 
     public void setSolIsTree(boolean tree) {
         solutionIsTree = tree;
@@ -56,6 +57,10 @@ public class RLTSolver implements RootedSolver {
 
     public void setConsideringCuts(int num) {
         considerCuts = num;
+    }
+
+    public void setPSD(PSD psd) {
+        this.psd = psd;
     }
 
     public void setInitialSolution(Set<Unit> solution) {
@@ -104,6 +109,9 @@ public class RLTSolver implements RootedSolver {
             if (solutionIsTree) {
                 treeConstraints();
             }
+            if (psd != null) {
+                psdConstraints(signals, psd);
+            }
             breakTreeSymmetries();
             tuning(cplex);
             if (graph.edgeSet().size() >= 1)
@@ -130,13 +138,13 @@ public class RLTSolver implements RootedSolver {
                 Object c = it.next();
                 constraints.add((IloRange) c);
             }
-            double[] zeros = new double[constraints.size()];
+            /*double[] zeros = new double[constraints.size()];
             Arrays.fill(zeros, 0);
             if (cplex.refineMIPStartConflict(0, constraints.toArray(new IloConstraint[0]), zeros)) {
                 System.out.println("Conflict refined");
                 cplex.writeMIPStarts("../starts.mst");
             } else System.out.println("Conflict not refined");
-            cplex.exportModel("../model.lp");
+            cplex.exportModel("../model.lp");*/
             boolean solFound = cplex.solve();
             if (cplex.getCplexStatus() != CplexStatus.AbortTimeLim) {
                 isSolvedToOptimality = true;
@@ -378,13 +386,39 @@ public class RLTSolver implements RootedSolver {
                     Edge e = graph.getAllEdges(v, u)
                             .stream().max(Comparator.comparingDouble(signals::weight)).get();
                     if (signals.minSum(e) == 0) {
-                        for (int sig: signals.unitSets(e)) {
+                        for (int sig : signals.unitSets(e)) {
                             cplex.addLe(y.get(v), s.getOrDefault(sig, w.get(e)));
                         }
                     }
                 }
             }
         }
+    }
+
+    private void psdConstraints(Signals signals, PSD psd) throws IloException {
+        Map<PSD.Center, List<PSD.Path>> centerPaths = psd.centerPaths();
+        for (Map.Entry<PSD.Center, List<PSD.Path>> cps : centerPaths.entrySet()) {
+            PSD.Center c = cps.getKey();
+            List<PSD.Path> paths = cps.getValue();
+            Set<Integer> pathSigs = new HashSet<>();
+            for (PSD.Path p : paths) {
+                do {
+                    pathSigs.addAll(p.sigs);
+                    p = p.parent;
+                } while (p.parent != p);
+            }
+            for (int sig : c.sigs) {
+                int k = pathSigs.size();
+                IloNumVar term = s.getOrDefault(sig,
+                        getVar(c.elem)
+                );
+                IloNumVar[] neg = pathSigs.stream()
+                        .flatMap(ss -> signals.set(ss).stream())
+                        .map(this::getVar).toArray(IloNumVar[]::new);
+                cplex.addLe(cplex.sum(neg), cplex.prod(k, term));
+            }
+        }
+
     }
 
     private void otherConstraints() throws IloException {

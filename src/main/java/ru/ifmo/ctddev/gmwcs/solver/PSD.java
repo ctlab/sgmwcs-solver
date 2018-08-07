@@ -41,6 +41,24 @@ public class PSD {
         return sub;
     }
 
+    public boolean hasCenter(Path p) {
+        return dsuPaths.containsKey(dsu.min(p.c.sigs.get(0)));
+    }
+
+    public Map<Center, List<Path>> centerPaths() {
+        Map<Center, List<Path>> res = new HashMap<>();
+        for (Path p: paths.values()) {
+            if (hasCenter(p)) {
+                res.putIfAbsent(p.c, new ArrayList<>());
+                res.get(p.c).add(p);
+            }
+        }
+        return res;
+    }
+
+    public Map<Node, Path> getPaths() {
+        return Collections.unmodifiableMap(paths);
+    }
     public class Path {
         Node n;
         Path parent;
