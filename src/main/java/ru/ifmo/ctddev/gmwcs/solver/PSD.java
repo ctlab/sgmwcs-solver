@@ -159,13 +159,28 @@ public class PSD {
         return pos;
     }
 
+    private double ub(Set<Center> cs) {
+        Set<Integer> sigs = new HashSet<>();
+        for (Center c: cs) {
+            sigs.addAll(c.sigs);
+            sigs.addAll(bestPaths.get(c).sigs);
+        }
+        return s.weightSum(sigs);
+    }
+
 
     private double getUpperBound() {
-        return dsuPaths.values().stream()
+        Set<Set<Center>> combs = Utils.subsets(bestPaths.keySet());
+        double ub = 0;
+        for (Set<Center> comb: combs) {
+            ub = Math.max(ub(comb), ub);
+        }
+        return ub;
+/*        return dsuPaths.values().stream()
                 .flatMap(p -> Stream.concat(
                         p.c.sigs.stream(),
                         p.sigs.stream())).distinct()
-                .mapToDouble(set -> s.weight(set)).sum();
+                .mapToDouble(set -> s.weight(set)).sum(); */
     }
 
     public boolean decompose() {
@@ -174,8 +189,8 @@ public class PSD {
             return false; // No positive vertices, no decomposition exists
         dijkstra();
         findBoundaries();
-        filterBoundaries();
-        forceVertices(forced);
+        // filterBoundaries();
+        // forceVertices(forced);
         this.ub = getUpperBound();
         return true;
     }

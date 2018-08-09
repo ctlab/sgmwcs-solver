@@ -403,10 +403,7 @@ public class RLTSolver implements RootedSolver {
             List<PSD.Path> paths = cps.getValue();
             Set<Integer> pathSigs = new HashSet<>();
             for (PSD.Path p : paths) {
-                do {
-                    pathSigs.addAll(p.sigs);
-                    p = p.parent;
-                } while (p.parent != p);
+                pathSigs.addAll(p.sigs);
             }
             for (int sig : c.sigs) {
                 int k = pathSigs.size();

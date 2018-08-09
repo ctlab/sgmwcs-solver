@@ -31,13 +31,12 @@ public class Utils {
     public static void copy(Graph inGr, Signals inS, Graph outGr, Signals outS) {
         Map<Unit, Unit> oldToNew = new HashMap<>();
         inGr.vertexSet().forEach(v -> {
-            Node nv = new Node(v) ;
+            Node nv = new Node(v);
             outGr.addVertex(nv);
             oldToNew.put(v, nv);
         });
         inGr.edgeSet().forEach(e -> {
-            Node nv = (Node) oldToNew.get(inGr.getEdgeSource(e))
-               , nu = (Node) oldToNew.get(inGr.getEdgeTarget(e));
+            Node nv = (Node) oldToNew.get(inGr.getEdgeSource(e)), nu = (Node) oldToNew.get(inGr.getEdgeTarget(e));
             Edge ne = new Edge(e);
             outGr.addEdge(nv, nu, ne);
             oldToNew.put(e, ne);
@@ -53,7 +52,7 @@ public class Utils {
         }
     }
 
-    public static <T extends Unit> Set<Set<T>> subsets(Set<T> set) {
+    public static <T> Set<Set<T>> subsets(Set<T> set) {
         Set<Set<T>> result = new HashSet<>();
         if (set.isEmpty()) {
             result.add(new HashSet<>());
@@ -63,7 +62,7 @@ public class Utils {
         T head = units.get(0);
         units.remove(0);
         Set<Set<T>> ss = subsets(new HashSet<>(units));
-        for (Set<T> s: ss) {
+        for (Set<T> s : ss) {
             Set<T> ns = new HashSet<>(s);
             result.add(s);
             ns.add(head);
