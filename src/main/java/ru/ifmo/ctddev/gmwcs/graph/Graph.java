@@ -24,12 +24,11 @@ public class Graph {
             addVertex(newV);
             oldToNew.put(v, newV);
         });
-        that.edgeSet()
-                .forEach(e -> addEdge(
-                        oldToNew.get(that.getEdgeSource(e)),
-                        oldToNew.get(that.getEdgeTarget(e)),
-                        new Edge(e))
-                );
+        that.edgeSet().forEach(e -> addEdge(
+                oldToNew.get(that.getEdgeSource(e)),
+                oldToNew.get(that.getEdgeTarget(e)),
+                new Edge(e))
+        );
     }
 
     public void addVertex(Node v) {
@@ -176,7 +175,7 @@ public class Graph {
 
     public Graph edgesSubgraph(Set<Edge> edges) {
         Set<Node> nodes = new HashSet<>();
-        for (Edge e: edges) {
+        for (Edge e : edges) {
             nodes.add(getEdgeSource(e));
             nodes.add(getEdgeTarget(e));
         }

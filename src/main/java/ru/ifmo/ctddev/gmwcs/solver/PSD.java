@@ -92,14 +92,14 @@ public class PSD {
                 Node u = g.getEdgeSource(e);
                 Node v = g.getEdgeTarget(e);
                 sigs.addAll(s.positiveUnitSets(e));
-                d[u.getNum()] = 0;
-                d[v.getNum()] = 0;
+                d[u.getNum()] = -s.weight(u);
+                d[v.getNum()] = -s.weight(v);
                 centers.putIfAbsent(u, this);
                 centers.putIfAbsent(v, this);
             } else {
                 centers.put((Node) elem, this);
                 sigs.addAll(s.positiveUnitSets(elem));
-                d[elem.getNum()] = 0;
+                d[elem.getNum()] = -s.weight(elem);
             }
         }
     }
@@ -307,10 +307,9 @@ public class PSD {
         while (!q.isEmpty()) {
             Node cur = q.poll();
             Path p = paths.get(cur);
-            Center c = centers.get(cur);
             for (Node n : g.neighborListOf(cur)) {
                 Edge e = g.getEdge(n, cur);
-                if (s.weight(e) > 0) continue;
+                if (s.weight(e) > 0 || centers.containsKey(n)) continue;
                 double w = d[cur.getNum()] - s.minSum(e, n);
                 if (d[n.getNum()] > w) {
                     paths.put(n, new Path(p, n, e));

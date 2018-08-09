@@ -133,12 +133,13 @@ public class RLTSolver implements RootedSolver {
                     }
                 }
             }
+            /* for model and starts debug
             List<IloConstraint> constraints = new ArrayList<>();
             for (Iterator it = cplex.rangeIterator(); it.hasNext(); ) {
                 Object c = it.next();
                 constraints.add((IloRange) c);
             }
-            /*double[] zeros = new double[constraints.size()];
+            double[] zeros = new double[constraints.size()];
             Arrays.fill(zeros, 0);
             if (cplex.refineMIPStartConflict(0, constraints.toArray(new IloConstraint[0]), zeros)) {
                 System.out.println("Conflict refined");
@@ -385,7 +386,7 @@ public class RLTSolver implements RootedSolver {
                 if (signals.minSum(u) == 0) {
                     Edge e = graph.getAllEdges(v, u)
                             .stream().max(Comparator.comparingDouble(signals::weight)).get();
-                    if (signals.minSum(e) == 0) {
+                    if (signals.minSum(e) == 0 && signals.maxSum(e) > 0) {
                         for (int sig : signals.unitSets(e)) {
                             cplex.addLe(y.get(v), s.getOrDefault(sig, w.get(e)));
                         }
@@ -415,7 +416,8 @@ public class RLTSolver implements RootedSolver {
                 IloNumVar[] neg = pathSigs.stream()
                         .flatMap(ss -> signals.set(ss).stream())
                         .map(this::getVar).toArray(IloNumVar[]::new);
-                cplex.addLe(cplex.sum(neg), cplex.prod(k, term));
+                if (neg.length * k > 0 && term != null)
+                    cplex.addLe(cplex.sum(neg), cplex.prod(k, term));
             }
         }
 
@@ -591,7 +593,9 @@ public class RLTSolver implements RootedSolver {
     }
 
     private boolean isGoodNode(Node node, Edge edge, Set<Node> visited) {
-        return signals.minSum(node, edge) == 0 && !visited.contains(node);
+        return signals.minSum(node, edge) == 0 && !visited.contains(node) &&
+                !signals.positiveUnitSets(initialSolution)
+                        .containsAll(signals.positiveUnitSets(node, edge));
     }
 
     private CplexSolution applyMstSolution(Set<Unit> units) {

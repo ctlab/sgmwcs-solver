@@ -45,7 +45,7 @@ public class Worker implements Runnable {
                 edges.forEach(signals::remove);
                 signals.remove(n);
             });
-            if (bp.psd.ub() <= bp.getLB()) {
+            if (bp.psd.ub() < bp.getLB()) {
                 result = Collections.emptyList();
                 return;
             }
