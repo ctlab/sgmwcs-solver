@@ -80,17 +80,24 @@ public class ComponentSolver implements Solver {
             solver.setSharedLB(lb);
             solver.setTimeLimit(tl);
             solver.setLogLevel(logLevel);
-            Set<Unit> subset = new HashSet<>(subgraph.vertexSet());
+            Set<Node> vertexSet = subgraph.vertexSet();
+            Set<Unit> subset = new HashSet<>(vertexSet);
             subset.addAll(subgraph.edgeSet());
             Signals subSignals = new Signals(signals, subset);
-            if (root != null) {
+            Node treeRoot = root;
+            if (treeRoot == null) {
+                treeRoot = vertexSet.stream().max(Comparator.comparing(signals::weight)).orElse(null);
+            }
+            if (treeRoot != null) {
                 MSTSolver ms = new MSTSolver(
-                        subgraph, RLTSolver.makeHeuristicWeights(subgraph, subSignals), root
+                        subgraph,
+                        RLTSolver.makeHeuristicWeights(subgraph, subSignals),
+                        treeRoot
                 );
                 ms.solve();
-                Graph subtree = subgraph.subgraph(subgraph.vertexSet(), ms.getEdges());
+                Graph subtree = subgraph.subgraph(vertexSet, ms.getEdges());
                 TreeSolver ts = new TreeSolver(subtree, subSignals);
-                TreeSolver.Solution sol = ts.solveRooted(root);
+                TreeSolver.Solution sol = ts.solveRooted(treeRoot);
                 double tlb = subSignals.weightSum(sol.sets());
                 double plb = lb.get();
                 if (tlb >= plb) {

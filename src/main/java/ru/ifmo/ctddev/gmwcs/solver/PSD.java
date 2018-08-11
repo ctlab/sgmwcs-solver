@@ -47,7 +47,7 @@ public class PSD {
 
     public Map<Center, List<Path>> centerPaths() {
         Map<Center, List<Path>> res = new HashMap<>();
-        for (Path p: paths.values()) {
+        for (Path p : paths.values()) {
             if (hasCenter(p)) {
                 res.putIfAbsent(p.c, new ArrayList<>());
                 res.get(p.c).add(p);
@@ -59,6 +59,7 @@ public class PSD {
     public Map<Node, Path> getPaths() {
         return Collections.unmodifiableMap(paths);
     }
+
     public class Path {
         Node n;
         Path parent;
@@ -92,14 +93,14 @@ public class PSD {
                 Node u = g.getEdgeSource(e);
                 Node v = g.getEdgeTarget(e);
                 sigs.addAll(s.positiveUnitSets(e));
-                d[u.getNum()] = -s.weight(u);
-                d[v.getNum()] = -s.weight(v);
+                d[u.getNum()] = 0;//-s.weight(u);
+                d[v.getNum()] = 0;// -s.weight(v);
                 centers.putIfAbsent(u, this);
                 centers.putIfAbsent(v, this);
             } else {
                 centers.put((Node) elem, this);
                 sigs.addAll(s.positiveUnitSets(elem));
-                d[elem.getNum()] = -s.weight(elem);
+                d[elem.getNum()] = 0;//-s.weight(elem);
             }
         }
     }
@@ -144,7 +145,7 @@ public class PSD {
                         pos = true;
                     else {
                         Set<Integer> added = new HashSet<>();
-                        for (int sig: ens) {
+                        for (int sig : ens) {
                             if (sigs.add(sig)) {
                                 added.add(sig);
                             }
@@ -161,7 +162,7 @@ public class PSD {
 
     private double ub(Set<Center> cs) {
         Set<Integer> sigs = new HashSet<>();
-        for (Center c: cs) {
+        for (Center c : cs) {
             sigs.addAll(c.sigs);
             sigs.addAll(bestPaths.get(c).sigs);
         }
@@ -170,17 +171,17 @@ public class PSD {
 
 
     private double getUpperBound() {
-        Set<Set<Center>> combs = Utils.subsets(bestPaths.keySet());
+        /*Set<Set<Center>> combs = Utils.subsets(bestPaths.keySet());
         double ub = 0;
         for (Set<Center> comb: combs) {
             ub = Math.max(ub(comb), ub);
         }
-        return ub;
-/*        return dsuPaths.values().stream()
+        return ub;*/
+        return dsuPaths.values().stream()
                 .flatMap(p -> Stream.concat(
                         p.c.sigs.stream(),
                         p.sigs.stream())).distinct()
-                .mapToDouble(set -> s.weight(set)).sum(); */
+                .mapToDouble(set -> s.weight(set)).sum();
     }
 
     public boolean decompose() {
@@ -189,8 +190,8 @@ public class PSD {
             return false; // No positive vertices, no decomposition exists
         dijkstra();
         findBoundaries();
-        // filterBoundaries();
-        // forceVertices(forced);
+        filterBoundaries();
+        forceVertices(forced);
         this.ub = getUpperBound();
         return true;
     }

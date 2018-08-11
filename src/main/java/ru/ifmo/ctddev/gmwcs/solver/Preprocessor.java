@@ -125,8 +125,8 @@ public class Preprocessor {
                         negR(primaryNode, primaryNode, new HashSet<>(), s)
                         , "negR").apply(toRemove);
             res += leaves.apply(toRemove);
-            res += cns.apply(toRemove);
         }
+        res += cns.apply(toRemove);
         posC();
         negC();
         Set<Edge> edgesToRemove = numThreads == 1 ? new HashSet<>() : new ConcurrentSkipListSet<>();

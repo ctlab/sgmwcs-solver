@@ -64,21 +64,17 @@ public class GMWCSTest {
             Graph graph = new Graph();
             Signals signals = new Signals();
             copy(test.graph(), test.signals(), graph, signals);
-            int[] nodesPrev = test.graph().vertexSet().stream()
-                    .map(signals::weight).sorted()
-                    .mapToInt(Double::intValue).toArray();
-            int[] nodesNew = graph.vertexSet().stream()
-                    .map(signals::weight).sorted()
-                    .mapToInt(Double::intValue).toArray();
-            Assert.assertArrayEquals("Node weights must be equal", nodesPrev, nodesNew);
+            double[] nodesPrev = test.graph().vertexSet().stream()
+                    .mapToDouble(signals::weight).sorted().toArray();
+            double[] nodesNew = graph.vertexSet().stream()
+                    .mapToDouble(signals::weight).sorted().toArray();
+            Assert.assertArrayEquals("Node weights must be equal", nodesPrev, nodesNew, 0.00001);
 
-            int[] edgesPrev = test.graph().edgeSet().stream()
-                    .map(signals::weight).sorted()
-                    .mapToInt(Double::intValue).toArray();
-            int[] edgesNew = graph.edgeSet().stream()
-                    .map(signals::weight).sorted()
-                    .mapToInt(Double::intValue).toArray();
-            Assert.assertArrayEquals("Edge weights must be equal", edgesPrev, edgesNew);
+            double[] edgesPrev = test.graph().edgeSet().stream()
+                    .mapToDouble(signals::weight).sorted().toArray();
+            double[] edgesNew = graph.edgeSet().stream()
+                    .mapToDouble(signals::weight).sorted().toArray();
+            Assert.assertArrayEquals("Edge weights must be equal", edgesPrev, edgesNew, 0.00001);
 
             Assert.assertEquals(test.signals().size(), signals.size());
             for (int j = 0; j < signals.size(); ++j) {
@@ -113,11 +109,11 @@ public class GMWCSTest {
         for (int i = 0; i < allTests; i++) {
             System.err.println("Test " + i);
             TestCase test = tests.get(i);
-            if (random.nextBoolean()) {
+/*            if (random.nextBoolean()) {
                 addPenalties(test, random.nextInt(10));
-            }
+            }*/
             check(test, i, referenceSolver);
-            solver.setEdgePenalty(0);
+//            solver.setEdgePenalty(0);
         }
         System.out.println();
     }
@@ -234,8 +230,8 @@ public class GMWCSTest {
                 }
                 fillEdgesRandomly(graph, count, nodesArray, edges, size);
                 Map<Unit, Double> weights = new HashMap<>();
-                nodes.forEach(weights::put);
-                edges.forEach(weights::put);
+                nodes.forEach((n, v) -> weights.put(n, v * n.getNum() * 0.03 + v));
+                edges.forEach((e, v) -> weights.put(e, v * e.getNum() * 0.07 + v));
                 tests.add(new TestCase(graph, weights, random));
             }
         }

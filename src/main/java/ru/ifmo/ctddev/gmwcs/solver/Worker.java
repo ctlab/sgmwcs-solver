@@ -35,25 +35,20 @@ public class Worker implements Runnable {
     @Override
     public void run() {
         solver.setRoot(root);
-        if (root != null) {
-            BlockPreprocessing bp = new BlockPreprocessing(graph, signals, root);
-            bp.setLB(solver.getLB());
-            Set<Node> toRemove = bp.result();
-            toRemove.forEach(n -> {
-                Set<Edge> edges = graph.edgesOf(n);
-                graph.removeVertex(n);
-                edges.forEach(signals::remove);
-                signals.remove(n);
-            });
-            if (bp.psd.ub() < bp.getLB()) {
+        PSD psd = new PSD(graph, signals);
+        if (psd.decompose()) {
+            if (root != null) {
+                psd.forceVertex(root);
+            }
+            if (psd.ub() < solver.getLB()) {
                 result = Collections.emptyList();
                 return;
             }
-            solver.setSolIsTree(bp.psd.solutionIsTree);
-            solver.setPSD(bp.psd);
-            if (logLevel > 1 || true) {
-                System.out.println("Block Preprocessing removed " + toRemove.size() + " nodes.");
-            }
+            solver.setSolIsTree(psd.solutionIsTree);
+            solver.setPSD(psd);
+        } else {
+            result = Collections.emptyList();
+            return;
         }
         double tl = solver.getTimeLimit().getRemainingTime() - (System.currentTimeMillis() - startTime) / 1000.0;
         if (tl <= 0) {
@@ -64,11 +59,7 @@ public class Worker implements Runnable {
         if (graph.vertexSet().isEmpty()) {
             result = Collections.emptyList();
         } else try {
-            Set<Node> comp = null;
-            if (graph.connectedSets().size() > 1) {
-                comp = graph.connectedSets().stream().filter(s -> s.contains(root)).findFirst().get();
-            }
-            List<Unit> sol = solver.solve(comp != null ? graph.subgraph(comp) : graph, signals);
+            List<Unit> sol = solver.solve(graph, signals);
             if (Utils.sum(sol, signals) > Utils.sum(result, signals)) {
                 result = sol;
             }

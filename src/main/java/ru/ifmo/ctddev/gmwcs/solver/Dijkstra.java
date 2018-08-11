@@ -129,8 +129,8 @@ class Dijkstra {
      */
 
     Set<Edge> solveNE(Node u, List<Node> neighbors) {
-        solve(u);
         this.dests = new HashSet<>(neighbors);
+        solve(u);
         Set<Edge> res = new HashSet<>();
         neighbors.forEach(n -> {
             List<Edge> edges = graph.getAllEdges(n, u);

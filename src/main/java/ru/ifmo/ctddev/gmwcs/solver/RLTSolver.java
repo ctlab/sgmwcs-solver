@@ -388,7 +388,9 @@ public class RLTSolver implements RootedSolver {
                             .stream().max(Comparator.comparingDouble(signals::weight)).get();
                     if (signals.minSum(e) == 0 && signals.maxSum(e) > 0) {
                         for (int sig : signals.unitSets(e)) {
-                            cplex.addLe(y.get(v), s.getOrDefault(sig, w.get(e)));
+                            IloNumExpr expr = cplex.diff(s.getOrDefault(sig, w.get(e)), y.get(v));
+                            cplex.addLazyConstraint(cplex.range(0, expr, 1));
+//                            cplex.addLe(y.get(v), s.getOrDefault(sig, w.get(e)));
                         }
                     }
                 }
@@ -407,14 +409,15 @@ public class RLTSolver implements RootedSolver {
             }
             for (int sig : c.sigs) {
                 int k = pathSigs.size();
-                IloNumVar term = s.getOrDefault(sig,
-                        getVar(c.elem)
-                );
+                IloNumVar term = s.getOrDefault(sig, getVar(c.elem));
                 IloNumVar[] neg = pathSigs.stream()
                         .flatMap(ss -> signals.set(ss).stream())
                         .map(this::getVar).toArray(IloNumVar[]::new);
-                if (neg.length * k > 0 && term != null)
-                    cplex.addLe(cplex.sum(neg), cplex.prod(k, term));
+                if (neg.length * k > 0 && term != null) {
+                    IloNumExpr e = cplex.diff(cplex.prod(k, term), cplex.sum(neg));
+                    IloRange r = cplex.range(0, e, k);
+                    cplex.add(r);
+                }
             }
         }
 
