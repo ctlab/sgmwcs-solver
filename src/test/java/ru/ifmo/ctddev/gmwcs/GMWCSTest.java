@@ -230,8 +230,8 @@ public class GMWCSTest {
                 }
                 fillEdgesRandomly(graph, count, nodesArray, edges, size);
                 Map<Unit, Double> weights = new HashMap<>();
-                nodes.forEach((n, v) -> weights.put(n, v * n.getNum() * 0.03 + v));
-                edges.forEach((e, v) -> weights.put(e, v * e.getNum() * 0.07 + v));
+                nodes.forEach(weights::put);
+                edges.forEach(weights::put);
                 tests.add(new TestCase(graph, weights, random));
             }
         }

@@ -7,9 +7,8 @@ import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Worker implements Runnable {
     private final Signals signals;
@@ -34,14 +33,21 @@ public class Worker implements Runnable {
 
     @Override
     public void run() {
+        Set<Node> vertexSet = graph.vertexSet();
         solver.setRoot(root);
         PSD psd = new PSD(graph, signals);
-        if (psd.decompose()) {
+        if (vertexSet.size() <= 1) {
+            result = vertexSet.stream().filter(n -> signals.weight(n) >= 0).collect(Collectors.toList());
+            return;
+        }
+        /*if (psd.decompose()) {
             if (root != null) {
                 psd.forceVertex(root);
             }
-            if (psd.ub() < solver.getLB()) {
-                result = Collections.emptyList();
+            if (psd.ub() - solver.getLB() < -0.001) {
+                System.out.println(psd.ub());
+                result = Collections.singletonList(vertexSet.stream().max(
+                        Comparator.comparingDouble(signals::weight)).get());
                 return;
             }
             solver.setSolIsTree(psd.solutionIsTree);
@@ -49,16 +55,14 @@ public class Worker implements Runnable {
         } else {
             result = Collections.emptyList();
             return;
-        }
+        }*/
         double tl = solver.getTimeLimit().getRemainingTime() - (System.currentTimeMillis() - startTime) / 1000.0;
         if (tl <= 0) {
             isSolvedToOptimality = false;
             return;
         }
         solver.setTimeLimit(new TimeLimit(Math.max(tl, 0.0)));
-        if (graph.vertexSet().isEmpty()) {
-            result = Collections.emptyList();
-        } else try {
+        try {
             List<Unit> sol = solver.solve(graph, signals);
             if (Utils.sum(sol, signals) > Utils.sum(result, signals)) {
                 result = sol;

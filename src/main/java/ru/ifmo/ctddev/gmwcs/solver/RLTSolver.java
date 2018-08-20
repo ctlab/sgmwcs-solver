@@ -109,9 +109,9 @@ public class RLTSolver implements RootedSolver {
             if (solutionIsTree) {
                 treeConstraints();
             }
-            if (psd != null) {
-                psdConstraints(signals, psd);
-            }
+ //           if (psd != null) {
+//                psdConstraints(signals, psd);
+  //          }
             breakTreeSymmetries();
             tuning(cplex);
             if (graph.edgeSet().size() >= 1)
@@ -397,7 +397,7 @@ public class RLTSolver implements RootedSolver {
             }
         }
     }
-
+/*
     private void psdConstraints(Signals signals, PSD psd) throws IloException {
         Map<PSD.Center, List<PSD.Path>> centerPaths = psd.centerPaths();
         for (Map.Entry<PSD.Center, List<PSD.Path>> cps : centerPaths.entrySet()) {
@@ -422,7 +422,7 @@ public class RLTSolver implements RootedSolver {
         }
 
     }
-
+*/
     private void otherConstraints() throws IloException {
         // (36), (39)
         for (Edge edge : graph.edgeSet()) {

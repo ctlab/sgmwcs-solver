@@ -105,9 +105,33 @@ public class Preprocessor {
         do {
             removed = iteration();
             if (logLevel > 1) {
-                System.out.println("Removed " + removed + " vertices");
+                System.out.println("Removed " + removed + " units");
             }
         } while (removed > 0);
+        merdeEdges();
+    }
+
+    private void merdeEdges() {
+        for (Node u : graph.vertexSet()) {
+            for (Node v : graph.neighborListOf(u)) {
+                if (v.getNum() <= u.getNum()) continue;
+                List<Edge> es = graph.getAllEdges(u, v);
+                if (es.size() == 1) continue;
+                for (Edge e : new ArrayList<>(es)) {
+                    if (signals.minSum(e) < 0 && signals.maxSum(e) == 0)
+                        es.remove(e);
+                }
+                while (es.size() > 1) {
+                    absorb(es.get(1), es.get(0));
+                    graph.removeEdge(es.get(0));
+                    es.remove(0);
+                }
+
+
+            }
+
+        }
+
     }
 
     private int iteration() {
@@ -130,7 +154,7 @@ public class Preprocessor {
         posC();
         negC();
         Set<Edge> edgesToRemove = numThreads == 1 ? new HashSet<>() : new ConcurrentSkipListSet<>();
-        npe.apply(edgesToRemove);
+        res += npe.apply(edgesToRemove);
         res += npv2.apply(toRemove);
         return res;
     }
@@ -257,22 +281,22 @@ public class Preprocessor {
 
     private void leaves(Set<Node> toRemove) {
         Map<Node, List<Unit>> toAbsorb = new HashMap<>();
-        for (Node node : graph.vertexSet()) {
-            Set<Edge> edges = graph.edgesOf(node);
+        for (Node leaf : graph.vertexSet()) {
+            Set<Edge> edges = graph.edgesOf(leaf);
             if (edges.size() != 1
-                    || weight(node) == weight(primaryNode)) continue;
+                    || weight(leaf) == weight(primaryNode)) continue;
             Edge edge = edges.stream().findAny().orElse(null);
-            Node opposite = graph.getOppositeVertex(node, edge);
-            double minSum = signals.minSum(edge, node, opposite);
+            Node opposite = graph.getOppositeVertex(leaf, edge);
+            double minSum = signals.minSum(edge, leaf, opposite);
             if (minSum <= signals.minSum(edge)
-                    && minSum <= signals.minSum(node)
+                    && minSum <= signals.minSum(leaf)
                     && minSum == signals.minSum(opposite)
                     && graph.degreeOf(opposite) > 1) {
                 toAbsorb.putIfAbsent(opposite, new ArrayList<>());
-                toAbsorb.get(opposite).addAll(Arrays.asList(node, edge));
-                toRemove.add(node);
-            } else if (nonPositive(edge) && nonPositive(node)) {
-                toRemove.add(node);
+                toAbsorb.get(opposite).addAll(Arrays.asList(leaf, edge));
+                toRemove.add(leaf);
+            } else if (signals.maxSum(edge, leaf, opposite) <= signals.maxSum(opposite)) {
+                toRemove.add(leaf);
             }
         }
         for (Map.Entry<Node, List<Unit>> kvp : toAbsorb.entrySet()) {

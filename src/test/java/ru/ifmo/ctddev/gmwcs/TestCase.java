@@ -29,7 +29,7 @@ public class TestCase {
         int signal = signals.addAndSetWeight(last, weights.get(last));
         for (int i = 1; i < units.size(); i++) {
             Unit current = units.get(i);
-            if (random.nextBoolean()) {
+            if (random.nextBoolean() && weights.get(last) >= 0) {
                 signals.add(current, signal);
                 signals.setWeight(signal, signals.weight(last));
             } else {

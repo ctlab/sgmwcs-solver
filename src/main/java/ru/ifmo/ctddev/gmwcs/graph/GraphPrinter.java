@@ -22,7 +22,7 @@ public class GraphPrinter {
     }
 
     private String formatSignal(int signal) {
-        return "S" + (signal + 1);
+        return "S" + signal;
     }
 
     private String printSignals(Unit unit) {
@@ -41,18 +41,18 @@ public class GraphPrinter {
         List<String> output = new ArrayList<>();
         output.add("graph graphname {");
         for (Node v : graph.vertexSet()) {
-            String str = (v.getNum() + 1) + "";
+            String str = (v.getNum()) + "";
             output.add(formatUnit(str, printSignals(v)));
         }
         for (Edge e : graph.edgeSet()) {
-            String str = (graph.getEdgeSource(e).num + 1)
-                    + "--" + (graph.getEdgeTarget(e).num + 1);
+            String str = (graph.getEdgeSource(e).num)
+                    + "--" + (graph.getEdgeTarget(e).num);
             output.add(formatUnit(str, printSignals(e)));
         }
         output.add("node[shape=record]");
         String signs = "signals [label=\"{" + IntStream.range(1, signals.size())
                 .mapToObj(this::formatSignal)
-                .reduce("S1", (a, b) -> a + "|" + b) +
+                .reduce("S0", (a, b) -> a + "|" + b) +
                 "}|{" +
                 IntStream.range(1, signals.size())
                         .mapToObj(s -> signals.weight(s) + "")

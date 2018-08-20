@@ -1,9 +1,11 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
 import ru.ifmo.ctddev.gmwcs.Signals;
+import ru.ifmo.ctddev.gmwcs.SignalsGraph;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.*;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -64,6 +66,11 @@ public class ComponentSolver implements Solver {
         List<Worker> memorized = new ArrayList<>();
         BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
         ExecutorService executor = new ThreadPoolExecutor(threads, threads, Long.MAX_VALUE, TimeUnit.NANOSECONDS, queue);
+        try {
+            new SignalsGraph(graph, signals).writeGraph();
+        } catch (IOException ignored) {
+
+        }
         while (!components.isEmpty()) {
             Set<Node> component = components.poll();
             Graph subgraph = graph.subgraph(component);
