@@ -623,6 +623,10 @@ public class RLTSolver implements RootedSolver {
 
         @Override
         protected void main() throws IloException {
+            if (lb.get() >= getBestObjValue()) {
+                abort();
+                return;
+            }
             i++;
             if ((i - 1) % 1000 != 0 || i > 10000) return;
             Map<Edge, Double> weights = new HashMap<>();
@@ -692,6 +696,7 @@ public class RLTSolver implements RootedSolver {
         protected void main() throws IloException {
             while (true) {
                 double currLB = lb.get();
+
                 if (currLB >= getObjValue()) {
                     break;
                 }
