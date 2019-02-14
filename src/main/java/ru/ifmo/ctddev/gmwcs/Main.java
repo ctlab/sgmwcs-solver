@@ -124,7 +124,7 @@ public class Main {
                     }
                 }
                 Graph solGraph = graph.subgraph(nodes, edges);
-                new GraphPrinter(solGraph, signals).printGraph("sol.dot");
+                new GraphPrinter(solGraph, signals).printGraph("sol.dot", false);
             }
             graphIO.write(units);
         } catch (ParseException e) {

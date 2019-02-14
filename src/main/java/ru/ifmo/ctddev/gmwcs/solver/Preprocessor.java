@@ -108,10 +108,10 @@ public class Preprocessor {
                 System.out.println("Removed " + removed + " units");
             }
         } while (removed > 0);
-        merdeEdges();
+        mergeEdges();
     }
 
-    private void merdeEdges() {
+    private void mergeEdges() {
         for (Node u : graph.vertexSet()) {
             for (Node v : graph.neighborListOf(u)) {
                 if (v.getNum() <= u.getNum()) continue;
@@ -126,12 +126,8 @@ public class Preprocessor {
                     graph.removeEdge(es.get(0));
                     es.remove(0);
                 }
-
-
             }
-
         }
-
     }
 
     private int iteration() {

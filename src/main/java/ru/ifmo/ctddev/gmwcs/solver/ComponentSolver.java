@@ -44,11 +44,11 @@ public class ComponentSolver implements Solver {
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
         if (logLevel > 0) {
-            new GraphPrinter(g, s).printGraph("beforePrep.dot");
+            new GraphPrinter(g, s).printGraph("beforePrep.dot", false);
         }
         new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess();
         if (logLevel > 0) {
-            new GraphPrinter(g, s).printGraph("afterPrep.dot");
+            new GraphPrinter(g, s).printGraph("afterPrep.dot", false);
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
             System.out.println("and " + (edgesBefore - g.edgeSet().size()) + " edges.");
         }
@@ -66,11 +66,11 @@ public class ComponentSolver implements Solver {
         List<Worker> memorized = new ArrayList<>();
         BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
         ExecutorService executor = new ThreadPoolExecutor(threads, threads, Long.MAX_VALUE, TimeUnit.NANOSECONDS, queue);
-        try {
+        /*try {
             new SignalsGraph(graph, signals).writeGraph();
         } catch (IOException ignored) {
 
-        }
+        }*/
         while (!components.isEmpty()) {
             Set<Node> component = components.poll();
             Graph subgraph = graph.subgraph(component);

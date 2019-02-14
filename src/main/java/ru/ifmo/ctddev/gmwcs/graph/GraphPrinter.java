@@ -37,29 +37,39 @@ public class GraphPrinter {
         return unit + " [label=\"" + unit + "(" + signals + ")" + "\"]";
     }
 
+    private String weight(Unit unit) {
+        return signals.weight(unit) + "";
+    }
+
     public void printGraph(String fileName) throws SolverException {
+        printGraph(fileName, true);
+    }
+
+    public void printGraph(String fileName, boolean sigLabels) throws SolverException {
         List<String> output = new ArrayList<>();
         output.add("graph graphname {");
         for (Node v : graph.vertexSet()) {
             String str = (v.getNum()) + "";
-            output.add(formatUnit(str, printSignals(v)));
+            output.add(formatUnit(str, sigLabels ? printSignals(v) : weight(v)));
         }
         for (Edge e : graph.edgeSet()) {
             String str = (graph.getEdgeSource(e).num)
                     + "--" + (graph.getEdgeTarget(e).num);
-            output.add(formatUnit(str, printSignals(e)));
+            output.add(formatUnit(str, sigLabels ? printSignals(e) : weight(e)));
         }
-        output.add("node[shape=record]");
-        String signs = "signals [label=\"{" + IntStream.range(1, signals.size())
-                .mapToObj(this::formatSignal)
-                .reduce("S0", (a, b) -> a + "|" + b) +
-                "}|{" +
-                IntStream.range(1, signals.size())
-                        .mapToObj(s -> signals.weight(s) + "")
-                        .reduce(signals.weight(0) + "", (a, b) -> a + "|" + b) +
-                "}" +
-                "\"]";
-        output.add(signs);
+        if (sigLabels) {
+            output.add("node[shape=record]");
+            String signs = "signals [label=\"{" + IntStream.range(1, signals.size())
+                    .mapToObj(this::formatSignal)
+                    .reduce("S0", (a, b) -> a + "|" + b) +
+                    "}|{" +
+                    IntStream.range(1, signals.size())
+                            .mapToObj(s -> signals.weight(s) + "")
+                            .reduce(signals.weight(0) + "", (a, b) -> a + "|" + b) +
+                    "}" +
+                    "\"]";
+            output.add(signs);
+        }
         output.add("}");
         Path file = Paths.get(fileName);
         try {
@@ -68,5 +78,6 @@ public class GraphPrinter {
             throw new SolverException("Couldn't print graph");
         }
     }
+
 
 }

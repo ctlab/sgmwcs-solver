@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import static ilog.cplex.IloCplex.*;
 
 public class RLTSolver implements RootedSolver {
-    private static final double EPS = 0.01;
+    private static final double EPS = 1e-3;
     private IloCplex cplex;
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
@@ -46,7 +46,7 @@ public class RLTSolver implements RootedSolver {
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
-        threads = 1;
+        threads = 2;
         externLB = 0.0;
         maxToAddCuts = considerCuts = Integer.MAX_VALUE;
     }
