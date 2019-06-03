@@ -91,7 +91,7 @@ public class ComponentSolver implements Solver {
             Set<Unit> subset = new HashSet<>(vertexSet);
             subset.addAll(subgraph.edgeSet());
             Signals subSignals = new Signals(signals, subset);
-            Node treeRoot = root;
+            /* Node treeRoot = root;
             if (treeRoot == null) {
                 treeRoot = vertexSet.stream().max(Comparator.comparing(signals::weight)).orElse(null);
             }
@@ -112,7 +112,7 @@ public class ComponentSolver implements Solver {
                     lb.compareAndSet(plb, tlb);
                     solver.setInitialSolution(sol.units);
                 }
-            }
+            } */
             Worker worker = new Worker(subgraph, root,
                     subSignals, solver, timeBefore);
             executor.execute(worker);

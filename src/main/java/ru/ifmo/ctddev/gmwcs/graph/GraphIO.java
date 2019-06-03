@@ -15,6 +15,8 @@ public class GraphIO {
     private Signals signals;
     private Map<String, Integer> signalNames;
 
+    private String inf = "inf"; // Representation of infinite-weight signal
+
     public GraphIO(File nodeIn, File edgeIn, File signalIn) {
         this.nodeIn = nodeIn;
         this.edgeIn = edgeIn;
@@ -131,7 +133,8 @@ public class GraphIO {
                 if (!tokenizer.hasMoreTokens()) {
                     throw new ParseException("Expected weight of signal at line", reader.getLineNumber());
                 }
-                double weight = Double.parseDouble(tokenizer.nextToken());
+                String w = tokenizer.nextToken();
+                double weight = w.equals(inf) ? Double.POSITIVE_INFINITY : Double.parseDouble(w);
                 if (!signalNames.containsKey(signal)) {
                     throw new ParseException("Signal " + signal +
                             "doesn't appear in node/edge files", reader.getLineNumber());
