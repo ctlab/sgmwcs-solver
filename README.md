@@ -35,7 +35,7 @@ Running
 To run the program you should set jvm parameter java.library.path to directory of CPLEX binaries and set parameter
 -classpath to program jar and cplex.jar like in the example below.
 
-    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_linux/ -cp /opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar:sgmwcs-solver.jar ru.ifmo.ctddev.gmwcs.Main
+    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_linux/ -cp /opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar:sgmwcs-solver.jar Main
 
 See more help by using flag -h.
 
@@ -99,4 +99,4 @@ Red units in graph below - solution.
 Running the example
 ==============
 
-    java -cp /opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar:sgmwcs-solver.jar ru.ifmo.ctddev.gmwcs.Main -n nodes -e edges -s signals
+    java -cp /opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar:sgmwcs-solver.jar Main -n nodes -e edges -s signals

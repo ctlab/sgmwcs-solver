@@ -33,7 +33,7 @@
                     <finalName>sgmwcs-solver</finalName>
                     <archive>
                         <manifest>
-                            <mainClass>ru.ifmo.ctddev.gmwcs.Main</mainClass>
+                            <mainClass>ru.itmo.ctlab.sgmwcs.Main</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

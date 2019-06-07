@@ -12,7 +12,7 @@ install:
 
 script:
 - mvn install -DskipTests=true
-- java -Djava.library.path=lib/lib -cp lib/lib/cplex.jar:target/sgmwcs-solver.jar ru.ifmo.ctddev.gmwcs.Main -n nodes -e edges -s signals
+- java -Djava.library.path=lib/lib -cp lib/lib/cplex.jar:target/sgmwcs-solver.jar Main -n nodes -e edges -s signals
 - mvn -Djava.library.path=lib/lib cobertura:cobertura
 
 after_success:
