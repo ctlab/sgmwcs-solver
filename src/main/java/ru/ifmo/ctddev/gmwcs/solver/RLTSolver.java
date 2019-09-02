@@ -46,7 +46,7 @@ public class RLTSolver implements RootedSolver {
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
-        threads = 1;
+        threads = 4;
         externLB = 0.0;
         maxToAddCuts = considerCuts = Integer.MAX_VALUE;
     }
@@ -168,8 +168,8 @@ public class RLTSolver implements RootedSolver {
         MSTSolver mst = new MSTSolver(graph, edgeWeights, treeRoot);
         mst.solve();
         Graph tree = graph.subgraph(graph.vertexSet(), mst.getEdges());
-        TreeSolver.Solution sol = new TreeSolver(tree, signals).solveRooted(treeRoot);
-        return sol.units;
+        // TreeSolver.Solution sol = new TreeSolver(tree, signals).solveRooted(treeRoot);
+        return tree.units();
     }
 
     private void breakTreeSymmetries() throws IloException {
@@ -207,7 +207,7 @@ public class RLTSolver implements RootedSolver {
             if (!component.contains(graph.getOppositeVertex(root, e))) {
                 continue;
             }
-            cplex.addEq(getX(e, root), 0);
+            cplex.addEq(getX(e, root), 0, "edge_" + e.getNum() + "root_" + root.getNum());
         }
         for (Node cp : bs.cutpointsOf(component)) {
             if (root != cp) {
@@ -278,6 +278,7 @@ public class RLTSolver implements RootedSolver {
         if (isLBShared) {
             cplex.use(new MIPCallback(logLevel == 0));
         }
+        //cplex.setParam(IntParam.MIPEmphasis, 1);
         cplex.setParam(IntParam.Threads, threads);
         cplex.setParam(IntParam.ParallelMode, -1);
         cplex.setParam(IntParam.MIPOrdType, 3);
@@ -302,7 +303,7 @@ public class RLTSolver implements RootedSolver {
             k--;
         }
         this.prSum = cplex.numVar(0, n, "prSum");
-        cplex.addEq(prSum, cplex.sum(terms));
+        cplex.addEq(prSum, cplex.sum(terms), "prSum");
         for (int i = 0; i < n; i++) {
             cplex.addGe(prSum, rs[i],"brs" + k);
         }
@@ -319,11 +320,12 @@ public class RLTSolver implements RootedSolver {
                     .map(this::getVar).filter(Objects::nonNull)
                     .toArray(IloNumVar[]::new);
             IloNumExpr vsum = cplex.sum(vars);
+            IloNumVar x = cplex.boolVar("s" + i);
             if (vars.length == 0 || weight == 0.0) {
                 continue;
             } else if (Double.isInfinite(weight)) {
-                cplex.addGe(vsum, 1, "sig_root_ub" + i);
-                cplex.addLe(vsum, vars.length, "sig_root" + i);
+                // cplex.addEq(x, 1);
+                cplex.addLazyConstraint(cplex.range(1, vsum, vars.length, "sig_root" + i));
                 weight = 0;
                 signals.setWeight(i, 0);
             } else if (weight > 0) {
@@ -336,10 +338,9 @@ public class RLTSolver implements RootedSolver {
                 vs.add(vars[0]);
                 continue;
             }
-            IloNumVar x = cplex.boolVar("s" + i);
             s.put(i, x);
             vs.add(x);
-            if (weight > 0) {
+            if (weight >= 0) {
                 cplex.addLe(x, vsum, "sig_sum_pos" + i);
             } else {
                 cplex.addGe(cplex.prod(vars.length, x), vsum, "sig_sum_neg" + i);
@@ -348,8 +349,8 @@ public class RLTSolver implements RootedSolver {
         IloNumExpr sum = cplex.scalProd(ks.stream().mapToDouble(d -> d).toArray(),
                 vs.toArray(new IloNumVar[0]));
 
-        this.sum = cplex.numVar(negSum, posSum, "sum");
-        cplex.addGe(sum, lb.get());
+        this.sum = cplex.numVar(negSum - 1, posSum + 1, "sum");
+        // cplex.addGe(sum, lb.get(), "lb");
         cplex.addEq(this.sum, sum);
         cplex.addMaximize(this.sum);
     }
@@ -449,7 +450,7 @@ public class RLTSolver implements RootedSolver {
 
     private void sumConstraints() throws IloException {
         // (31)
-        cplex.addLe(cplex.sum(graph.vertexSet().stream().map(x -> x0.get(x)).toArray(IloNumVar[]::new)), 1);
+        cplex.addLe(cplex.sum(graph.vertexSet().stream().map(x -> x0.get(x)).toArray(IloNumVar[]::new)), 1, "sum31");
         if (root != null) {
             cplex.addEq(x0.get(root), 1, "root");
         }

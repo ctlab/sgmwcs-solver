@@ -11,6 +11,7 @@ import java.util.concurrent.*;
 
 public class ComponentSolver implements Solver {
     private final int threshold;
+    private final boolean preprocess;
     private TimeLimit tl;
     private Double externLB;
     private boolean isSolvedToOptimality;
@@ -26,10 +27,11 @@ public class ComponentSolver implements Solver {
         isEdgePenalty = edgePenalty > 0;
     }
 
-    public ComponentSolver(int threshold, boolean isEdgePenalty) {
+    public ComponentSolver(int threshold, boolean isEdgePenalty, boolean preprocess) {
         this.threshold = threshold;
         this.isEdgePenalty = isEdgePenalty;
-        externLB = 0.0;
+        this.preprocess = preprocess;
+        externLB = Double.NEGATIVE_INFINITY;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
     }
@@ -46,7 +48,10 @@ public class ComponentSolver implements Solver {
         if (logLevel > 0) {
             new GraphPrinter(g, s).printGraph("beforePrep.dot", false);
         }
-        new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess();
+        long before = System.currentTimeMillis();
+        if (preprocess) {
+            new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess();
+        }
         if (logLevel > 0) {
             new GraphPrinter(g, s).printGraph("afterPrep.dot", false);
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
@@ -91,7 +96,7 @@ public class ComponentSolver implements Solver {
             Set<Unit> subset = new HashSet<>(vertexSet);
             subset.addAll(subgraph.edgeSet());
             Signals subSignals = new Signals(signals, subset);
-            /* Node treeRoot = root;
+            /*Node treeRoot = root;
             if (treeRoot == null) {
                 treeRoot = vertexSet.stream().max(Comparator.comparing(signals::weight)).orElse(null);
             }
@@ -112,7 +117,7 @@ public class ComponentSolver implements Solver {
                     lb.compareAndSet(plb, tlb);
                     solver.setInitialSolution(sol.units);
                 }
-            } */
+            }*/
             Worker worker = new Worker(subgraph, root,
                     subSignals, solver, timeBefore);
             executor.execute(worker);
@@ -163,6 +168,15 @@ public class ComponentSolver implements Solver {
         }
         return best;
     }
+
+    /*private Node getRootGSTP(Graph graph, Blocks blocks) {
+        if (blocks.cutpoints().isEmpty()) {
+            return null;
+        }
+        Node v = blocks.cutpoints().iterator().next();
+        blocks.
+
+    }*/
 
     private int dfs(Node v, Node p, Blocks blocks, Map<Node, Integer> max, int n) {
         int res = 0;
@@ -248,7 +262,7 @@ public class ComponentSolver implements Solver {
         return externLB;
     }
 
-    private static class SetComparator implements Comparator<Set<Node>> {
+    public static class SetComparator implements Comparator<Set<Node>> {
         @Override
         public int compare(Set<Node> o1, Set<Node> o2) {
             return -Integer.compare(o1.size(), o2.size());

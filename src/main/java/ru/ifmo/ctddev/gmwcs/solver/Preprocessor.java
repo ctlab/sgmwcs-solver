@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 
 public class Preprocessor {
 
+    private Node root = null;
     private int logLevel = 0;
 
     private boolean edgePenalty;
@@ -73,10 +74,15 @@ public class Preprocessor {
         this.edgePenalty = edgePenalty;
     }
 
+
     public Preprocessor(Graph graph, Signals signals) {
         this.graph = graph;
         this.signals = signals;
         this.numThreads = 0;
+    }
+
+    public void setRoot(Node r) {
+        this.root = r;
     }
 
     private double weight(Unit unit) {
@@ -100,6 +106,11 @@ public class Preprocessor {
     private final Step<Node> leaves = new Step<>(this::leaves, "leaves");
     private final Step<Edge> npe = new Step<>(this::uselessEdges, "npe");
 
+    public void preprocessBasic() {
+        posC();
+        negC();
+    }
+
     public void preprocess() {
         int removed;
         do {
@@ -108,7 +119,7 @@ public class Preprocessor {
                 System.out.println("Removed " + removed + " units");
             }
         } while (removed > 0);
-        mergeEdges();
+        // mergeEdges();
     }
 
     private void mergeEdges() {

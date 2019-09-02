@@ -72,7 +72,7 @@ public class Signals {
     }
 
     public double maxSum(Unit... units) {
-        return sumByPredicate(units, w -> w > 0);
+        return sumByPredicate(units, w -> w >= 0);
     }
 
     public double minSum(Unit... units) {
@@ -145,7 +145,7 @@ public class Signals {
     }
 
     public Set<Integer> positiveUnitSets(Collection<? extends Unit> units) {
-        return unitSets(units.stream(), true).filter(u -> weight(u) >= 0).collect(Collectors.toSet());
+        return unitSets(units.stream(), true).filter(u -> weight(u) > 0).collect(Collectors.toSet());
     }
 
     public Set<Integer> positiveUnitSets(Unit unit) {

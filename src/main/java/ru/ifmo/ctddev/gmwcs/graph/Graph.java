@@ -206,6 +206,12 @@ public class Graph {
         return res;
     }
 
+    public Set<Unit> units() {
+        Set<Unit> units = new HashSet<>(vertexSet());
+        units.addAll(edgeSet());
+        return units;
+    }
+
     private void dfs(Node v, Set<Node> vis) {
         vis.add(v);
         for (Link l : adj.get(v)) {

@@ -112,4 +112,4 @@ def main(stp_path):
 
 
 if __name__ == '__main__':
-  main('/Developer/sgmwcs/sgmwcs-solver/wrp3-11/*.stp')
+  main('/Developer/sgmwcs/sgmwcs-solver/stp-samples/*.stp')
