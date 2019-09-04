@@ -1,8 +1,8 @@
-package ru.ifmo.ctddev.gmwcs.solver;
+package ru.itmo.ctlab.sgmwcs.solver;
 
-import ru.ifmo.ctddev.gmwcs.Signals;
-import ru.ifmo.ctddev.gmwcs.TimeLimit;
-import ru.ifmo.ctddev.gmwcs.graph.*;
+import ru.itmo.ctlab.sgmwcs.Signals;
+import ru.itmo.ctlab.sgmwcs.TimeLimit;
+import ru.itmo.ctlab.sgmwcs.graph.*;
 
 import java.util.*;
 

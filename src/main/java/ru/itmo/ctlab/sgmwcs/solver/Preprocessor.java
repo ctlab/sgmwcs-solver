@@ -74,11 +74,11 @@ public class Preprocessor {
         this.edgePenalty = edgePenalty;
     }
 
-
     public Preprocessor(Graph graph, Signals signals) {
         this.graph = graph;
         this.signals = signals;
         this.numThreads = 0;
+        this.logLevel = 0;
     }
 
     public void setRoot(Node r) {
@@ -160,8 +160,8 @@ public class Preprocessor {
         res += cns.apply(toRemove);
         posC();
         negC();
-        Set<Edge> edgesToRemove = numThreads == 1 ? new HashSet<>() : new ConcurrentSkipListSet<>();
-        res += npe.apply(edgesToRemove);
+        // Set<Edge> edgesToRemove = numThreads == 1 ? new HashSet<>() : new ConcurrentSkipListSet<>();
+        // res += npe.apply(edgesToRemove);
         res += npv2.apply(toRemove);
         return res;
     }

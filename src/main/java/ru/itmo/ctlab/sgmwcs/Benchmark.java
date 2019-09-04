@@ -1,10 +1,10 @@
-package ru.ifmo.ctddev.gmwcs;
+package ru.itmo.ctlab.sgmwcs;
 
-import ru.ifmo.ctddev.gmwcs.graph.Graph;
-import ru.ifmo.ctddev.gmwcs.solver.ComponentSolver;
-import ru.ifmo.ctddev.gmwcs.solver.Preprocessor;
-import ru.ifmo.ctddev.gmwcs.solver.SolverException;
-import ru.ifmo.ctddev.gmwcs.solver.Utils;
+import ru.itmo.ctlab.sgmwcs.graph.Graph;
+import ru.itmo.ctlab.sgmwcs.solver.ComponentSolver;
+import ru.itmo.ctlab.sgmwcs.solver.Preprocessor;
+import ru.itmo.ctlab.sgmwcs.solver.SolverException;
+import ru.itmo.ctlab.sgmwcs.solver.Utils;
 
 import java.io.File;
 import java.io.IOException;
