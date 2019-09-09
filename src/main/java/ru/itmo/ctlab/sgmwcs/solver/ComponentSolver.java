@@ -9,7 +9,6 @@ import java.util.concurrent.*;
 
 public class ComponentSolver implements Solver {
     private final int threshold;
-    private final boolean preprocess;
     private TimeLimit tl;
     private Double externLB;
     private boolean isSolvedToOptimality;
@@ -26,10 +25,9 @@ public class ComponentSolver implements Solver {
         isEdgePenalty = edgePenalty > 0;
     }
 
-    public ComponentSolver(int threshold, boolean isEdgePenalty, boolean preprocess) {
+    public ComponentSolver(int threshold, boolean isEdgePenalty) {
         this.threshold = threshold;
         this.isEdgePenalty = isEdgePenalty;
-        this.preprocess = preprocess;
         externLB = Double.NEGATIVE_INFINITY;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
@@ -48,9 +46,7 @@ public class ComponentSolver implements Solver {
             new GraphPrinter(g, s).printGraph("beforePrep.dot", false);
         }
         long before = System.currentTimeMillis();
-        if (preprocess) {
-            new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess(preprocessLevel);
-        }
+        new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess(preprocessLevel);
         if (logLevel > 0) {
             new GraphPrinter(g, s).printGraph("afterPrep.dot", false);
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
@@ -262,7 +258,7 @@ public class ComponentSolver implements Solver {
     }
 
     public void setPreprocessingLevel(int preprocessLevel) {
-        this.preprocessLevel = preprocessLevel
+        this.preprocessLevel = preprocessLevel;
     }
 
     public static class SetComparator implements Comparator<Set<Node>> {

@@ -94,7 +94,7 @@ public class Main {
             System.exit(1);
         }
         // Solver solver = new BlockSolver();
-        ComponentSolver solver = new ComponentSolver(50, false, preprocess);
+        ComponentSolver solver = new ComponentSolver(50, false);
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
         solver.setLogLevel(logLevel);
