@@ -46,7 +46,7 @@ public class RLTSolver implements RootedSolver {
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
-        threads = 4;
+        threads = 1;
         externLB = 0.0;
         maxToAddCuts = considerCuts = Integer.MAX_VALUE;
     }

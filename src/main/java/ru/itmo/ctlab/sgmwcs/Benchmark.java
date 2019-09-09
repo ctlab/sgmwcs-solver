@@ -6,7 +6,6 @@ import ru.itmo.ctlab.sgmwcs.solver.Preprocessor;
 import ru.itmo.ctlab.sgmwcs.solver.SolverException;
 import ru.itmo.ctlab.sgmwcs.solver.Utils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -37,7 +36,7 @@ public class Benchmark {
         Signals s = new Signals();
         Utils.copy(graph, signals, g, s);
         long timeBefore = System.currentTimeMillis();
-        new Preprocessor(g, s).preprocess();
+        new Preprocessor(g, s).preprocess(preprocessLevel);
         double prepTime = (System.currentTimeMillis() - timeBefore) / 1000;
         solve(g, s);
         double mipTime = (System.currentTimeMillis() - timeBefore) / 1000 - prepTime;

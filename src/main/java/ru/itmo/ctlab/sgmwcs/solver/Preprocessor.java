@@ -109,12 +109,27 @@ public class Preprocessor {
     public void preprocessBasic() {
         posC();
         negC();
+        for (Node v : new ArrayList<>(graph.vertexSet())) {
+            if (positive(v) && (primaryNode == null || weight(v) > weight(primaryNode))) {
+                primaryNode = v;
+            }
+        }
+        if (primaryNode != null) {
+            if (!edgePenalty) //TODO: seems like it is no longer needed
+                new Step<Node>(s ->
+                        negR(primaryNode, primaryNode, new HashSet<>(), s)
+                        , "negR").apply(new HashSet<>());
+        }
     }
 
-    public void preprocess() {
+    public void preprocess(int preprocessLevel) {
+        if (preprocessLevel == 1) {
+            preprocessBasic();
+            return;
+        }
         int removed;
         do {
-            removed = iteration();
+            removed = iteration(preprocessLevel);
             if (logLevel > 1) {
                 System.out.println("Removed " + removed + " units");
             }
@@ -141,7 +156,7 @@ public class Preprocessor {
         }
     }
 
-    private int iteration() {
+    private int iteration(int depth) {
         int res = 0;
         primaryNode = null;
         Set<Node> toRemove = new HashSet<>();
@@ -151,7 +166,7 @@ public class Preprocessor {
             }
         }
         if (primaryNode != null) {
-            if (!edgePenalty) //TODO: seems like it is no longer needed
+            if (depth > 2)
                 new Step<Node>(s ->
                         negR(primaryNode, primaryNode, new HashSet<>(), s)
                         , "negR").apply(toRemove);
@@ -160,8 +175,8 @@ public class Preprocessor {
         res += cns.apply(toRemove);
         posC();
         negC();
-        // Set<Edge> edgesToRemove = numThreads == 1 ? new HashSet<>() : new ConcurrentSkipListSet<>();
-        // res += npe.apply(edgesToRemove);
+        Set<Edge> edgesToRemove = numThreads == 1 ? new HashSet<>() : new ConcurrentSkipListSet<>();
+        res += npe.apply(edgesToRemove);
         res += npv2.apply(toRemove);
         return res;
     }

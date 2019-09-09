@@ -12,7 +12,7 @@ import java.util.*;
 public class BlockSolver implements Solver {
     @Override
     public List<Unit> solve(Graph graph, Signals signals) throws SolverException {
-        new Preprocessor(graph, signals, 4, 2, false).preprocess();
+        new Preprocessor(graph, signals, 4, 2, false).preprocess(preprocessLevel);
         for (Node v : new HashSet<>(graph.vertexSet())) {
             if (graph.neighborListOf(v).isEmpty()) {
                 graph.removeVertex(v);
@@ -52,6 +52,8 @@ public class BlockSolver implements Solver {
                             }
                         }
                     }
+                    if (repeatingSignals.size() > 0)
+                        break;
                 }
                 if (repeatingSignals.size() > 0)
                     continue;

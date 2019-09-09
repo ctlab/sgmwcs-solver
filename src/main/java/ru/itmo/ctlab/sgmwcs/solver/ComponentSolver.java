@@ -17,6 +17,7 @@ public class ComponentSolver implements Solver {
     private int threads;
 
     private boolean isEdgePenalty;
+    private int preprocessLevel;
 
     public void setEdgePenalty(double edgePenalty) {
         if (edgePenalty < 0) {
@@ -48,7 +49,7 @@ public class ComponentSolver implements Solver {
         }
         long before = System.currentTimeMillis();
         if (preprocess) {
-            new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess();
+            new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess(preprocessLevel);
         }
         if (logLevel > 0) {
             new GraphPrinter(g, s).printGraph("afterPrep.dot", false);
@@ -258,6 +259,10 @@ public class ComponentSolver implements Solver {
     @Override
     public double getLB() {
         return externLB;
+    }
+
+    public void setPreprocessingLevel(int preprocessLevel) {
+        this.preprocessLevel = preprocessLevel
     }
 
     public static class SetComparator implements Comparator<Set<Node>> {

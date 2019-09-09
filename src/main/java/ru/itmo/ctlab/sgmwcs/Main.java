@@ -5,9 +5,7 @@ import ilog.cplex.IloCplex;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import ru.itmo.ctlab.sgmwcs.graph.*;
-import ru.itmo.ctlab.sgmwcs.solver.ComponentSolver;
-import ru.itmo.ctlab.sgmwcs.solver.SolverException;
-import ru.itmo.ctlab.sgmwcs.solver.Utils;
+import ru.itmo.ctlab.sgmwcs.solver.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,8 +49,8 @@ public class Main {
                 .withRequiredArg().ofType(Integer.class).defaultsTo(0);
         optionParser.acceptsAll(asList("bm", "benchmark"), "Benchmark output file")
                 .withOptionalArg().defaultsTo("");
-        optionParser.acceptsAll(asList("dp", "disable-preprocessing"), "Disable preprocessing")
-                .withOptionalArg().ofType(Boolean.class).defaultsTo(false);
+        optionParser.acceptsAll(asList("pl", "preprocessing-level"), "Disable preprocessing")
+                .withOptionalArg().ofType(Integer.class).defaultsTo(1);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -89,7 +87,7 @@ public class Main {
         File signalFile = new File((String) optionSet.valueOf("signals"));
         double edgePenalty = (Double) optionSet.valueOf("p");
         int logLevel = (Integer) optionSet.valueOf("l");
-        boolean preprocess = !(Boolean) optionSet.valueOf("dp");
+        int preprocessLevel = (Integer) optionSet.valueOf("dp");
         String bmOutput = (String) optionSet.valueOf("bm");
         if (edgePenalty < 0) {
             System.err.println("Edge penalty can't be negative");
@@ -100,6 +98,7 @@ public class Main {
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
         solver.setLogLevel(logLevel);
+        solver.setPreprocessingLevel(preprocessLevel);
         GraphIO graphIO = new GraphIO(nodeFile, edgeFile, signalFile);
         try {
             long before = System.currentTimeMillis();
