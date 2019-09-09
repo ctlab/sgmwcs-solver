@@ -36,7 +36,7 @@ public class Benchmark {
         Signals s = new Signals();
         Utils.copy(graph, signals, g, s);
         long timeBefore = System.currentTimeMillis();
-        new Preprocessor(g, s).preprocess(preprocessLevel);
+        new Preprocessor(g, s).preprocess(2);
         double prepTime = (System.currentTimeMillis() - timeBefore) / 1000;
         solve(g, s);
         double mipTime = (System.currentTimeMillis() - timeBefore) / 1000 - prepTime;
@@ -55,7 +55,7 @@ public class Benchmark {
 
     private void solve(Graph g, Signals s) {
         try {
-            ComponentSolver sol = new ComponentSolver(50, false, false);
+            ComponentSolver sol = new ComponentSolver(50, false);
             sol.setTimeLimit(new TimeLimit(1000));
             sol.solve(g, s);
         } catch (SolverException e) {
