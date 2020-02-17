@@ -109,17 +109,6 @@ public class Preprocessor {
     public void preprocessBasic() {
         posC();
         negC();
-        for (Node v : new ArrayList<>(graph.vertexSet())) {
-            if (positive(v) && (primaryNode == null || weight(v) > weight(primaryNode))) {
-                primaryNode = v;
-            }
-        }
-        if (primaryNode != null) {
-            if (!edgePenalty) //TODO: seems like it is no longer needed
-                new Step<Node>(s ->
-                        negR(primaryNode, primaryNode, new HashSet<>(), s)
-                        , "negR").apply(new HashSet<>());
-        }
     }
 
     public void preprocess(int preprocessLevel) {
@@ -271,7 +260,7 @@ public class Preprocessor {
         }
     }
 
-    private void contract(Edge e) {
+    public void contract(Edge e) {
         Node main = graph.getEdgeSource(e);
         Node aux = graph.getEdgeTarget(e);
         Set<Edge> auxEdges = new HashSet<>(graph.edgesOf(aux));

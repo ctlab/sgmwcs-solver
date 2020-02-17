@@ -6,10 +6,7 @@ import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import ru.itmo.ctlab.sgmwcs.graph.Edge;
-import ru.itmo.ctlab.sgmwcs.graph.Graph;
-import ru.itmo.ctlab.sgmwcs.graph.Node;
-import ru.itmo.ctlab.sgmwcs.graph.Unit;
+import ru.itmo.ctlab.sgmwcs.graph.*;
 import ru.itmo.ctlab.sgmwcs.solver.ComponentSolver;
 import ru.itmo.ctlab.sgmwcs.solver.RLTSolver;
 import ru.itmo.ctlab.sgmwcs.solver.Solver;
@@ -47,7 +44,7 @@ public class GMWCSTest {
 
     public GMWCSTest() {
         random = new Random(SEED);
-        solver = new ComponentSolver(3, false, true);
+        solver = new ComponentSolver(3, false);
         tests = new ArrayList<>();
         referenceSolver = new ReferenceSolver();
         rltSolver = new RLTSolver();
@@ -105,7 +102,7 @@ public class GMWCSTest {
     public void test02_connected() {
         solver.setThreadsNum(1);
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
-        for (int i = 2999; i < allTests; i++) {
+        for (int i = 0; i < allTests; i++) {
             System.err.println("Test " + i);
             TestCase test = tests.get(i);
 /*            if (random.nextBoolean()) {

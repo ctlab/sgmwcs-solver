@@ -87,14 +87,14 @@ public class Main {
         File signalFile = new File((String) optionSet.valueOf("signals"));
         double edgePenalty = (Double) optionSet.valueOf("p");
         int logLevel = (Integer) optionSet.valueOf("l");
-        int preprocessLevel = (Integer) optionSet.valueOf("dp");
+        int preprocessLevel = (Integer) optionSet.valueOf("pl");
         String bmOutput = (String) optionSet.valueOf("bm");
         if (edgePenalty < 0) {
             System.err.println("Edge penalty can't be negative");
             System.exit(1);
         }
         // Solver solver = new BlockSolver();
-        ComponentSolver solver = new ComponentSolver(50, false);
+        BicomponentSolver solver = new BicomponentSolver(50, false);
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
         solver.setLogLevel(logLevel);

@@ -225,6 +225,19 @@ public class Graph {
         return degree.get(v);
     }
 
+    public void removeUnit(Unit u)  {
+        if (u instanceof Node) {
+            removeVertex((Node) u);
+        } else {
+            removeEdge((Edge) u);
+        }
+    }
+
+    public boolean containsUnit(Unit u) {
+        return u instanceof Node ? containsVertex((Node) u)
+                                 : containsEdge((Edge) u);
+    }
+
     public boolean containsVertex(Node v) {
         return adj.containsKey(v);
     }
