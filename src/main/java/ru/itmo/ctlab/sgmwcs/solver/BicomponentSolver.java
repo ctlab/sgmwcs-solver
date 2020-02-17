@@ -128,7 +128,9 @@ public class BicomponentSolver implements Solver {
 
         for (Map.Entry<Set<Integer>, List<Unit>> cu:
                 colorUnits.entrySet()) {
-            if (cu.getKey().isEmpty()) {
+            Set<Integer> color = cu.getKey();
+            List<Unit> us = cu.getValue();
+            if (color.isEmpty()) {
                 for (Unit u: cu.getValue()) {
                     if (g.containsUnit(u)) {
                         g.removeUnit(u);
@@ -136,14 +138,14 @@ public class BicomponentSolver implements Solver {
                 }
             }
             else {
-                for (Unit u: cu.getValue()) {
+                for (Unit u: us) {
                     if (u instanceof Edge || !g.containsUnit(u))
                         continue;
                     Node n = (Node) u;
                     for (Edge e: g.edgesOf(n)) {
                         Node opp = g.getOppositeVertex(n, e);
-                        if (coloring.getOrDefault(opp, Collections.singleton(-1)).equals(cu)
-                                && coloring.get(e).equals(cu)) {
+                        if (coloring.getOrDefault(opp, Collections.singleton(-1)).equals(color)
+                                && coloring.get(e).equals(color)) {
                             p.contract(e);
                         }
                     }
