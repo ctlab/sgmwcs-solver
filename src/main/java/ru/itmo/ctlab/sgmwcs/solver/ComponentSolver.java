@@ -6,6 +6,7 @@ import ru.itmo.ctlab.sgmwcs.graph.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public class ComponentSolver implements Solver {
     private final int threshold;
@@ -61,6 +62,12 @@ public class ComponentSolver implements Solver {
 
     private List<Unit> afterPreprocessing(Graph graph, Signals signals) throws SolverException {
         long timeBefore = System.currentTimeMillis();
+        // Set<Integer> requiredSigs = new HashSet<>();
+        /*for (int sig = 0; sig < signals.size(); sig++) {
+            if (signals.weight(sig) == Double.POSITIVE_INFINITY) {
+                requiredSigs.add(sig);
+            }
+        }*/
         AtomicDouble lb = new AtomicDouble(externLB);
         PriorityQueue<Set<Node>> components = getComponents(graph);
         List<Worker> memorized = new ArrayList<>();
@@ -75,6 +82,10 @@ public class ComponentSolver implements Solver {
             Set<Node> component = components.poll();
             Graph subgraph = graph.subgraph(component);
             Node root = null;
+            /*Set<Integer> us = subgraph.vertexSet().stream()
+                    .flatMap(n -> signals.unitSets(n).stream())
+                    .collect(Collectors.toSet());
+            if (!us.containsAll(requiredSigs)) continue;*/
             double timeRemains = tl.getRemainingTime()
                     - (System.currentTimeMillis() - timeBefore) / 1000.0;
             if (component.size() >= threshold && timeRemains > 0) {

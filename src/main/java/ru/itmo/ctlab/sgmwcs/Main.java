@@ -17,7 +17,7 @@ import java.util.Set;
 import static java.util.Arrays.asList;
 
 public class Main {
-    public static final String VERSION = "0.9.4";
+    public static final String VERSION = "0.9.5";
 
     static {
         /*try {
@@ -50,7 +50,7 @@ public class Main {
         optionParser.acceptsAll(asList("bm", "benchmark"), "Benchmark output file")
                 .withOptionalArg().defaultsTo("");
         optionParser.acceptsAll(asList("pl", "preprocessing-level"), "Disable preprocessing")
-                .withOptionalArg().ofType(Integer.class).defaultsTo(1);
+                .withOptionalArg().ofType(Integer.class).defaultsTo(2);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -94,7 +94,7 @@ public class Main {
             System.exit(1);
         }
         // Solver solver = new BlockSolver();
-        BicomponentSolver solver = new BicomponentSolver(50, false);
+        ComponentSolver solver = new ComponentSolver(threshold, edgePenalty != 0);
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
         solver.setLogLevel(logLevel);

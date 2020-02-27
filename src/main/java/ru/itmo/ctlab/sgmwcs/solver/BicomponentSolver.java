@@ -5,6 +5,7 @@ package ru.itmo.ctlab.sgmwcs.solver;
  */
 
 import ru.itmo.ctlab.sgmwcs.Signals;
+import ru.itmo.ctlab.sgmwcs.SignalsGraph;
 import ru.itmo.ctlab.sgmwcs.TimeLimit;
 import ru.itmo.ctlab.sgmwcs.graph.*;
 
@@ -47,12 +48,12 @@ public class BicomponentSolver implements Solver {
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
         if (logLevel > 0) {
-            new GraphPrinter(g, s).printGraph("beforePrep.dot", false);
+            new GraphPrinter(g, s, Collections.emptySet()).printGraph("beforePrep.dot", false);
         }
         long before = System.currentTimeMillis();
         new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess(preprocessLevel);
         if (logLevel > 0) {
-            new GraphPrinter(g, s).printGraph("afterPrep.dot", false);
+            new GraphPrinter(g, s, Collections.emptySet()).printGraph("afterPrep.dot", false);
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
             System.out.println("and " + (edgesBefore - g.edgeSet().size()) + " edges.");
         }
@@ -73,8 +74,12 @@ public class BicomponentSolver implements Solver {
         }
         graph = graph.subgraph(graph.connectedSets().stream().min(new SetComparator()).get());
         BicomponentSeparator bs = new BicomponentSeparator(graph);
-        Graph g = bs.getBicomp();
+        Graph g = bs.getResult();
+        SignalsGraph sg = new SignalsGraph(origin, signals);
         Set<Edge> edges = bs.getCut();
+        new GraphPrinter(graph, signals, bs.edgesOfCuts()).printGraph("cuts", false);
+        BicomponentSeparator signalsBs = new BicomponentSeparator(sg.getGraph());
+        new GraphPrinter(sg.getGraph(), null, signalsBs.edgesOfCuts()).printGraph("sigcuts", false);
         Graph subgraph = g.subgraph(g.connectedSets().stream().max(new SetComparator()).get());
         for (Edge e : edges) {
             Node n = graph.getEdgeSource(e);
@@ -139,6 +144,7 @@ public class BicomponentSolver implements Solver {
             }
             else {
                 for (Unit u: us) {
+                    Set<Edge> toContract = new HashSet<>();
                     if (u instanceof Edge || !g.containsUnit(u))
                         continue;
                     Node n = (Node) u;
@@ -146,9 +152,10 @@ public class BicomponentSolver implements Solver {
                         Node opp = g.getOppositeVertex(n, e);
                         if (coloring.getOrDefault(opp, Collections.singleton(-1)).equals(color)
                                 && coloring.get(e).equals(color)) {
-                            p.contract(e);
+                            toContract.add(e);
                         }
                     }
+                    toContract.forEach(p::contract);
                 }
             }
         }

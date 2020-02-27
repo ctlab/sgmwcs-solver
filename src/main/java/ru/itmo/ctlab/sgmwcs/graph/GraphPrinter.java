@@ -8,18 +8,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 public class GraphPrinter {
     private final Graph graph;
     private final Signals signals;
+    private final Set<Edge> cutEdges;
 
 
-    public GraphPrinter(Graph graph, Signals signals) {
+    public GraphPrinter(Graph graph, Signals signals, Set<Edge> cutEdges) {
         this.graph = graph;
         this.signals = signals;
+        this.cutEdges = cutEdges;
     }
+    public GraphPrinter(Graph graph, Signals signals) {
+        this(graph, signals, Collections.emptySet());
+    }
+
 
     private String formatSignal(int signal) {
         return "S" + signal;
@@ -33,12 +41,15 @@ public class GraphPrinter {
                 .reduce(u, (a, b) -> a + ", " + b);
     }
 
+    private String formatUnit(String unit, String signals, String color) {
+        return unit + " [label=\"" + unit + "(" + signals + ")" + "\"" + color + "]";
+    }
     private String formatUnit(String unit, String signals) {
-        return unit + " [label=\"" + unit + "(" + signals + ")" + "\"]";
+        return unit + (this.signals == null ? "" :  " [label=\"" + unit + "(" + signals + ")" + "\"]");
     }
 
     private String weight(Unit unit) {
-        return signals.weight(unit) + "";
+        return this.signals == null ? unit.getNum() + "" : signals.weight(unit) + "";
     }
 
     public void printGraph(String fileName) throws SolverException {
@@ -55,7 +66,11 @@ public class GraphPrinter {
         for (Edge e : graph.edgeSet()) {
             String str = (graph.getEdgeSource(e).num)
                     + "--" + (graph.getEdgeTarget(e).num);
-            output.add(formatUnit(str, sigLabels ? printSignals(e) : weight(e)));
+            if (cutEdges.contains(e)) {
+                output.add(formatUnit(str, sigLabels ? printSignals(e) : weight(e), " dir = none color=\"red\""));
+            } else {
+                output.add(formatUnit(str, sigLabels ? printSignals(e) : weight(e)));
+            }
         }
         if (sigLabels) {
             output.add("node[shape=record]");

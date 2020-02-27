@@ -35,7 +35,10 @@ public class SignalsGraph {
             gout.addVertex(nodes[s]);
         });
         constructGraph();
+    }
 
+    public Graph getGraph() {
+        return gout;
     }
 
     private void constructGraph() {

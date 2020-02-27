@@ -14,26 +14,28 @@ class ToSgmwcs(object):
     for n1 in range(1, len(edges)):
       is_gr = 0
       for (n2, w) in edges[n1]:
-        if n2 not in terms:
+        if n2 not in terms: # then treat as Steiner node
           signum = 1
           while 'S{}'.format(signum) in ss:
             signum += 1
           newsig = 'S{}'.format(signum)
           ss[newsig] = -w
           edges_out.write(str(n1) + ' ' + str(n2) + ' ' + newsig + '\n')
-        else:
+        else:               # treat as group node
           ss['S{}'.format(n2)] = w
           is_gr = 1
           nodes_out.write('{} S{}\n'.format(n1, n2))
       if not is_gr:
-        nodes_out.write('{} S0\n'.format(n1))
-    # negsum = 0
-    # for (s, w) in ss.items():
-    # if w < 0:
-    #   negsum -= w
+        signum = 1
+        while 'S{}'.format(signum) in ss:
+          signum += 1
+        newsig = 'S{}'.format(signum)
+        ss[newsig] = 0
+        nodes_out.write('{} {}\n'.format(n1, newsig))
     for (s, w) in ss.items():
       if w > 0:
         ss[s] = 'inf'
+    ss.pop('S0')
     for (s, w) in ss.items():
       sigs_out.write(s + ' ' + str(w) + '\n')
     for h in (edges_out, nodes_out, sigs_out):
@@ -112,4 +114,4 @@ def main(stp_path):
 
 
 if __name__ == '__main__':
-  main('/Developer/sgmwcs/sgmwcs-solver/stp-samples/*.stp')
+  main('/Developer/sgmwcs/sgmwcs-solver/stp-samples/wrp*.stp')

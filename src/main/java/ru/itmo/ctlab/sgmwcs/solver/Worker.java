@@ -12,13 +12,13 @@ import java.util.stream.Collectors;
 public class Worker implements Runnable {
     private final Signals signals;
     private final Graph graph;
-    private final RLTSolver solver; //was RootedSolver, TODO!!!!!!!!!!!!
+    private final RLTSolver solver;
     private final Node root;
     private List<Unit> result;
     private boolean isSolvedToOptimality;
     private boolean isOk;
     private long startTime;
-    private int logLevel; // todo
+    private int logLevel;
 
     public Worker(Graph graph, Node root, Signals signals, RLTSolver solver, long time) {
         this.solver = solver;
@@ -34,7 +34,7 @@ public class Worker implements Runnable {
     public void run() {
         Set<Node> vertexSet = graph.vertexSet();
         solver.setRoot(root);
-        PSD psd = new PSD(graph, signals);
+        //PSD psd = new PSD(graph, signals);
         if (vertexSet.size() <= 1) {
             result = vertexSet.stream().filter(n -> signals.weight(n) >= 0).collect(Collectors.toList());
             return;
