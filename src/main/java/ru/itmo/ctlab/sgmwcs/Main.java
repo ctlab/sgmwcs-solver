@@ -124,7 +124,7 @@ public class Main {
             System.out.println("time:" + (now - before));
             Set<Edge> edges = new HashSet<>();
             Set<Node> nodes = new HashSet<>();
-            if (logLevel == 2) {
+            if (logLevel == 2 && units != null) {
                 for (Unit unit : units) {
                     if (unit instanceof Edge) {
                         edges.add((Edge) unit);
