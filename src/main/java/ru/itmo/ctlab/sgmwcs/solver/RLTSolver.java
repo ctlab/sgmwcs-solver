@@ -33,7 +33,7 @@ public class RLTSolver implements RootedSolver {
     private int maxToAddCuts;
     private int considerCuts;
     private AtomicDouble lb;
-    private double externLB = Double.NEGATIVE_INFINITY;
+    private double externLB;
     private boolean isLBShared;
     private IloNumVar sum;
     private boolean solutionIsTree;
@@ -47,7 +47,7 @@ public class RLTSolver implements RootedSolver {
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
-        externLB = 0.0;
+        externLB = Double.NEGATIVE_INFINITY;
         maxToAddCuts = considerCuts = Integer.MAX_VALUE;
     }
 

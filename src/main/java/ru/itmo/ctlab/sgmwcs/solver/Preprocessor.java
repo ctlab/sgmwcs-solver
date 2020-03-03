@@ -109,6 +109,18 @@ public class Preprocessor {
     public void preprocessBasic() {
         posC();
         negC();
+        primaryNode = null;
+        Set<Node> toRemove = new HashSet<>();
+        for (Node v : new ArrayList<>(graph.vertexSet())) {
+            if (positive(v) && (primaryNode == null || weight(v) > weight(primaryNode))) {
+                primaryNode = v;
+            }
+        }
+        if (primaryNode != null) {
+                new Step<Node>(s ->
+                        negR(primaryNode, primaryNode, new HashSet<>(), s)
+                        , "negR").apply(toRemove);
+        }
     }
 
     public void preprocess(int preprocessLevel) {
@@ -155,10 +167,6 @@ public class Preprocessor {
             }
         }
         if (primaryNode != null) {
-            if (depth > 2)
-                new Step<Node>(s ->
-                        negR(primaryNode, primaryNode, new HashSet<>(), s)
-                        , "negR").apply(toRemove);
             res += leaves.apply(toRemove);
         }
         res += cns.apply(toRemove);
