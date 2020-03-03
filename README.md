@@ -35,7 +35,7 @@ Running
 To run the program you should set jvm parameter java.library.path to directory of CPLEX binaries and set parameter
 -classpath to program jar and cplex.jar like in the example below.
 
-    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_linux/ -cp /opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar:sgmwcs-solver.jar Main
+    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_linux/ -cp /opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar:sgmwcs-solver.jar ru.itmo.ctlab.sgmwcs.Main
 
 See more help by using flag -h.
 
