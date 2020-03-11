@@ -162,7 +162,7 @@ public class Preprocessor {
         primaryNode = null;
         Set<Node> toRemove = new HashSet<>();
         for (Node v : new ArrayList<>(graph.vertexSet())) {
-            if (positive(v) && (primaryNode == null || weight(v) > weight(primaryNode))) {
+            if (primaryNode == null || weight(v) > weight(primaryNode)) {
                 primaryNode = v;
             }
         }
@@ -314,8 +314,21 @@ public class Preprocessor {
                 toAbsorb.putIfAbsent(opposite, new ArrayList<>());
                 toAbsorb.get(opposite).addAll(Arrays.asList(leaf, edge));
                 toRemove.add(leaf);
-            } else if (signals.maxSum(edge, leaf, opposite) <= signals.maxSum(opposite)) {
+            } else if (
+                    signals.sum(edge, leaf, opposite) <= signals.sum(opposite)) {
                 toRemove.add(leaf);
+            }
+            else {
+                for (Node other: graph.neighborListOf(opposite)) {
+                    if (toRemove.contains(other) || other == leaf)
+                        continue;
+                    Edge otherEdge = graph.getEdge(other, opposite);
+                    if (signals.positiveUnitSets(otherEdge, other)
+                            .containsAll(signals.positiveUnitSets(leaf, edge)) &&
+                    signals.minSum(otherEdge, other) >= signals.minSum(leaf, edge)) {
+                        toRemove.add(leaf);
+                    }
+                }
             }
         }
         for (Map.Entry<Node, List<Unit>> kvp : toAbsorb.entrySet()) {

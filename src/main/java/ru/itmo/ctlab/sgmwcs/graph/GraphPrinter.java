@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class GraphPrinter {
@@ -24,6 +25,7 @@ public class GraphPrinter {
         this.signals = signals;
         this.cutEdges = cutEdges;
     }
+
     public GraphPrinter(Graph graph, Signals signals) {
         this(graph, signals, Collections.emptySet());
     }
@@ -44,8 +46,9 @@ public class GraphPrinter {
     private String formatUnit(String unit, String signals, String color) {
         return unit + " [label=\"" + unit + "(" + signals + ")" + "\"" + color + "]";
     }
+
     private String formatUnit(String unit, String signals) {
-        return unit + (this.signals == null ? "" :  " [label=\"" + unit + "(" + signals + ")" + "\"]");
+        return unit + (this.signals == null ? "" : " [label=\"" + unit + "(" + signals + ")" + "\"]");
     }
 
     private String weight(Unit unit) {
@@ -56,11 +59,44 @@ public class GraphPrinter {
         printGraph(fileName, true);
     }
 
+    public void toTSV(String nodesFile, String edgesFile) throws SolverException {
+        Path nodes = Paths.get(nodesFile);
+        List<String> nodesList = new ArrayList<>();
+        Path edges = Paths.get(edgesFile);
+        List<String> edgesList = new ArrayList<>();
+        nodesList.add("name\tsignals\tscore\tscore2");
+        edgesList.add("source\ttarget\tsignals\tscore\tscore2");
+        for (Unit u : graph.units()) {
+            String sigString = String.join(",", signals.unitSets(u).stream()
+                    .map(s -> "S" + s).collect(Collectors.toList()));
+            double w = signals.weight(u);
+            double rounded = ((double)(int) (w * 100)) / 100;
+            String str = sigString + '\t' + w
+                    + '\t' + rounded + '\n';
+            if (u instanceof Edge) {
+                Edge e = (Edge) u;
+                str = (graph.getEdgeSource(e).num)
+                        + "\t" + (graph.getEdgeTarget(e).num) + "\t" + str;
+                edgesList.add(str);
+            } else {
+                str = u.getNum() + "\t" + str;
+                nodesList.add(str);
+            }
+        }
+        try {
+            Files.write(nodes, nodesList);
+            Files.write(edges, edgesList);
+        } catch (IOException e) {
+            throw new SolverException("Couldn't print graph");
+        }
+
+    }
+
     public void printGraph(String fileName, boolean sigLabels) throws SolverException {
         List<String> output = new ArrayList<>();
         output.add("graph graphname {");
         for (Node v : graph.vertexSet()) {
-            String str = (v.getNum()) + "";
+            String str = v.getNum() + "";
             output.add(formatUnit(str, sigLabels ? printSignals(v) : weight(v)));
         }
         for (Edge e : graph.edgeSet()) {

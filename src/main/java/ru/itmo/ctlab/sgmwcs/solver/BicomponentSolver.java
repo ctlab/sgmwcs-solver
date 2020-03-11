@@ -61,9 +61,16 @@ public class BicomponentSolver implements Solver {
         if (g.vertexSet().size() == 0) {
             return null;
         }
-        while (true) {
-            afterPreprocessing(g, new Signals(s, units));
+        Signals ss = new Signals(s, units);
+        for (int i = 0; i < 10; i++) {
+            afterPreprocessing(g, ss);
         }
+        ComponentSolver solver = new ComponentSolver(threshold, isEdgePenalty);
+        solver.setThreadsNum(threads);
+        solver.setTimeLimit(tl);
+        solver.setLogLevel(logLevel);
+        solver.setPreprocessingLevel(preprocessLevel);
+        return solver.solve(g, ss);
     }
 
     private List<Unit> afterPreprocessing(Graph graph, Signals signals) throws SolverException {
@@ -75,11 +82,11 @@ public class BicomponentSolver implements Solver {
         graph = graph.subgraph(graph.connectedSets().stream().min(new SetComparator()).get());
         BicomponentSeparator bs = new BicomponentSeparator(graph);
         Graph g = bs.getResult();
-        SignalsGraph sg = new SignalsGraph(origin, signals);
+        // SignalsGraph sg = new SignalsGraph(origin, signals);
         Set<Edge> edges = bs.getCut();
-        new GraphPrinter(graph, signals, bs.edgesOfCuts()).printGraph("cuts", false);
-        BicomponentSeparator signalsBs = new BicomponentSeparator(sg.getGraph());
-        new GraphPrinter(sg.getGraph(), null, signalsBs.edgesOfCuts()).printGraph("sigcuts", false);
+        // new GraphPrinter(graph, signals, bs.edgesOfCuts()).printGraph("cuts", false);
+        // BicomponentSeparator signalsBs = new BicomponentSeparator(sg.getGraph());
+        // new GraphPrinter(sg.getGraph(), null, signalsBs.edgesOfCuts()).printGraph("sigcuts", false);
         Graph subgraph = g.subgraph(g.connectedSets().stream().max(new SetComparator()).get());
         for (Edge e : edges) {
             Node n = graph.getEdgeSource(e);
@@ -94,6 +101,9 @@ public class BicomponentSolver implements Solver {
         Set<Node> vertexSet = subgraph.vertexSet();
         Set<Unit> subset = new HashSet<>(vertexSet);
         subset.addAll(subgraph.edgeSet());
+        for (int s: signals.unitSets(subset)) {
+            System.out.println(signals.set(s).size());
+        }
 
         Set<Unit> res1 = runSolver(subgraph, new Signals(signals, subset), roots.get(0));
         Set<Unit> res2 = runSolver(subgraph, new Signals(signals, subset), roots.get(1));
@@ -107,7 +117,9 @@ public class BicomponentSolver implements Solver {
         Set<Unit> res3 = runSolver(subgraph, subSignals, roots.get(1));
         List<Set<Unit>> colors = new ArrayList<>();
         colors.add(res1); colors.add(res2); colors.add(res3);
-        contractSolutions(origin, signals, colors, subset);
+        if (signals.weightSum(signals.unitSets(res1)) == signals.weightSum(signals.unitSets(res2))
+                && signals.weightSum(signals.unitSets(res2)) == signals.weightSum(signals.unitSets(res3)))
+            contractSolutions(origin, signals, colors, subset);
         return null;
 }
 

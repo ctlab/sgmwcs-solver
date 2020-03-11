@@ -7,6 +7,7 @@ import ru.itmo.ctlab.sgmwcs.Signals;
 import ru.itmo.ctlab.sgmwcs.TimeLimit;
 import ru.itmo.ctlab.sgmwcs.graph.*;
 
+import java.lang.Exception;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -87,6 +88,23 @@ public class RLTSolver implements RootedSolver {
         this.root = root;
     }
 
+    public double ub() {
+        try {
+            return cplex.getBestObjValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+    public double lb() {
+        try {
+            return cplex.getObjValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     @Override
     public List<Unit> solve(Graph graph, Signals signals) throws SolverException {
         try {
@@ -153,6 +171,8 @@ public class RLTSolver implements RootedSolver {
             }
             if (solFound) {
                 return getResult();
+            } else if (initialSolution != null) {
+                return new ArrayList<>(initialSolution);
             }
             return Collections.emptyList();
         } catch (IloException e) {
@@ -320,7 +340,9 @@ public class RLTSolver implements RootedSolver {
                     .map(this::getVar).filter(Objects::nonNull)
                     .toArray(IloNumVar[]::new);
             IloNumExpr vsum = cplex.sum(vars);
-            IloNumVar x = cplex.boolVar("s" + i);
+
+            IloNumVar x = cplex.numVar(0, 1, "s" + i);
+
             if (vars.length == 0 || weight == 0.0) {
                 continue;
             } else if (Double.isInfinite(weight)) {
@@ -350,7 +372,7 @@ public class RLTSolver implements RootedSolver {
                 vs.toArray(new IloNumVar[0]));
 
         this.sum = cplex.numVar(negSum - 1, posSum + 1, "sum");
-        // cplex.addGe(sum, lb.get(), "lb");
+        cplex.addGe(sum, lb.get(), "lb");
         cplex.addEq(this.sum, sum);
         cplex.addMaximize(this.sum);
     }
@@ -515,6 +537,7 @@ public class RLTSolver implements RootedSolver {
 
     private CplexSolution tryMstSolution(Graph tree, Node root,
                                          Set<Unit> mstSol) {
+        mstSol = new HashSet<>(mstSol);
         CplexSolution solution = new CplexSolution();
         final Set<Edge> unvisitedEdges = new HashSet<>(this.graph.edgeSet());
         final Set<Node> unvisitedNodes = new HashSet<>(this.graph.vertexSet());

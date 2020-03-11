@@ -133,7 +133,7 @@ public class Main {
                     }
                 }
                 Graph solGraph = graph.subgraph(nodes, edges);
-                new GraphPrinter(solGraph, signals).printGraph("sol.dot", false);
+                new GraphPrinter(solGraph, signals).toTSV("nodes-sol.tsv", "edges-sol.tsv");
             }
             graphIO.write(units);
         } catch (ParseException e) {

@@ -44,12 +44,12 @@ public class ComponentSolver implements Solver {
         Set<Unit> units = new HashSet<>(g.vertexSet());
         units.addAll(g.edgeSet());
         if (logLevel > 0) {
-            new GraphPrinter(g, s).printGraph("beforePrep.dot", false);
+            new GraphPrinter(g, s).printGraph("beforePrep.dot", true);
         }
         long before = System.currentTimeMillis();
         new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess(preprocessLevel);
         if (logLevel > 0) {
-            new GraphPrinter(g, s).printGraph("afterPrep.dot", false);
+            new GraphPrinter(g, s).toTSV("nodes-prep.tsv", "edges-prep.tsv");
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
             System.out.println("and " + (edgesBefore - g.edgeSet().size()) + " edges.");
         }
@@ -73,11 +73,7 @@ public class ComponentSolver implements Solver {
         List<Worker> memorized = new ArrayList<>();
         BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
         ExecutorService executor = new ThreadPoolExecutor(threads, threads, Long.MAX_VALUE, TimeUnit.NANOSECONDS, queue);
-        /*try {
-            new SignalsGraph(graph, signals).writeGraph();
-        } catch (IOException ignored) {
 
-        }*/
         while (!components.isEmpty()) {
             Set<Node> component = components.poll();
             Graph subgraph = graph.subgraph(component);
@@ -91,9 +87,11 @@ public class ComponentSolver implements Solver {
             if (component.size() >= threshold && timeRemains > 0) {
                 root = getRoot(subgraph, new Blocks(subgraph));
                 if (root != null) {
-                    addComponents(subgraph, root, components);
+                    addComponents(subgraph, root, components, signals);
                 }
             }
+            //if (root != null && !subgraph.containsVertex(root))
+             //   continue;
             RLTSolver solver = new RLTSolver();
             solver.setSharedLB(lb);
             solver.setTimeLimit(tl);
@@ -119,7 +117,7 @@ public class ComponentSolver implements Solver {
                 double tlb = subSignals.weightSum(sol.sets());
                 double plb = lb.get();
                 if (tlb >= plb) {
-                    System.out.println("found lb " + tlb);
+                    System.out.println("heuristic found lb " + tlb);
                     lb.compareAndSet(plb, tlb);
                     solver.setInitialSolution(sol.units);
                 }
@@ -150,6 +148,16 @@ public class ComponentSolver implements Solver {
                 isSolvedToOptimality = false;
             }
         }
+
+        /*try {
+            new GraphPrinter(graph.subgraph(best.stream()
+                    .filter(u -> u instanceof Node).map(u -> (Node) u).collect(Collectors.toSet()),
+                    best.stream()
+                    .filter(u -> u instanceof Edge).map(u -> (Edge) u).collect(Collectors.toSet()))
+                    , signals).printGraph("best.dot", true);
+        } catch (SolverException e) {
+            e.printStackTrace();
+        }*/
         List<Unit> result = extract(best);
         graph.vertexSet().forEach(Unit::clear);
         graph.edgeSet().forEach(Unit::clear);
@@ -224,9 +232,71 @@ public class ComponentSolver implements Solver {
         return isSolvedToOptimality;
     }
 
-    private void addComponents(Graph graph, Node root, PriorityQueue<Set<Node>> components) {
+    private void addComponents(Graph graph, Node root,
+                               PriorityQueue<Set<Node>> components,
+                               Signals signals) throws SolverException {
+        // signals = new Signals(signals, graph.units());
+        // Graph origin = graph;
         graph = graph.subgraph(graph.vertexSet());
         graph.removeVertex(root);
+        /* List<Set<Node>> sets = graph.connectedSets().stream()
+                .sorted(new SetComparator()).collect(Collectors.toList());
+
+        List<Set<Integer>> sigs = new ArrayList<>();
+        for (Set<Node> set : sets) {
+            Graph g = graph.subgraph(set);
+            Set<Integer> s = signals.positiveUnitSets(set);
+            s.addAll(signals.positiveUnitSets(g.edgeSet()));
+            sigs.add(s);
+        }
+        double[][] inter = new double[sigs.size()][sigs.size()];
+        for (int i = 0; i < sigs.size(); i++) {
+            for (int j = i; j < sigs.size(); j++) {
+                Set<Integer> sect = new HashSet<>(sigs.get(i));
+                sect.retainAll(sigs.get(j));
+                inter[i][j] = signals.weightSum(sect);
+            }
+        }
+        boolean contains = true;
+        for (int i = 1; i < inter.length; i++) {
+            if (inter[0][i] < inter[i][i]) {
+                contains = false;
+                break;
+            }
+        }
+
+        if (contains) {
+            for (int sig : sigs.get(0)) {
+                if (sigs.subList(1, sigs.size()).stream().noneMatch(s -> s.contains(sig))) {
+                    signals.setWeight(sig, 0);
+                }
+            }
+            // sets.remove(0);
+            AtomicDouble lb = new AtomicDouble(0);
+            RLTSolver sol1 = new RLTSolver();
+            sol1.setSharedLB(lb);
+            sol1.setLogLevel(2);
+            sol1.setTimeLimit(new TimeLimit(30));
+            Graph sub = graph.subgraph(graph.connectedSets().get(0));
+            Signals s1 = new Signals(signals, sub.units());
+            Preprocessor prep1 = new Preprocessor(sub, s1);
+            prep1.preprocess(2);
+            List<Unit> res1 = sol1.solve(sub, s1);
+            RLTSolver sol2 = new RLTSolver();
+            sol2.setSharedLB(lb);
+            sol2.setRoot(root);
+            Graph sub2 = origin.subgraph(origin.vertexSet());
+            Signals s2 = new Signals(signals, sub2.units());
+            List<Unit> res2 = sol2.solve(sub2, s2);
+            double sum1 = s1.sum(res1);
+            double sum2 = s2.sum(res2);
+            if (sum1 > sum2) {
+                System.out.println("removing root " + root);
+                origin.removeVertex(root);
+                components.add(sets.get(0));
+                return;
+            }
+        }*/
         components.addAll(graph.connectedSets());
     }
 
