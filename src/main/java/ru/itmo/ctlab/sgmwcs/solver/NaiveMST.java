@@ -28,9 +28,9 @@ public class NaiveMST {
             Double cw = Double.MAX_VALUE;
             for (Node n : t) {
                 Map<Node, Double> neighbors = weights.get(n);
-                for (Map.Entry<Node, Double> cand : neighbors.entrySet()) {
-                    Node node = cand.getKey();
-                    double w = cand.getValue();
+                for (Map.Entry<Node, Double> m: neighbors.entrySet()) {
+                    Node node = m.getKey();
+                    double w = m.getValue();
                     if (nodes.contains(node) && !t.contains(node) && w < cw) {
                         cw = w;
                         next = node;

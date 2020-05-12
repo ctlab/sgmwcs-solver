@@ -51,7 +51,7 @@ public class BicomponentSolver implements Solver {
             new GraphPrinter(g, s, Collections.emptySet()).printGraph("beforePrep.dot", false);
         }
         long before = System.currentTimeMillis();
-        new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess(preprocessLevel);
+        new Preprocessor(g, s, threads, logLevel).preprocess(preprocessLevel);
         if (logLevel > 0) {
             new GraphPrinter(g, s, Collections.emptySet()).printGraph("afterPrep.dot", false);
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");

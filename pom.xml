@@ -8,7 +8,7 @@
     <artifactId>sgmwcs-solver</artifactId>
 
 
-    <version>0.9.6</version>
+    <version>0.9.8</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -137,7 +137,7 @@
             <scope>provided</scope>
             <groupId>com.ibm</groupId>
             <artifactId>cplex</artifactId>
-            <version>[12.6.3,)</version>
+            <version>[12.9.0,)</version>
         </dependency>
         <dependency>
             <groupId>org.jgrapht</groupId>

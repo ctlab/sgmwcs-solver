@@ -182,6 +182,20 @@ public class Graph {
     }
 
 
+    public Graph subgraph(List<Unit> units) {
+        Set<Node> nodes = new HashSet<>();
+        Set<Edge> edges = new HashSet<>();
+        for (Unit unit: units) {
+            if (unit instanceof Edge) {
+                edges.add((Edge) unit);
+            } else {
+                nodes.add((Node) unit);
+            }
+        }
+        return subgraph(nodes, edges);
+    }
+
+
     public Graph subgraph(Set<Node> nodes, Set<Edge> edges) {
         Graph res = new Graph();
         nodes.forEach(res::addVertex);

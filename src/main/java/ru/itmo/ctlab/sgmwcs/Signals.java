@@ -63,6 +63,11 @@ public class Signals {
         return weights.get(num).getAsDouble();
     }
 
+
+    public Stream<Integer> filter(Set<Integer> sets, Predicate<Integer> pred) {
+        return sets.stream().filter(pred);
+    };
+
     public double minSum(Collection<? extends Unit> units) {
         return minSum(units.toArray(new Unit[0]));
     }
@@ -72,17 +77,20 @@ public class Signals {
     }
 
     public double maxSum(Unit... units) {
-        return sumByPredicate(units, w -> w >= 0);
+//         return sumByPredicate(units, s -> weight(s) > 0);
+        return sum(units);
     }
 
     public double minSum(Unit... units) {
-        return sumByPredicate(units, w -> w < 0);
+        return sumByPredicate(units, s -> (set(s).size() == 1) || (weight(s) < 0));
     }
 
-    private double sumByPredicate(Unit[] units, Predicate<Double> pred) {
+
+    private double sumByPredicate(Unit[] units, Predicate<Integer> pred) {
         return unitSets(Arrays.stream(units), true)
+                .filter(pred)
                 .mapToDouble(this::weight)
-                .filter(pred::test).sum();
+                .sum();
     }
 
     public double weight(Unit unit) {
@@ -131,8 +139,12 @@ public class Signals {
        return weightSum(unitSets(units));
     }
 
+    public double weightSum(Stream<Integer> sets) {
+        return sets.distinct().mapToDouble(this::weight).sum();
+    }
+
     public double weightSum(Collection<Integer> sets) {
-        return sets.stream().distinct().mapToDouble(this::weight).sum();
+        return weightSum(sets.stream());
     }
 
     public boolean bijection(Unit unit) {
@@ -194,8 +206,7 @@ public class Signals {
     }
 
     public List<Unit> set(int num) {
-        List<Unit> result = new ArrayList<>();
-        result.addAll(sets.get(num));
+        List<Unit> result = new ArrayList<>(sets.get(num));
         return result;
     }
 
@@ -212,6 +223,19 @@ public class Signals {
         int num = sets.size() - 1;
         ensureLink(unit, num);
         return num;
+    }
+
+    public void remove(Unit unit, int from) {
+        sets.get(from).remove(unit);
+        unitsSets.get(unit).remove(from);
+    }
+
+    public boolean canReplace(Set<Unit> w, Set<Unit> who, Set<Unit> whom) {
+        double wsum = maxSum(w);
+        w.retainAll(whom);
+        w.addAll(who);
+        double replSum = maxSum(w);
+        return replSum >= wsum;
     }
 
     public void remove(Unit unit) {

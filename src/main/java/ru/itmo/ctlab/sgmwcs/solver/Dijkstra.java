@@ -7,6 +7,8 @@ import ru.itmo.ctlab.sgmwcs.graph.Node;
 import ru.itmo.ctlab.sgmwcs.graph.Unit;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class Dijkstra {
     private Graph graph;
@@ -19,11 +21,13 @@ class Dijkstra {
     private Set<Integer> currentSignals;
 
     private double currentWeight() {
-        return cache.computeIfAbsent(currentSignals, s -> -signals.weightSum(s));
+        Set<Integer> negSets = signals.filter(currentSignals, s -> signals.weight(s) < 0).collect(Collectors.toSet());
+        return cache.computeIfAbsent(negSets,
+                s -> -signals.weightSum(negSets));
     }
 
-    private double weight(Unit unit) {
-        return d.getOrDefault(unit, Double.MAX_VALUE);
+    private double weight(Node n) {
+        return d.getOrDefault(n, Double.MAX_VALUE);
     }
 
     /**
@@ -52,9 +56,9 @@ class Dijkstra {
         currentSignals = new HashSet<>();
         q.add(u);
         d.put(u, 0.0);
-        p.put(u, new HashSet<>());
+        p.put(u, new HashSet<>(signals.positiveUnitSets(u)));
         Node cur;
-        Set<Integer> negE, negN;
+        List<Integer> negE, negN;
         List<Integer> addedE = new ArrayList<>(), addedN = new ArrayList<>();
         Set<Node> visitedDests = new HashSet<>();
         while ((cur = q.poll()) != null) {
@@ -66,22 +70,22 @@ class Dijkstra {
             currentSignals = p.getOrDefault(cur, new HashSet<>());
             double cw = currentWeight();
             for (Node node : graph.neighborListOf(cur)) {
-                negN = signals.negativeUnitSets(node);
+                negN = signals.unitSets(node);
                 double sumN = 0;
                 for (int i : negN) {
                     if (currentSignals.add(i)) {
                         addedN.add(i);
-                        sumN -= signals.weight(i);
+                        sumN -= Math.min(signals.weight(i), 0);
                     }
                 }
                 cw += sumN;
                 for (Edge edge : graph.getAllEdges(node, cur)) {
-                    negE = signals.negativeUnitSets(edge);
+                    negE = signals.unitSets(edge);
                     double sumE = 0;
                     for (int i : negE) {
                         if (currentSignals.add(i)) {
                             addedE.add(i);
-                            sumE -= signals.weight(i);
+                            sumE -= Math.min(signals.weight(i), 0);
                         }
                     }
                     cw += sumE;
@@ -116,9 +120,16 @@ class Dijkstra {
         Node v_1 = nbors.get(0), v_2 = nbors.get(1);
         this.dests.add(v_2);
         solve(v_1);
-        Set<Integer> unitSets = new HashSet<>(signals.negativeUnitSets(u));
-        unitSets.addAll(signals.negativeUnitSets(graph.edgesOf(u)));
-        return !p.get(v_2).containsAll(unitSets);
+        Set<Integer> neg = new HashSet<>(signals.negativeUnitSets(u));
+        neg.addAll(signals.negativeUnitSets(graph.edgesOf(u)));
+        if (p.get(v_2).containsAll(neg)) return false;
+        Set<Integer> pos = new HashSet<>(signals.positiveUnitSets(u));
+        pos.addAll(signals.positiveUnitSets(graph.edgesOf(u)));
+        pos.removeAll(signals.positiveUnitSets(v_1, v_2));
+        return p.get(v_2).containsAll(pos);
+//                && signals.weightSum(signals.filter(p.get(v_2), s -> signals.set(s).size() == 1))
+ //               >= signals.minSum(u) + signals.minSum(graph.edgesOf(u));
+
     }
 
     /**
@@ -137,8 +148,8 @@ class Dijkstra {
         Set<Edge> res = new HashSet<>();
         neighbors.forEach(n -> {
             List<Edge> edges = graph.getAllEdges(n, u);
+            p.get(n).removeAll(signals.unitSets(u, n));
             for (Edge e : edges) {
-                p.get(n).removeAll(signals.unitSets(u, n));
                 if (!p.get(n).containsAll(signals.negativeUnitSets(e)))
                     res.add(e);
             }
@@ -150,11 +161,11 @@ class Dijkstra {
      * Tests NPk reduction condition which holds if the {@link NaiveMST} solutions for
      * all subsets of <code>k</code> have less value than <code>p</code>.
      *
-     * @param p The weight of {@linkplain Node}.
+     * @param u {@linkplain Node} considered.
      * @param k Adjacent nodes.
      * @return <code>true</code> if condition holds.
      */
-    boolean solveClique(double p, Set<Node> k) {
+    boolean solveClique(Node u, Set<Node> k) {
         if (k.size() < 2) return false;
         Map<Node, Map<Node, Double>> distances = new HashMap<>();
         for (Node v : k) {
@@ -166,13 +177,14 @@ class Dijkstra {
                 Set<Integer> path = this.p.get(n);
                 if (path == null) return false;
                 path.addAll(signals.negativeUnitSets(v));
-                cd.put(n, -signals.weightSum(path));
+                cd.put(n, -signals.weightSum(signals.filter(path, s -> signals.weight(s) < 0)));
             }
         }
         Set<Set<Node>> subsets = Utils.subsets(k);
         for (Set<Node> subset : subsets) {
             if (subset.size() < 2) continue;
-            if (new NaiveMST(subset, distances).result() + p > 0)
+            if (    !signals.positiveUnitSets(subset).containsAll(signals.positiveUnitSets(u))
+                    || new NaiveMST(subset, distances).result() + signals.minSum(u) > 0)
                 return false;
         }
         return true;

@@ -42,7 +42,7 @@ public class Main {
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
         optionParser.accepts("c", "Threshold for CPE solver").withRequiredArg().
-                ofType(Integer.class).defaultsTo(500);
+                ofType(Integer.class).defaultsTo(25);
         optionParser.acceptsAll(asList("p", "penalty"), "Penalty for each additional edge")
                 .withRequiredArg().ofType(Double.class).defaultsTo(.0);
         optionParser.acceptsAll(asList("l", "log"), "Log level")
@@ -94,7 +94,7 @@ public class Main {
             System.exit(1);
         }
         // Solver solver = new BlockSolver();
-        ComponentSolver solver = new ComponentSolver(threshold, edgePenalty != 0);
+        ComponentSolver solver = new ComponentSolver(threshold, edgePenalty > 0);
         solver.setThreadsNum(threads);
         solver.setTimeLimit(tl);
         solver.setLogLevel(logLevel);
@@ -107,20 +107,21 @@ public class Main {
                     graph.edgeSet().size() + " edges and " +
                     graph.vertexSet().size() + " nodes");
             Signals signals = graphIO.getSignals();
-            if (edgePenalty > 0) {
+            /*if (edgePenalty > 0) {
                 signals.addEdgePenalties(-edgePenalty);
-            }
+            }*/
             if (!bmOutput.equals("")) {
                 new Benchmark(graph, signals, bmOutput).run();
                 return;
             }
-            // solver.setEdgePenalty(edgePenalty);
             List<Unit> units = solver.solve(graph, signals);
             long now = System.currentTimeMillis();
             if (solver.isSolvedToOptimality()) {
                 System.out.println("SOLVED TO OPTIMALITY");
             }
             System.out.println(Utils.sum(units, signals));
+            if (units != null)
+                System.out.println(units.size());
             System.out.println("time:" + (now - before));
             Set<Edge> edges = new HashSet<>();
             Set<Node> nodes = new HashSet<>();

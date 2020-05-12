@@ -20,7 +20,6 @@ public class Preprocessor {
     private Node root = null;
     private int logLevel = 0;
 
-    private boolean edgePenalty;
 
     public void setLogLevel(int level) {
         this.logLevel = level;
@@ -50,7 +49,6 @@ public class Preprocessor {
                 if (t instanceof Edge) {
                     graph.removeEdge((Edge) t);
                 }
-
             }
             return res;
         }
@@ -66,12 +64,10 @@ public class Preprocessor {
     public Preprocessor(Graph graph,
                         Signals signals,
                         int numThreads,
-                        int logLevel,
-                        boolean edgePenalty) {
+                        int logLevel) {
         this(graph, signals);
         this.numThreads = numThreads;
         this.logLevel = logLevel;
-        this.edgePenalty = edgePenalty;
     }
 
     public Preprocessor(Graph graph, Signals signals) {
@@ -90,11 +86,12 @@ public class Preprocessor {
     }
 
     private boolean positive(Unit unit) {
-        return signals.minSum(unit) == 0;
+        return signals.minSum(unit) >= 0;
+        // return signals.minSum(unit) == 0;
     }
 
     private boolean nonPositive(Unit unit) {
-        return signals.maxSum(unit) == 0;
+        return signals.minSum(unit) <= 0;
     }
 
     private boolean bijection(Unit unit) {
@@ -105,37 +102,42 @@ public class Preprocessor {
     private final Step<Node> npv2 = new Step<>(this::npv2, "npv2");
     private final Step<Node> leaves = new Step<>(this::leaves, "leaves");
     private final Step<Edge> npe = new Step<>(this::uselessEdges, "npe");
+    private final Step<Edge> nnp = new Step<>(this::nnp, "nnp");
+    //private final Step<Node> npv3 = new Step<>(this::npv3, "npv3");
 
     public void preprocessBasic() {
         posC();
         negC();
-        primaryNode = null;
+        primaryNode = root;
         Set<Node> toRemove = new HashSet<>();
-        for (Node v : new ArrayList<>(graph.vertexSet())) {
-            if (positive(v) && (primaryNode == null || weight(v) > weight(primaryNode))) {
-                primaryNode = v;
+        if (root != null)
+            for (Node v : new ArrayList<>(graph.vertexSet())) {
+                if (positive(v) && (primaryNode == null || weight(v) > weight(primaryNode))) {
+                    primaryNode = v;
+                }
             }
-        }
         if (primaryNode != null) {
-                new Step<Node>(s ->
-                        negR(primaryNode, primaryNode, new HashSet<>(), s)
-                        , "negR").apply(toRemove);
+            new Step<Node>(s ->
+                    negR(primaryNode, primaryNode, new HashSet<>(), s)
+                    , "negR").apply(toRemove);
         }
     }
 
     public void preprocess(int preprocessLevel) {
+        if (preprocessLevel == 0) {
+            return;
+        }
         if (preprocessLevel == 1) {
             preprocessBasic();
             return;
         }
         int removed;
         do {
-            removed = iteration(preprocessLevel);
+            removed = iteration();
             if (logLevel > 1) {
                 System.out.println("Removed " + removed + " units");
             }
         } while (removed > 0);
-        // mergeEdges();
     }
 
     private void mergeEdges() {
@@ -157,26 +159,59 @@ public class Preprocessor {
         }
     }
 
-    private int iteration(int depth) {
+    private int iteration() {
         int res = 0;
-        primaryNode = null;
         Set<Node> toRemove = new HashSet<>();
-        for (Node v : new ArrayList<>(graph.vertexSet())) {
-            if (primaryNode == null || weight(v) > weight(primaryNode)) {
-                primaryNode = v;
+        primaryNode = root;
+        if (primaryNode == null)
+            for (Node v : new ArrayList<>(graph.vertexSet())) {
+                if (primaryNode == null || weight(v) > weight(primaryNode)) {
+                    primaryNode = v;
+                }
             }
-        }
         if (primaryNode != null) {
-            res += leaves.apply(toRemove);
+           res += leaves.apply(toRemove);
         }
         res += cns.apply(toRemove);
-        posC();
         negC();
+        posC();
+        primaryNode = root;
+        Node posNode = null;
+        if (primaryNode == null)
+            for (Node v : new ArrayList<>(graph.vertexSet())) {
+                if (primaryNode == null || weight(v) > weight(primaryNode)) {
+                    posNode = primaryNode;
+                    primaryNode = v;
+                }
+            }
+        if (primaryNode != null)
+            res += new Step<Node>(s ->
+                    negR(primaryNode, primaryNode, new HashSet<>(), s)
+                    , "negR").apply(toRemove);
+        if (posNode != null && graph.containsVertex(posNode)) {
+            final Node pn = posNode;
+            res += new Step<Node>(s ->
+                    negR(pn, pn, new HashSet<>(), s)
+                    , "negR").apply(toRemove);
+        }
         Set<Edge> edgesToRemove = numThreads == 1 ? new HashSet<>() : new ConcurrentSkipListSet<>();
         res += npe.apply(edgesToRemove);
+        res += nnp.apply(edgesToRemove);
+
         res += npv2.apply(toRemove);
+        // res += npv3.apply(toRemove);
         return res;
     }
+
+    /*private void cleanEdges() {
+        for (Edge e: graph.edgeSet()) {
+            for (int sig: signals.positiveUnitSets(graph.disjointVertices(e))) {
+                if (signals.set(sig).contains(e)) {
+                    signals.remove(e, sig);
+                }
+            }
+        }
+    }*/
 
     private boolean negR(Node v, Node r, Set<Node> vis, Set<Node> toRemove) {
         boolean safe = false;
@@ -193,13 +228,13 @@ public class Preprocessor {
             }
             boolean res = negR(u, v, vis, toRemove);
             units.add(u);
-            if (minSum == signals.minSum(units) || signals.maxSum(u) > 0) {
+            if (minSum <= signals.minSum(units) || signals.maxSum(u) > 0) {
                 res = true;
             } else {
                 minSum = signals.minSum(units);
                 for (Edge edge : graph.getAllEdges(v, u)) {
                     units.add(edge);
-                    if (minSum == signals.minSum(units)) {
+                    if (minSum <= signals.minSum(units)) {
                         res = true;
                     }
                     units.remove(units.size() - 1);
@@ -214,9 +249,38 @@ public class Preprocessor {
         return safe;
     }
 
+
+    private void nnp(Set<Edge> toRemove) {
+        for (Edge e : graph.edgeSet()) {
+            if (signals.minSum(e) > 0) continue;
+            Node u = graph.getEdgeTarget(e), v = graph.getEdgeSource(e);
+            for (Node n : graph.neighborListOf(v)) {
+                Edge eu = graph.getEdge(n, v);
+                if (eu == e || signals.minSum(eu, n) < signals.minSum(e)) continue;
+                if (graph.neighborListOf(n).contains(u)) {
+                    Edge ev = graph.getEdge(n, u);
+                    if (toRemove.contains(eu) || toRemove.contains(ev))
+                        continue;
+                    Set<Integer> pos = signals.positiveUnitSets(e);
+                    double lowest = Math.min(
+                            signals.minSum(eu, ev), signals.minSum(eu, ev, n));
+                    double lowest2 = Math.min(signals.minSum(eu), signals.minSum(ev));
+                    lowest = Math.min(lowest, lowest2);
+                    if (lowest >= signals.minSum(e)
+                            && signals.positiveUnitSets(eu, n, u, v)
+                            .containsAll(pos)
+                            && signals.positiveUnitSets(ev, n, u, v)
+                            .containsAll(pos))
+                        toRemove.add(e);
+                }
+            }
+        }
+
+    }
+
     private void negC() {
         for (Node v : new ArrayList<>(graph.vertexSet())) {
-            if (signals.maxSum(v) == 0 && graph.degreeOf(v) == 2) {
+            if (signals.maxSum(v) <= 0 && graph.degreeOf(v) == 2) {
                 Edge[] edges = graph.edgesOf(v).toArray(new Edge[0]);
                 if (signals.maxSum(edges[1]) > 0 || signals.maxSum(edges[0]) > 0) {
                     continue;
@@ -307,9 +371,7 @@ public class Preprocessor {
             Edge edge = edges.stream().findAny().orElse(null);
             Node opposite = graph.getOppositeVertex(leaf, edge);
             double minSum = signals.minSum(edge, leaf, opposite);
-            if (minSum <= signals.minSum(edge)
-                    && minSum <= signals.minSum(leaf)
-                    && minSum == signals.minSum(opposite)
+            if (minSum >= signals.minSum(opposite)
                     && graph.degreeOf(opposite) > 1) {
                 toAbsorb.putIfAbsent(opposite, new ArrayList<>());
                 toAbsorb.get(opposite).addAll(Arrays.asList(leaf, edge));
@@ -317,15 +379,14 @@ public class Preprocessor {
             } else if (
                     signals.sum(edge, leaf, opposite) <= signals.sum(opposite)) {
                 toRemove.add(leaf);
-            }
-            else {
-                for (Node other: graph.neighborListOf(opposite)) {
+            } else {
+                for (Node other : graph.neighborListOf(opposite)) {
                     if (toRemove.contains(other) || other == leaf)
                         continue;
                     Edge otherEdge = graph.getEdge(other, opposite);
                     if (signals.positiveUnitSets(otherEdge, other)
                             .containsAll(signals.positiveUnitSets(leaf, edge)) &&
-                    signals.minSum(otherEdge, other) >= signals.minSum(leaf, edge)) {
+                            signals.minSum(otherEdge, other) >= signals.minSum(leaf, edge)) {
                         toRemove.add(leaf);
                     }
                 }
@@ -343,28 +404,36 @@ public class Preprocessor {
 
     private Stream<Node> positiveNeighbors(Node v) {
         return graph.neighborListOf(v).stream()
-                .filter(n -> positive(n)
-                        && positiveEdge(v, n)
-                );
+                .filter(n -> positive(n) && positiveEdge(n, v));
+//                .filter(n -> signals.minSum(n, graph.getEdge(n, v)) >= 0);
     }
 
     private void cns(Set<Node> toRemove) {
         Set<Node> vertexSet = graph.vertexSet();
         Set<Node> w;
+        Set<Edge> we;
         for (Node v : vertexSet) {
             if (toRemove.contains(v)) continue;
             w = positiveNeighbors(v)
                     .collect(Collectors.toSet());
+            // we = w.stream().map(n -> graph.getEdge(n, v)).collect(Collectors.toSet());
             w.add(v);
-            for (Node n : w) {
+            // ws.addAll(signals.unitSets(w));
+            final Set<Integer> ws = signals.unitSets(w);
+            Set<Node> wnbs = w.stream()
+                    .flatMap(n -> graph.neighborListOf(n).stream())
+                    .collect(Collectors.toSet());
+            for (Node n : wnbs) {
                 List<Node> neighbors = graph.neighborListOf(n);
                 for (Node r : neighbors) {
-                    if (!signals.positiveUnitSets(r).isEmpty() || w.contains(r)) continue;
-                    double rWeight = signals.minSum(r);
+                    if (w.contains(r) || r == root) continue;
                     double vWorst = signals.minSum(v);
                     Set<Edge> edges = graph.edgesOf(r);
-                    double bestSum = signals.maxSum(edges) + rWeight;
-                    if (vWorst >= bestSum && bijection(r)
+                    Set<Integer> rs = signals.positiveUnitSets(edges);
+                    rs.addAll(signals.positiveUnitSets(r));
+                    // double rWeight = signals.weightSum(signals.positiveUnitSets(edges));
+                    double bestSum = signals.minSum(r);
+                    if (vWorst >= bestSum && ws.containsAll(rs)
                             && w.containsAll(graph.neighborListOf(r)))
                         toRemove.add(r);
                 }
@@ -378,6 +447,7 @@ public class Preprocessor {
             executor = Executors.newFixedThreadPool(numThreads);
             synchronized (this) {
                 // Remove nodes marked as deleted
+                // in internal graph representation
                 graph.subgraph(graph.vertexSet());
             }
         } else executor = Executors.newSingleThreadExecutor();
@@ -389,7 +459,7 @@ public class Preprocessor {
             executor.execute(
                     () -> {
                         Dijkstra dijkstra = new Dijkstra(graph, signals);
-                        dijkstraIteration(dijkstra, u, toRemove);
+                        npeIteration(dijkstra, u, toRemove);
                     }
             );
         }
@@ -400,37 +470,51 @@ public class Preprocessor {
         }
     }
 
-    private void dijkstraIteration(Dijkstra dijkstra, Node u, Set<Edge> toRemove) {
+    private void npeIteration(Dijkstra dijkstra, Node u, Set<Edge> toRemove) {
         List<Node> neighbors = graph.neighborListOf(u).stream()
                 .filter(n -> graph.getAllEdges(n, u)
-                        .stream().anyMatch(e -> nonPositive(e) && bijection(e)))
+                        .stream().anyMatch(this::nonPositive))
                 .collect(Collectors.toList());
         if (neighbors.isEmpty()) return;
         Set<Edge> res = dijkstra.solveNE(u, neighbors);
         for (Edge edge : res) {
-            if (nonPositive(edge) && bijection(edge)) {
-                toRemove.add(edge);
-            }
+            // if (nonPositive(edge)) {
+            toRemove.add(edge);
+            // }
         }
     }
 
     private void npv2(Set<Node> toRemove) {
         Dijkstra dijkstra = new Dijkstra(graph, signals);
-        graph.vertexSet().stream()
-                .filter(n -> checkNeg(n) && dijkstra.solveNP(n))
-                .forEach(toRemove::add);
+        for (Node n : graph.vertexSet()) {
+            if (n == primaryNode) continue;
+            if (!checkNeg(n)) continue;
+            if (graph.neighborListOf(n).stream().anyMatch(toRemove::contains)) continue;
+            if (dijkstra.solveNP(n))
+                toRemove.add(n);
+
+        }
+
+    }
+
+    private void npv3(Set<Node> toRemove) {
+        npvClique(3, toRemove);
+    }
+
+    private void npv4(Set<Node> toRemove) {
+        npvClique(4, toRemove);
     }
 
     private void npvClique(int maxK, Set<Node> toRemove) {
         Set<Node> nodes = new HashSet<>(graph.vertexSet());
         for (Node v : graph.vertexSet()) {
-            if (!negWithEdges(v)) continue;
+            // if (!negWithEdges(v)) continue;
             List<Node> delta = graph.neighborListOf(v);
             if (delta.size() <= maxK && delta.size() >= 2) {
                 nodes.remove(v);
                 boolean res = new Dijkstra(
                         graph.subgraph(nodes), signals
-                ).solveClique(signals.minSum(v), new HashSet<>(delta)
+                ).solveClique(v, new HashSet<>(delta)
                 );
                 if (res) {
                     toRemove.add(v);
@@ -441,12 +525,16 @@ public class Preprocessor {
     }
 
     private boolean checkNeg(Node n) {
-        return graph.degreeOf(n) == 2 && negWithEdges(n);
+        return graph.degreeOf(n) == 2 && negWithEdges(n); //signals.maxSum(n) + signals.maxSum(graph.edgesOf(n)) <= 0);
     }
 
     private boolean negWithEdges(Node n) {
-        double edgeSum = signals.maxSum(graph.edgesOf(n));
-        return signals.maxSum(n) + edgeSum == 0;
+        Edge[] e = graph.edgesOf(n).toArray(new Edge[0]);
+        Set<Integer> es = signals.positiveUnitSets(graph.edgesOf(n));
+        es.addAll(signals.unitSets(n));
+        return signals.weightSum(es)
+                + Math.max(signals.weightSum(signals.negativeUnitSets(e[0])),
+                signals.weightSum(signals.negativeUnitSets(e[1]))) <= 0;
     }
 
     private void absorb(Unit who, Unit whom) {

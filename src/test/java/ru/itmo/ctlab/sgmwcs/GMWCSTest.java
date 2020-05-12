@@ -117,7 +117,7 @@ public class GMWCSTest {
     @Test
     public void test03_random() {
         int allTests = MAX_SIZE * TESTS_PER_SIZE;
-        solver.setEdgePenalty(0);
+//        solver.setEdgePenalty(0);
         for (int i = allTests; i < tests.size(); i++) {
             TestCase test = tests.get(i);
             check(test, i, referenceSolver);
@@ -277,7 +277,7 @@ public class GMWCSTest {
         }
     }
     private void addPenalties(TestCase test, double pen){
-        solver.setEdgePenalty(pen);
+        //solver.setEdgePenalty(pen);
         test.signals().addEdgePenalties(-pen);
     }
 }

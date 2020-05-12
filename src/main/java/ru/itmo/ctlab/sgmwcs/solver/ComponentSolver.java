@@ -16,19 +16,14 @@ public class ComponentSolver implements Solver {
     private int logLevel;
     private int threads;
 
-    private boolean isEdgePenalty;
+    private boolean minimize;
     private int preprocessLevel;
+    private Graph g;
+    private Signals s;
 
-    public void setEdgePenalty(double edgePenalty) {
-        if (edgePenalty < 0) {
-            throw new IllegalArgumentException("Edge penalty must be >= 0");
-        }
-        isEdgePenalty = edgePenalty > 0;
-    }
-
-    public ComponentSolver(int threshold, boolean isEdgePenalty) {
+    public ComponentSolver(int threshold, boolean minimize) {
         this.threshold = threshold;
-        this.isEdgePenalty = isEdgePenalty;
+        this.minimize= minimize;
         externLB = Double.NEGATIVE_INFINITY;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
@@ -36,6 +31,8 @@ public class ComponentSolver implements Solver {
 
     @Override
     public List<Unit> solve(Graph graph, Signals signals) throws SolverException {
+        this.g = graph;
+        this.s = signals;
         isSolvedToOptimality = true;
         Graph g = new Graph();
         Signals s = new Signals();
@@ -47,9 +44,8 @@ public class ComponentSolver implements Solver {
             new GraphPrinter(g, s).printGraph("beforePrep.dot", true);
         }
         long before = System.currentTimeMillis();
-        new Preprocessor(g, s, threads, logLevel, isEdgePenalty).preprocess(preprocessLevel);
+        new Preprocessor(g, s, threads, logLevel).preprocess(preprocessLevel);
         if (logLevel > 0) {
-            new GraphPrinter(g, s).toTSV("nodes-prep.tsv", "edges-prep.tsv");
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
             System.out.println("and " + (edgesBefore - g.edgeSet().size()) + " edges.");
         }
@@ -92,6 +88,8 @@ public class ComponentSolver implements Solver {
             }
             //if (root != null && !subgraph.containsVertex(root))
              //   continue;
+
+
             RLTSolver solver = new RLTSolver();
             solver.setSharedLB(lb);
             solver.setTimeLimit(tl);
@@ -135,7 +133,7 @@ public class ComponentSolver implements Solver {
         return getResult(memorized, graph, signals);
     }
 
-    private List<Unit> getResult(List<Worker> memorized, Graph graph, Signals signals) {
+    private List<Unit> getResult(List<Worker> memorized, Graph graph, Signals signals) throws SolverException {
         List<Unit> best = null;
         double bestScore = -Double.MAX_VALUE;
         for (Worker worker : memorized) {
@@ -158,10 +156,17 @@ public class ComponentSolver implements Solver {
         } catch (SolverException e) {
             e.printStackTrace();
         }*/
+        if (logLevel == 2) {
+            new GraphPrinter(graph, signals)
+                    .toTSV("nodes-prep.tsv", "edges-prep.tsv",
+                            best == null ? Collections.emptySet() : new HashSet<>(best));
+        }
         List<Unit> result = extract(best);
         graph.vertexSet().forEach(Unit::clear);
         graph.edgeSet().forEach(Unit::clear);
-        return result;
+        if (minimize) {
+            return new Postprocessor(g, s, result, logLevel).minimize();
+        } else return result;
     }
 
     private Node getRoot(Graph graph, Blocks blocks) {

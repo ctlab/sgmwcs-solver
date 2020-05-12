@@ -60,19 +60,25 @@ public class GraphPrinter {
     }
 
     public void toTSV(String nodesFile, String edgesFile) throws SolverException {
+        toTSV(nodesFile, edgesFile, Collections.emptySet());
+    }
+
+    public void toTSV(String nodesFile, String edgesFile, Set<Unit> solution) throws SolverException {
         Path nodes = Paths.get(nodesFile);
         List<String> nodesList = new ArrayList<>();
         Path edges = Paths.get(edgesFile);
         List<String> edgesList = new ArrayList<>();
-        nodesList.add("name\tsignals\tscore\tscore2");
-        edgesList.add("source\ttarget\tsignals\tscore\tscore2");
+        nodesList.add("name\tsignals\tscore\tscore2\tsol");
+        edgesList.add("source\ttarget\tsignals\tscore\tscore2\tsol");
         for (Unit u : graph.units()) {
+            char isSol = solution.contains(u) ? '1' : '0';
             String sigString = String.join(",", signals.unitSets(u).stream()
                     .map(s -> "S" + s).collect(Collectors.toList()));
             double w = signals.weight(u);
             double rounded = ((double)(int) (w * 100)) / 100;
             String str = sigString + '\t' + w
-                    + '\t' + rounded + '\n';
+                    + '\t' + rounded
+                    + '\t' + isSol;
             if (u instanceof Edge) {
                 Edge e = (Edge) u;
                 str = (graph.getEdgeSource(e).num)
