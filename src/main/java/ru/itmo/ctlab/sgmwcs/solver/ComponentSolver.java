@@ -146,7 +146,7 @@ public class ComponentSolver implements Solver {
                 isSolvedToOptimality = false;
             }
         }
-
+        // dot format printing
         /*try {
             new GraphPrinter(graph.subgraph(best.stream()
                     .filter(u -> u instanceof Node).map(u -> (Node) u).collect(Collectors.toSet()),
@@ -164,7 +164,7 @@ public class ComponentSolver implements Solver {
         List<Unit> result = extract(best);
         graph.vertexSet().forEach(Unit::clear);
         graph.edgeSet().forEach(Unit::clear);
-        if (minimize) {
+        if (minimize && bestScore > 0) {
             return new Postprocessor(g, s, result, logLevel).minimize();
         } else return result;
     }

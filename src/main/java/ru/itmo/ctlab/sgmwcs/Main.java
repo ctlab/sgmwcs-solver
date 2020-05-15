@@ -1,14 +1,16 @@
 package ru.itmo.ctlab.sgmwcs;
 
-import ilog.concert.IloException;
-import ilog.cplex.IloCplex;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import ru.itmo.ctlab.sgmwcs.graph.*;
-import ru.itmo.ctlab.sgmwcs.solver.*;
+import ru.itmo.ctlab.sgmwcs.solver.ComponentSolver;
+import ru.itmo.ctlab.sgmwcs.solver.SolverException;
+import ru.itmo.ctlab.sgmwcs.solver.Utils;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.HashSet;
 import java.util.List;
@@ -119,13 +121,15 @@ public class Main {
             if (solver.isSolvedToOptimality()) {
                 System.out.println("SOLVED TO OPTIMALITY");
             }
-            System.out.println(Utils.sum(units, signals));
+            double sum = Utils.sum(units, signals);
+            System.out.println(sum);
             if (units != null)
                 System.out.println(units.size());
+            long timeConsumed = now - before;
             System.out.println("time:" + (now - before));
             Set<Edge> edges = new HashSet<>();
             Set<Node> nodes = new HashSet<>();
-            if (logLevel == 2 && units != null) {
+            if (logLevel >= 1 && units != null) {
                 for (Unit unit : units) {
                     if (unit instanceof Edge) {
                         edges.add((Edge) unit);
@@ -134,7 +138,9 @@ public class Main {
                     }
                 }
                 Graph solGraph = graph.subgraph(nodes, edges);
-                new GraphPrinter(solGraph, signals).toTSV("nodes-sol.tsv", "edges-sol.tsv");
+                if (logLevel == 2)
+                    new GraphPrinter(solGraph, signals).toTSV("nodes-sol.tsv", "edges-sol.tsv");
+                printStats(sum, solGraph, timeConsumed, System.currentTimeMillis());
             }
             graphIO.write(units);
         } catch (ParseException e) {
@@ -143,6 +149,19 @@ public class Main {
             System.err.println("Error occurred while solving:" + e.getMessage());
         } catch (IOException e) {
             System.err.println("Error occurred while reading/writing input/output files");
+        }
+    }
+
+    private static void printStats(double sum, Graph solGraph, long timeConsumed, long postfix) {
+        try (PrintWriter pw = new PrintWriter("log" + postfix + ".tsv")) {
+            String header = "score\ttime\tedges\tnodes\n";
+            String out = sum + "\t" + timeConsumed +  "\t" +
+                    solGraph.edgeSet().size() + "\t" +
+                    solGraph.vertexSet().size();
+            pw.write(header);
+            pw.write(out);
+        } catch (IOException e) {
+            System.err.println("Failed to write stats");
         }
     }
 }
