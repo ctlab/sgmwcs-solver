@@ -19,7 +19,7 @@ import java.util.Set;
 import static java.util.Arrays.asList;
 
 public class Main {
-    public static final String VERSION = "0.9.5";
+    public static final String VERSION = "0.9.8";
 
     static {
         /*try {
@@ -140,7 +140,8 @@ public class Main {
                 Graph solGraph = graph.subgraph(nodes, edges);
                 if (logLevel == 2)
                     new GraphPrinter(solGraph, signals).toTSV("nodes-sol.tsv", "edges-sol.tsv");
-                printStats(sum, solGraph, timeConsumed, System.currentTimeMillis());
+                printStats(solver.isSolvedToOptimality()?1:0, solver.getLB(), sum, solGraph, timeConsumed, System.currentTimeMillis(), VERSION,
+                        nodeFile.getName(), edgeFile.getName(), signalFile.getName());
             }
             graphIO.write(units);
         } catch (ParseException e) {
@@ -152,12 +153,14 @@ public class Main {
         }
     }
 
-    private static void printStats(double sum, Graph solGraph, long timeConsumed, long postfix) {
+    private static void printStats(int isOpt, double lb, double score, Graph solGraph,
+                                   long timeConsumed, long postfix, String ver,
+                                   String nodes, String edges, String signals) {
         try (PrintWriter pw = new PrintWriter("log" + postfix + ".tsv")) {
-            String header = "score\ttime\tedges\tnodes\n";
-            String out = sum + "\t" + timeConsumed +  "\t" +
+            String header = "isOpt\tlb\tscore\ttime\tedges\tnodes\tnodefile\tedgefile\tsigfile\n";
+            String out = isOpt + "\t" + lb + "\t"+score + "\t" + timeConsumed +  "\t" +
                     solGraph.edgeSet().size() + "\t" +
-                    solGraph.vertexSet().size();
+                    solGraph.vertexSet().size() + "\t" + nodes + "\t" + edges + "\t" + signals;
             pw.write(header);
             pw.write(out);
         } catch (IOException e) {
