@@ -53,6 +53,7 @@ public class Main {
                 .withOptionalArg().defaultsTo("");
         optionParser.acceptsAll(asList("pl", "preprocessing-level"), "Disable preprocessing")
                 .withOptionalArg().ofType(Integer.class).defaultsTo(2);
+        optionParser.acceptsAll(asList("f", "stats-file"), "Dump stats").withOptionalArg().ofType(Integer.class).defaultsTo(System.currentTimeMillis().);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -156,11 +157,11 @@ public class Main {
     private static void printStats(int isOpt, double lb, double score, Graph solGraph,
                                    long timeConsumed, long postfix, String ver,
                                    String nodes, String edges, String signals) {
-        try (PrintWriter pw = new PrintWriter("log" + postfix + ".tsv")) {
-            String header = "isOpt\tlb\tscore\ttime\tedges\tnodes\tnodefile\tedgefile\tsigfile\n";
+         try (PrintWriter pw = new PrintWriter("log" + postfix + ".tsv")) {
+            String header = "isOpt\tlb\tscore\ttime\tedges\tnodes\tnodefile\tedgefile\tsigfile\tversion\n";
             String out = isOpt + "\t" + lb + "\t"+score + "\t" + timeConsumed +  "\t" +
                     solGraph.edgeSet().size() + "\t" +
-                    solGraph.vertexSet().size() + "\t" + nodes + "\t" + edges + "\t" + signals;
+                    solGraph.vertexSet().size() + "\t" + nodes + "\t" + edges + "\t" + signals+;
             pw.write(header);
             pw.write(out);
         } catch (IOException e) {
