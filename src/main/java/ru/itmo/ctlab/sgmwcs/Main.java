@@ -53,7 +53,7 @@ public class Main {
                 .withOptionalArg().defaultsTo("");
         optionParser.acceptsAll(asList("pl", "preprocessing-level"), "Disable preprocessing")
                 .withOptionalArg().ofType(Integer.class).defaultsTo(2);
-        optionParser.acceptsAll(asList("f", "stats-file"), "Dump stats").withOptionalArg().ofType(Integer.class).defaultsTo(System.currentTimeMillis().);
+        optionParser.acceptsAll(asList("f", "stats-file"), "Dump stats").withOptionalArg().ofType(String.class).defaultsTo("");
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -92,6 +92,7 @@ public class Main {
         int logLevel = (Integer) optionSet.valueOf("l");
         int preprocessLevel = (Integer) optionSet.valueOf("pl");
         String bmOutput = (String) optionSet.valueOf("bm");
+        String statsFile = (String) optionSet.valueOf("f");
         if (edgePenalty < 0) {
             System.err.println("Edge penalty can't be negative");
             System.exit(1);
@@ -141,7 +142,7 @@ public class Main {
                 Graph solGraph = graph.subgraph(nodes, edges);
                 if (logLevel == 2)
                     new GraphPrinter(solGraph, signals).toTSV("nodes-sol.tsv", "edges-sol.tsv");
-                printStats(solver.isSolvedToOptimality()?1:0, solver.getLB(), sum, solGraph, timeConsumed, System.currentTimeMillis(), VERSION,
+                printStats(solver.isSolvedToOptimality()?1:0, solver.getLB(), sum, solGraph, timeConsumed, statsFile,
                         nodeFile.getName(), edgeFile.getName(), signalFile.getName());
             }
             graphIO.write(units);
@@ -155,13 +156,13 @@ public class Main {
     }
 
     private static void printStats(int isOpt, double lb, double score, Graph solGraph,
-                                   long timeConsumed, long postfix, String ver,
+                                   long timeConsumed, String fileName,
                                    String nodes, String edges, String signals) {
-         try (PrintWriter pw = new PrintWriter("log" + postfix + ".tsv")) {
+         try (PrintWriter pw = new PrintWriter(fileName)) {
             String header = "isOpt\tlb\tscore\ttime\tedges\tnodes\tnodefile\tedgefile\tsigfile\tversion\n";
             String out = isOpt + "\t" + lb + "\t"+score + "\t" + timeConsumed +  "\t" +
                     solGraph.edgeSet().size() + "\t" +
-                    solGraph.vertexSet().size() + "\t" + nodes + "\t" + edges + "\t" + signals+;
+                    solGraph.vertexSet().size() + "\t" + nodes + "\t" + edges + "\t" + signals+ "\t" + VERSION;
             pw.write(header);
             pw.write(out);
         } catch (IOException e) {
