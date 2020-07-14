@@ -12,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -54,6 +55,7 @@ public class Main {
         optionParser.acceptsAll(asList("pl", "preprocessing-level"), "Disable preprocessing")
                 .withOptionalArg().ofType(Integer.class).defaultsTo(2);
         optionParser.acceptsAll(asList("f", "stats-file"), "Dump stats").withOptionalArg().ofType(String.class).defaultsTo("");
+        optionParser.acceptsAll(Collections.singletonList("mst"), "Use primal heuristic only").withOptionalArg().ofType(Integer.class).defaultsTo(0);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -91,6 +93,7 @@ public class Main {
         double edgePenalty = (Double) optionSet.valueOf("p");
         int logLevel = (Integer) optionSet.valueOf("l");
         int preprocessLevel = (Integer) optionSet.valueOf("pl");
+        int heuristicOnly = (Integer) optionSet.valueOf("mst");
         String bmOutput = (String) optionSet.valueOf("bm");
         String statsFile = (String) optionSet.valueOf("f");
         if (edgePenalty < 0) {
@@ -103,6 +106,7 @@ public class Main {
         solver.setTimeLimit(tl);
         solver.setLogLevel(logLevel);
         solver.setPreprocessingLevel(preprocessLevel);
+        solver.setCplexOff(heuristicOnly > 0);
         GraphIO graphIO = new GraphIO(nodeFile, edgeFile, signalFile);
         try {
             long before = System.currentTimeMillis();
@@ -142,8 +146,9 @@ public class Main {
                 Graph solGraph = graph.subgraph(nodes, edges);
                 if (logLevel == 2)
                     new GraphPrinter(solGraph, signals).toTSV("nodes-sol.tsv", "edges-sol.tsv");
-                printStats(solver.isSolvedToOptimality()?1:0, solver.getLB(), sum, solGraph, timeConsumed, statsFile,
-                        nodeFile.getName(), edgeFile.getName(), signalFile.getName());
+                printStats(solver.isSolvedToOptimality() ? 1 : 0, solver.preprocessedNodes(), solver.preprocessedEdges(),
+                        solGraph, timeConsumed, statsFile,
+                        nodeFile.getAbsolutePath(), edgeFile.getAbsolutePath(), signalFile.getAbsolutePath());
             }
             graphIO.write(units);
         } catch (ParseException e) {
@@ -155,14 +160,14 @@ public class Main {
         }
     }
 
-    private static void printStats(int isOpt, double lb, double score, Graph solGraph,
+    private static void printStats(int isOpt, int prepNodes, int prepEdges, Graph solGraph,
                                    long timeConsumed, String fileName,
                                    String nodes, String edges, String signals) {
-         try (PrintWriter pw = new PrintWriter(fileName)) {
-            String header = "isOpt\tlb\tscore\ttime\tedges\tnodes\tnodefile\tedgefile\tsigfile\tversion\n";
-            String out = isOpt + "\t" + lb + "\t"+score + "\t" + timeConsumed +  "\t" +
+        try (PrintWriter pw = new PrintWriter(fileName)) {
+            String header = "isOpt\tVPrep\tEPrep\ttime\tedges\tnodes\tnodefile\tedgefile\tsigfile\tversion\n";
+            String out = isOpt + "\t" + prepNodes + "\t" + prepEdges + "\t" + timeConsumed + "\t" +
                     solGraph.edgeSet().size() + "\t" +
-                    solGraph.vertexSet().size() + "\t" + nodes + "\t" + edges + "\t" + signals+ "\t" + VERSION;
+                    solGraph.vertexSet().size() + "\t" + nodes + "\t" + edges + "\t" + signals + "\t" + VERSION + "\n";
             pw.write(header);
             pw.write(out);
         } catch (IOException e) {

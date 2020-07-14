@@ -15,15 +15,26 @@ public class ComponentSolver implements Solver {
     private boolean isSolvedToOptimality;
     private int logLevel;
     private int threads;
+    private boolean cplexOff;
 
     private boolean minimize;
     private int preprocessLevel;
     private Graph g;
     private Signals s;
 
+    private int[] preprocessedSize = {0, 0};
+
+    public int preprocessedNodes() {
+        return preprocessedSize[0];
+    }
+
+    public int preprocessedEdges() {
+        return preprocessedSize[1];
+    }
+
     public ComponentSolver(int threshold, boolean minimize) {
         this.threshold = threshold;
-        this.minimize= minimize;
+        this.minimize = minimize;
         externLB = Double.NEGATIVE_INFINITY;
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
@@ -45,6 +56,8 @@ public class ComponentSolver implements Solver {
         }
         long before = System.currentTimeMillis();
         new Preprocessor(g, s, threads, logLevel).preprocess(preprocessLevel);
+        preprocessedSize[0] = g.vertexSet().size();
+        preprocessedSize[1] = g.edgeSet().size();
         if (logLevel > 0) {
             System.out.print("Preprocessing deleted " + (vertexBefore - g.vertexSet().size()) + " nodes ");
             System.out.println("and " + (edgesBefore - g.edgeSet().size()) + " edges.");
@@ -69,6 +82,7 @@ public class ComponentSolver implements Solver {
         List<Worker> memorized = new ArrayList<>();
         BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
         ExecutorService executor = new ThreadPoolExecutor(threads, threads, Long.MAX_VALUE, TimeUnit.NANOSECONDS, queue);
+        List<Unit> bestTree = new ArrayList<>();
 
         while (!components.isEmpty()) {
             Set<Node> component = components.poll();
@@ -87,13 +101,8 @@ public class ComponentSolver implements Solver {
                 }
             }
             //if (root != null && !subgraph.containsVertex(root))
-             //   continue;
+            //   continue;
 
-
-            RLTSolver solver = new RLTSolver();
-            solver.setSharedLB(lb);
-            solver.setTimeLimit(tl);
-            solver.setLogLevel(logLevel);
             Set<Node> vertexSet = subgraph.vertexSet();
             Set<Unit> subset = new HashSet<>(vertexSet);
             subset.addAll(subgraph.edgeSet());
@@ -102,35 +111,51 @@ public class ComponentSolver implements Solver {
             if (treeRoot == null) {
                 treeRoot = vertexSet.stream().max(Comparator.comparing(signals::weight)).orElse(null);
             }
+            TreeSolver.Solution mstSol = null;
             if (treeRoot != null) {
                 MSTSolver ms = new MSTSolver(
                         subgraph,
-                        RLTSolver.makeHeuristicWeights(subgraph, subSignals),
+                        Solver.makeHeuristicWeights(subgraph, subSignals),
                         treeRoot
                 );
                 ms.solve();
                 Graph subtree = subgraph.subgraph(vertexSet, ms.getEdges());
                 TreeSolver ts = new TreeSolver(subtree, subSignals);
-                TreeSolver.Solution sol = ts.solveRooted(treeRoot);
-                double tlb = subSignals.weightSum(sol.sets());
+                mstSol = ts.solveRooted(treeRoot);
+                double tlb = subSignals.weightSum(mstSol.sets());
                 double plb = lb.get();
                 if (tlb >= plb) {
                     System.out.println("heuristic found lb " + tlb);
                     lb.compareAndSet(plb, tlb);
-                    solver.setInitialSolution(sol.units);
+                    bestTree = extract(new ArrayList<>(mstSol.units));
                 }
             }
-            Worker worker = new Worker(subgraph, root,
-                    subSignals, solver, timeBefore);
-            executor.execute(worker);
-            memorized.add(worker);
+            if (!this.cplexOff) {
+                RLTSolver solver = new RLTSolver();
+                solver.setSharedLB(lb);
+                solver.setTimeLimit(tl);
+                solver.setLogLevel(logLevel);
+                if (mstSol != null)
+                    solver.setInitialSolution(mstSol.units);
+                Worker worker = new Worker(subgraph, root,
+                        subSignals, solver, timeBefore);
+                executor.execute(worker);
+                memorized.add(worker);
+
+            }
         }
         executor.shutdown();
         try {
             executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         } catch (InterruptedException ignored) {
         }
-        return getResult(memorized, graph, signals);
+        if (!this.cplexOff)
+            return getResult(memorized, graph, signals);
+        else {
+            graph.vertexSet().forEach(Unit::clear);
+            graph.edgeSet().forEach(Unit::clear);
+            return bestTree;
+        }
     }
 
     private List<Unit> getResult(List<Worker> memorized, Graph graph, Signals signals) throws SolverException {
@@ -146,16 +171,6 @@ public class ComponentSolver implements Solver {
                 isSolvedToOptimality = false;
             }
         }
-        // dot format printing
-        /*try {
-            new GraphPrinter(graph.subgraph(best.stream()
-                    .filter(u -> u instanceof Node).map(u -> (Node) u).collect(Collectors.toSet()),
-                    best.stream()
-                    .filter(u -> u instanceof Edge).map(u -> (Edge) u).collect(Collectors.toSet()))
-                    , signals).printGraph("best.dot", true);
-        } catch (SolverException e) {
-            e.printStackTrace();
-        }*/
         if (logLevel == 2) {
             new GraphPrinter(graph, signals)
                     .toTSV("nodes-prep.tsv", "edges-prep.tsv",
@@ -345,6 +360,10 @@ public class ComponentSolver implements Solver {
 
     public void setPreprocessingLevel(int preprocessLevel) {
         this.preprocessLevel = preprocessLevel;
+    }
+
+    public void setCplexOff(boolean cplexOff) {
+        this.cplexOff = cplexOff;
     }
 
     public static class SetComparator implements Comparator<Set<Node>> {
