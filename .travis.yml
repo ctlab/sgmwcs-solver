@@ -13,7 +13,7 @@ install:
 script:
 - mvn install -DskipTests=true
 - java -Djava.library.path=lib/lib -cp lib/lib/cplex.jar:target/sgmwcs-solver.jar ru.itmo.ctlab.sgmwcs.Main -n nodes -e edges -s signals
-- mvn -Djava.library.path=lib/lib cobertura:cobertura
+  #- mvn -Djava.library.path=lib/lib cobertura:cobertura
 
 after_success:
 - bash <(curl -s https://codecov.io/bash)
