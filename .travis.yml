@@ -11,7 +11,7 @@ install:
 - mvn install:install-file -Dfile=lib/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.7.1 -Dpackaging=jar
 
 script:
-- mvn install -DskipTests=true
+- mvn install
 - java -Djava.library.path=lib/lib -cp lib/lib/cplex.jar:target/sgmwcs-solver.jar ru.itmo.ctlab.sgmwcs.Main -n nodes -e edges -s signals
   #- mvn -Djava.library.path=lib/lib cobertura:cobertura
 
